@@ -1,0 +1,51 @@
+const HOUR_MS = 60 * 60 * 1000;
+const MIN_AGGREGATE_MONTHS = 24;
+
+export function rawRetentionHours(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.STELLOG_RAW_RETENTION_HOURS ?? '48';
+  const hours = Number(raw);
+  if (!Number.isFinite(hours) || hours < 1) {
+    throw new Error('STELLOG_RAW_RETENTION_HOURS must be a number of at least 1.');
+  }
+  return hours;
+}
+
+export function aggregateRetentionMonths(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.STELLOG_AGGREGATE_RETENTION_MONTHS ?? String(MIN_AGGREGATE_MONTHS);
+  const months = Number(raw);
+  if (!Number.isFinite(months)) return MIN_AGGREGATE_MONTHS;
+  return Math.max(MIN_AGGREGATE_MONTHS, Math.floor(months));
+}
+
+export function rawCutoff(now: Date, env: NodeJS.ProcessEnv = process.env): Date {
+  return new Date(now.getTime() - rawRetentionHours(env) * HOUR_MS);
+}
+
+/** Calendar months, never fewer than 24. */
+export function aggregateCutoff(now: Date, env: NodeJS.ProcessEnv = process.env): Date {
+  const cutoff = new Date(now.getTime());
+  cutoff.setUTCMonth(cutoff.getUTCMonth() - aggregateRetentionMonths(env));
+  return cutoff;
+}
+
+export function startOfUtcHour(date: Date): Date {
+  const next = new Date(date.getTime());
+  next.setUTCMinutes(0, 0, 0);
+  return next;
+}
+
+export function startOfUtcDay(date: Date): Date {
+  const next = new Date(date.getTime());
+  next.setUTCHours(0, 0, 0, 0);
+  return next;
+}
+
+const FUTURE_SKEW_MS = 5 * 60 * 1000;
+
+export function acceptedObservationTime(observedAt: Date, now: Date): boolean {
+  const earliest = aggregateCutoff(now);
+  return (
+    observedAt.getTime() >= earliest.getTime() &&
+    observedAt.getTime() <= now.getTime() + FUTURE_SKEW_MS
+  );
+}
