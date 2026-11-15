@@ -56,3 +56,15 @@ test('resend sends a working link once mail is back, and is neutral for unknown 
   await post('/auth/resend', { email: EMAIL });
   assert.equal(mails.length, 1, 'verified accounts get no further email');
 });
+
+test('reset and invite emails use their own wording, not the verify text', async () => {
+  const sent = [];
+  const m = createMailer({ SMTP_HOST: 'smtp.test' }, { sendMail: async (x) => sent.push(x) });
+  await m.send({ to: 'a@b.test', subject: 'Reset', kind: 'reset', link: 'https://x.test/reset?token=1' });
+  await m.send({ to: 'a@b.test', subject: 'Invite', kind: 'invite', link: 'https://x.test/reset?token=2' });
+  assert.match(sent[0].text, /password reset was requested/i);
+  assert.match(sent[0].text, /valid for 1 hour/);
+  assert.doesNotMatch(sent[0].text, /Welcome|Verify your email/);
+  assert.match(sent[1].text, /invited to operate Starlog/);
+  assert.match(sent[1].text, /valid for 72 hours/);
+});

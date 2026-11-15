@@ -100,7 +100,10 @@ export async function buildApp({ pools, mailer, config = {} }) {
   app.get('/auth/verify', async (req, reply) => {
     const token = String(req.query.token || '');
     const { rows } = await pools.auth.query('SELECT starlog.verify_email($1) AS ok', [sha256(token)]);
-    return rows[0].ok ? { message: 'Email verified. You can sign in now.' } : reply.code(400).send({ error: 'This link is invalid or expired.' });
+    if (!rows[0].ok) return reply.code(400).send({ error: 'This link is invalid or expired.' });
+    // A person clicking the emailed link gets the sign-in page; scripts and tests still get JSON.
+    if ((req.headers.accept || '').includes('text/html')) return reply.redirect('/login?verified=1');
+    return { message: 'Email verified. You can sign in now.' };
   });
 
   // Neutral answer whether or not the email exists, so this cannot be used to find registered emails.

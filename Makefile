@@ -1,5 +1,5 @@
 COMPOSE=docker compose -f infra/compose/docker-compose.yml --env-file .env
-.PHONY: up down logs psql test-db test-api operator e2e
+.PHONY: wallet-key up down logs psql test-db test-api operator e2e
 up:
 	$(COMPOSE) up -d --build
 down:
@@ -18,3 +18,6 @@ operator:
 	$(COMPOSE) run --rm api node scripts/create-operator.js "$(EMAIL)" "$(PASSWORD)"
 e2e:
 	bash infra/scripts/e2e.sh
+# Prints a new STELLAR_AUTH_SECRET for wallet sign-in. Paste the line into .env.
+wallet-key:
+	$(COMPOSE) run --rm api node scripts/gen-wallet-key.js

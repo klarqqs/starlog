@@ -181,3 +181,12 @@ test('operators can sign in with a linked wallet, and the role is reported', asy
   assert.equal(r.statusCode, 200);
   assert.equal(r.json().role, 'operator');
 });
+
+test('the emailed verify link opens the sign-in page for browsers and returns JSON for scripts', async () => {
+  await post('/auth/register', { project: 'Redirect Co', email: 'rd@redirect.test', password: PW });
+  const token = tokenOf(mails.at(-1));
+  const r = await app.inject({ url: `/auth/verify?token=${token}`, headers: { accept: 'text/html,application/xhtml+xml' } });
+  assert.equal(r.statusCode, 302);
+  assert.equal(r.headers.location, '/login?verified=1');
+  assert.equal((await post('/auth/login', { email: 'rd@redirect.test', password: PW })).statusCode, 200);
+});

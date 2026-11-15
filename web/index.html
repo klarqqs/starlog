@@ -231,6 +231,7 @@
             <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
             <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
             <p class="error" id="err">${esc(notice || '')}</p>
+            <p id="ok-note" class="${new URLSearchParams(location.search).get('verified') ? '' : 'hide'}">Email verified. You can sign in now.</p>
             <p id="resend-row" class="hide"><a href="#" id="resend">Resend verification email</a></p>
             <button type="submit" id="submit">${operator ? 'Sign in as operator' : 'Sign in'}</button>
           </form>

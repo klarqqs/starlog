@@ -23,11 +23,13 @@
         {"path":"/accounts/GABC.../payments?limit=5","status":200,"latencyMs":42}]}'</code></pre>
 <p>The domain must be an API site you added. Paths are normalized before storage, so the example above is stored as <code>/accounts/:id/payments</code>. Responses: <code>200</code> with the accepted count, <code>401</code> for a missing or unknown token, <code>404</code> if no API site matches the domain.</p>
 <h2 id="share">Share</h2><p>Turn on the share link in the dashboard to publish totals only at <code>/share/your-slug</code>. Turn it off to revoke it.</p>
-<h2 id="operator">SCF operators</h2><p>Operators sign in at <a href="/operator/login">/operator/login</a>. The first operator is created by whoever runs the service: <code>make operator EMAIL=… PASSWORD=…</code>.</p>
+<h2 id="signin">Sign in, password reset and wallets</h2><p>Projects sign in with email and password at <a href="/login">/login</a>. If you forget the password, use <a href="/forgot">Forgot your password?</a>: we email a link that is valid for 1 hour and works once, and a reset signs you out everywhere.</p>
+<p>After you sign in you can link <strong>Freighter</strong> or <strong>xBull</strong> in the dashboard (up to 5 wallets). Linking asks the wallet to sign a short challenge for this site. Nothing is sent to the Stellar network and no funds move. After that, the wallet buttons on the sign-in page sign you in without the password. A wallet belongs to one account.</p>
+<h2 id="operator">SCF operators</h2><p>Operators sign in at <a href="/operator/login">/operator/login</a>, a separate door from the project one. A project account cannot use it. The first operator is created by whoever runs the service: <code>make operator EMAIL=… PASSWORD=…</code>. After that, any operator can invite colleagues from the operator page: they get an email, choose their own password, and can be removed again. The last active operator cannot be removed.</p>
 <h2 id="selfhost">Self-host</h2><pre><code>git clone https://github.com/klarqqs/starlog
 cd starlog &amp;&amp; cp .env.example .env   # set every CHANGE-ME
 make up
-make operator EMAIL=you@example.org PASSWORD='12+ characters'</code></pre><p>The app is then on <code>http://127.0.0.1:4000</code>. In development, verification links print in <code>make logs</code>.</p></main>
+make operator EMAIL=you@example.org PASSWORD='12+ characters'</code></pre><p>The app is then on <code>http://127.0.0.1:4000</code>. In development, verification and reset links print in <code>make logs</code>. For wallet sign-in run <code>make wallet-key</code> and paste the line into <code>.env</code>.</p></main>
 <footer><div class="wrap"><div><a class="logo" href="/">Star<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
 <div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">API metrics</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
 <div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>

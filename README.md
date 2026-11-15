@@ -54,6 +54,12 @@ Onboarding real projects and proving adoption: see `docs/onboarding.md`. Passwor
 Create the first operator with `api/scripts/create-operator.js`.
 Verification email goes out over SMTP when `SMTP_HOST` is set. With it unset, links print in the log (development only), and `NODE_ENV=production` refuses to start without SMTP. `POST /auth/resend` sends a new link.
 
+### Accounts
+- Password reset: `/forgot` then the emailed `/reset?token=` link (1 hour, single use, signs the account out everywhere).
+- Operators are invited from the operator page (email link, 72 hours). The first one comes from `make operator`.
+- Wallet sign-in (Freighter, xBull): link a wallet in the dashboard, then sign in with it. It uses a SEP-10 challenge bound to this site's domain, valid 5 minutes, usable once. Set `STELLAR_AUTH_SECRET` (`make wallet-key`). The browser script is built from `web/wallet-src` into `web/wallet.js` and committed, so no wallet code loads from another host.
+- Every account function in Postgres is executable only by `starlog_auth`.
+
 ## Known limits to address next
 - The SECURITY DEFINER functions rely on the table owner bypassing RLS (a superuser owner does). Use a dedicated owner role with BYPASSRLS if you change this.
 - Register returns 409 for a known email, which reveals that it is registered. Consider a neutral response later.

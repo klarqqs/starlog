@@ -54,6 +54,7 @@ services:
       TENANT_DATABASE_URL: postgresql://starlog_tenant:${STARLOG_TENANT_PASSWORD}@db:5432/${STARLOG_DB_NAME:-starlog}
       OPERATOR_DATABASE_URL: postgresql://starlog_operator:${STARLOG_OPERATOR_PASSWORD}@db:5432/${STARLOG_DB_NAME:-starlog}
       INGEST_DATABASE_URL: postgresql://starlog_ingest:${STARLOG_INGEST_PASSWORD}@db:5432/${STARLOG_DB_NAME:-starlog}
+      STELLAR_AUTH_SECRET: ${STELLAR_AUTH_SECRET:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

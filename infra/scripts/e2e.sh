@@ -45,4 +45,24 @@ BODY='{"domain":"api.demo.example.com","points":[{"path":"/accounts/GABCDEFGHIJK
 API="$(curl -s -b "$CJ" "$BASE/tenant/api/summary")"; echo "$API" | grep -q '"/accounts/:id/payments"' && echo "$API" | grep -q '"/tx/:id"' || fail "normalization $API"; ok "paths are normalized: $(echo "$API" | node -pe 'JSON.parse(require("fs").readFileSync(0)).routes.map(r=>r.route+" p95="+r.p95).join(", ")')"
 REPORT="$(node scripts/adoption-report.js "$BASE" op@scf.test operator-password-1 30)"; echo "$REPORT" | grep -q "Demo Wallet.*views=1.*api=2" || fail "operator report: $REPORT"; ok "operator report shows the project: $(echo "$REPORT" | tail -1)"
 [ "$(code -b "$CJ" "$BASE/operator/tenants")" = 403 ] || fail "tenant reached operator data"; ok "a project cannot open the operator list"
+# ---- accounts: forgot/reset, operator invites, verify redirect, wallet config
+field(){ node -pe "JSON.parse(require('fs').readFileSync(0))$1"; }
+RESETURL="$(curl -s "${J[@]}" -d '{"email":"owner@demo.test"}' "$BASE/auth/forgot" | field .resetUrl)"; RTOK="${RESETURL##*token=}"; [ -n "$RTOK" ] || fail "forgot gave no reset link (dev)"
+[ "$(code "${J[@]}" -d "{\"token\":\"$RTOK\",\"password\":\"a-brand-new-password\"}" "$BASE/auth/reset")" = 200 ] || fail "reset"
+[ "$(code "${J[@]}" -d "{\"token\":\"$RTOK\",\"password\":\"a-brand-new-password\"}" "$BASE/auth/reset")" = 400 ] || fail "reset link reused"
+[ "$(code -b "$CJ" "$BASE/me")" = 401 ] || fail "old session survived the reset"
+[ "$(code "${J[@]}" -d '{"email":"owner@demo.test","password":"correct-horse-battery"}' "$BASE/auth/login")" = 401 ] || fail "old password still works"
+[ "$(code "${J[@]}" -d '{"email":"owner@demo.test","password":"a-brand-new-password"}' "$BASE/auth/login")" = 200 ] || fail "new password"; ok "password reset: one-time link, old password and sessions gone"
+OPJ="$TMP/opjar"; curl -s -c "$OPJ" "${J[@]}" -d '{"email":"op@scf.test","password":"operator-password-1"}' "$BASE/auth/login" >/dev/null
+INV="$(curl -s -b "$OPJ" "${J[@]}" -d '{"email":"colleague@scf.test"}' "$BASE/operator/operators" | field .inviteUrl)"; ITOK="${INV##*token=}"; [ -n "$ITOK" ] || fail "no invite link"
+[ "$(code "${J[@]}" -d '{"email":"colleague@scf.test","password":"guess-guess-guess"}' "$BASE/auth/login")" = 401 ] || fail "invited operator signed in before accepting"
+[ "$(code "${J[@]}" -d "{\"token\":\"$ITOK\",\"password\":\"colleague-password-1\"}" "$BASE/auth/reset")" = 200 ] || fail "accept invite"
+[ "$(curl -s "${J[@]}" -d '{"email":"colleague@scf.test","password":"colleague-password-1"}' "$BASE/auth/login" | field .role)" = operator ] || fail "invited operator login"
+TJ="$TMP/tjar"; curl -s -c "$TJ" "${J[@]}" -d '{"email":"owner@demo.test","password":"a-brand-new-password"}' "$BASE/auth/login" >/dev/null
+[ "$(code -b "$TJ" "${J[@]}" -d '{"email":"x@scf.test"}' "$BASE/operator/operators")" = 403 ] || fail "a project invited an operator"; ok "operators: invite, accept, and projects cannot invite"
+curl -s "${J[@]}" -d '{"project":"Redirect Co","email":"rd@demo.test","password":"correct-horse-battery"}' "$BASE/auth/register" > "$TMP/rd.json"; RV="$(field .verifyUrl < "$TMP/rd.json")"
+[ "$(code -H 'Accept: text/html' "$RV")" = 302 ] || fail "browser verify link did not redirect"; ok "emailed verify link sends browsers to the sign-in page"
+[ "$(curl -s "$BASE/auth/wallet/config" | field .enabled)" = true ] || fail "wallet config"
+[ "$(code "${J[@]}" -d '{"address":"nope"}' "$BASE/auth/wallet/challenge")" = 400 ] || fail "bad wallet address accepted"
+CH="$(curl -s "${J[@]}" -d "{\"address\":\"$(cd "$ROOT/api" && node -e "import('@stellar/stellar-sdk').then(s=>console.log(s.Keypair.random().publicKey()))")\"}" "$BASE/auth/wallet/challenge" | field .transaction)"; [ ${#CH} -gt 100 ] || fail "no wallet challenge"; ok "wallet challenge issued for a valid address (signing is covered by the API tests)"
 echo "ALL END-TO-END CHECKS PASSED"

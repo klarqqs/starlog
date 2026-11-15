@@ -8,7 +8,8 @@ numbers have to come from the projects themselves.
 - Service running with real email: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` in `.env`,
   and `NODE_ENV=production` plus `PUBLIC_URL=https://your-host`. In production the API refuses to start without SMTP.
 - Serve it over HTTPS (a reverse proxy such as Caddy or nginx), set `TRUST_PROXY=1` behind it, and `ALLOWED_ORIGIN` to your public URL.
-- Create the first operator: `make operator EMAIL=you@example.org PASSWORD='12+ characters'`.
+- Wallet sign-in: run `make wallet-key` and put `STELLAR_AUTH_SECRET` in `.env`. Without it, wallet sign-in is off in production.
+- Create the first operator: `make operator EMAIL=you@example.org PASSWORD='12+ characters'`. Add the rest of the SCF team from the operator page (they get an email invite).
 
 ## For each web project (need 3)
 1. The project registers at `/login?mode=register` and verifies the email (use "Resend verification email" if needed).
