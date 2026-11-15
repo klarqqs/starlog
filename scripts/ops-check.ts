@@ -7,7 +7,7 @@ import {
   evaluateBaseline,
   newestBackupAgeSeconds,
   promText,
-} from '../src/stellog/ops-baseline.ts';
+} from '../src/stellog/ops-baseline';
 
 const onceOnly = !process.argv.includes('--loop');
 

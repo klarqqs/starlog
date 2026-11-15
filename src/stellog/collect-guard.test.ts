@@ -73,7 +73,7 @@ describe('collect ip budget', () => {
     for (let i = 0; i < IP_EVENT_LIMIT; i++) {
       const decision = decideCollect(input, store);
       expect(decision.ok).toBe(false);
-      if (!decision.ok) expect(decision.reason).toBe('nonce');
+      if (decision.ok === false) expect(decision.reason).toBe('nonce');
     }
     expect(decideCollect({ ...input, nonce: issueNonce(secret, websiteId, now) }, store)).toEqual({
       ok: false,

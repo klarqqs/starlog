@@ -11,11 +11,11 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-// With no token the user can't be logged in, so going via /websites only flashes it before /login.
-test('sends visitors without a token straight to login', () => {
+// With no token the visitor goes to the public Stellog home page instead of flashing /websites.
+test('sends visitors without a token straight to the home page', () => {
   render(<RootPage />);
 
-  expect(getTestRouter().replace).toHaveBeenCalledWith('/login');
+  expect(getTestRouter().replace).toHaveBeenCalledWith('/home');
 });
 
 test('sends logged-in users to their websites', () => {

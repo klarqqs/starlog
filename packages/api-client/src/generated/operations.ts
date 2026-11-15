@@ -3082,6 +3082,30 @@ export const operations = {
     ],
     hasBody: false,
   },
+  ingestOtlpLogs: {
+    operationId: 'ingestOtlpLogs',
+    method: 'post',
+    path: '/v1/logs',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
+  ingestOtlpMetrics: {
+    operationId: 'ingestOtlpMetrics',
+    method: 'post',
+    path: '/v1/metrics',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
+  ingestOtlpTraces: {
+    operationId: 'ingestOtlpTraces',
+    method: 'post',
+    path: '/v1/traces',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
   initiateTwoFactorSetup: {
     operationId: 'initiateTwoFactorSetup',
     method: 'post',
@@ -5234,6 +5258,42 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'getWebsiteValues'>> {
     return this.execute('getWebsiteValues', input, options);
+  }
+
+  /**
+   * Ingest OTLP logs JSON
+   * Accepts an OTLP JSON log payload, keeps derived metrics, and discards the rest. Bearer token is a website ingest key. Protobuf is rejected.
+   * `POST /v1/logs`
+   */
+  ingestOtlpLogs(
+    input: OperationInput<'ingestOtlpLogs'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'ingestOtlpLogs'>> {
+    return this.execute('ingestOtlpLogs', input, options);
+  }
+
+  /**
+   * Ingest OTLP metrics JSON
+   * Bearer token is a website ingest key (stk_). Protobuf is rejected. A tenant.id that does not match the key stores nothing.
+   * `POST /v1/metrics`
+   */
+  ingestOtlpMetrics(
+    input: OperationInput<'ingestOtlpMetrics'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'ingestOtlpMetrics'>> {
+    return this.execute('ingestOtlpMetrics', input, options);
+  }
+
+  /**
+   * Ingest OTLP traces JSON
+   * Derives route, status, and latency from server spans, then discards the spans. Bearer token is a website ingest key. Protobuf is rejected.
+   * `POST /v1/traces`
+   */
+  ingestOtlpTraces(
+    input: OperationInput<'ingestOtlpTraces'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'ingestOtlpTraces'>> {
+    return this.execute('ingestOtlpTraces', input, options);
   }
 
   /**

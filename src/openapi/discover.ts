@@ -86,49 +86,55 @@ function toOpenApiSegment(segment: string) {
   return name ? `{${name}}` : segment;
 }
 
-function getRoutePath(apiRoot: string, routeFile: string): `/${string}` {
-  const relativeDirectory = path.relative(apiRoot, path.dirname(routeFile));
+function getRoutePath(routeRoot: string, routeFile: string, prefix: `/${string}`): `/${string}` {
+  const relativeDirectory = path.relative(routeRoot, path.dirname(routeFile));
   const segments = relativeDirectory
     .split(path.sep)
     .filter(Boolean)
     .map(toOpenApiSegment)
     .filter((segment): segment is string => segment !== null);
 
-  return `/api${segments.length ? `/${segments.join('/')}` : ''}`;
+  return `${prefix}${segments.length ? `/${segments.join('/')}` : ''}`;
 }
 
 export async function discoverApiOperations(
   projectRoot = process.cwd(),
 ): Promise<DiscoveredApiOperation[]> {
-  const apiRoot = path.join(projectRoot, 'src', 'app', 'api');
-  const routeFiles = await walk(apiRoot, name => ROUTE_FILE_PATTERN.test(name));
-  const operations: DiscoveredApiOperation[] = [];
   const configFile = ts.readConfigFile(path.join(projectRoot, 'tsconfig.json'), ts.sys.readFile);
   const parsedConfig = ts.parseJsonConfigFileContent(configFile.config, ts.sys, projectRoot);
   const program = ts.createProgram(parsedConfig.fileNames, parsedConfig.options);
   const checker = program.getTypeChecker();
+  const trees = [
+    { root: path.join(projectRoot, 'src', 'app', 'api'), prefix: '/api' as const },
+    { root: path.join(projectRoot, 'src', 'app', 'v1'), prefix: '/v1' as const },
+  ];
+  const operations: DiscoveredApiOperation[] = [];
 
-  for (const routeFile of routeFiles.sort()) {
-    const source =
-      program.getSourceFile(routeFile) ??
-      ts.createSourceFile(
-        routeFile,
-        await readFile(routeFile, 'utf8'),
-        ts.ScriptTarget.Latest,
-        true,
-        routeFile.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-      );
-    const routePath = getRoutePath(apiRoot, routeFile);
-    const relativeSource = path.relative(projectRoot, routeFile).replaceAll(path.sep, '/');
+  for (const tree of trees) {
+    const routeFiles = await walk(tree.root, name => ROUTE_FILE_PATTERN.test(name));
 
-    getExportedMethods(source).forEach(method => {
-      operations.push({
-        method,
-        path: routePath,
-        source: relativeSource,
-        analysis: analyzeSourceOperation(source, method, checker),
+    for (const routeFile of routeFiles.sort()) {
+      const source =
+        program.getSourceFile(routeFile) ??
+        ts.createSourceFile(
+          routeFile,
+          await readFile(routeFile, 'utf8'),
+          ts.ScriptTarget.Latest,
+          true,
+          routeFile.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+        );
+      const routePath = getRoutePath(tree.root, routeFile, tree.prefix);
+      const relativeSource = path.relative(projectRoot, routeFile).replaceAll(path.sep, '/');
+
+      getExportedMethods(source).forEach(method => {
+        operations.push({
+          method,
+          path: routePath,
+          source: relativeSource,
+          analysis: analyzeSourceOperation(source, method, checker),
+        });
       });
-    });
+    }
   }
 
   return operations.sort((left, right) =>
@@ -137,9 +143,17 @@ export async function discoverApiOperations(
 }
 
 export async function discoverContractFiles(projectRoot = process.cwd()) {
-  const apiRoot = path.join(projectRoot, 'src', 'app', 'api');
+  const roots = [
+    path.join(projectRoot, 'src', 'app', 'api'),
+    path.join(projectRoot, 'src', 'app', 'v1'),
+  ];
+  const files = (
+    await Promise.all(
+      roots.map(root =>
+        walk(root, name => name === 'contract.ts' || name === 'contract.generated.ts'),
+      ),
+    )
+  ).flat();
 
-  return (
-    await walk(apiRoot, name => name === 'contract.ts' || name === 'contract.generated.ts')
-  ).sort();
+  return files.sort();
 }

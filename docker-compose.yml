@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        SKIP_BUILD_GEO: ${SKIP_BUILD_GEO:-1}
     image: stellog:local
     ports:
       - "3000:3000"

@@ -4,7 +4,7 @@ import { once } from 'node:events';
 import { createReadStream } from 'node:fs';
 import { access } from 'node:fs/promises';
 import path from 'node:path';
-import { planRestore } from '../src/stellog/ops-baseline.ts';
+import { planRestore } from '../src/stellog/ops-baseline';
 
 const name = process.argv[2];
 if (!name) {

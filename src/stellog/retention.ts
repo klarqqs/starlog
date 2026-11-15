@@ -1,7 +1,7 @@
 const HOUR_MS = 60 * 60 * 1000;
 const MIN_AGGREGATE_MONTHS = 24;
 
-export function rawRetentionHours(env: NodeJS.ProcessEnv = process.env): number {
+export function rawRetentionHours(env: Record<string, string | undefined> = process.env): number {
   const raw = env.STELLOG_RAW_RETENTION_HOURS ?? '48';
   const hours = Number(raw);
   if (!Number.isFinite(hours) || hours < 1) {
@@ -10,19 +10,24 @@ export function rawRetentionHours(env: NodeJS.ProcessEnv = process.env): number 
   return hours;
 }
 
-export function aggregateRetentionMonths(env: NodeJS.ProcessEnv = process.env): number {
+export function aggregateRetentionMonths(
+  env: Record<string, string | undefined> = process.env,
+): number {
   const raw = env.STELLOG_AGGREGATE_RETENTION_MONTHS ?? String(MIN_AGGREGATE_MONTHS);
   const months = Number(raw);
   if (!Number.isFinite(months)) return MIN_AGGREGATE_MONTHS;
   return Math.max(MIN_AGGREGATE_MONTHS, Math.floor(months));
 }
 
-export function rawCutoff(now: Date, env: NodeJS.ProcessEnv = process.env): Date {
+export function rawCutoff(now: Date, env: Record<string, string | undefined> = process.env): Date {
   return new Date(now.getTime() - rawRetentionHours(env) * HOUR_MS);
 }
 
 /** Calendar months, never fewer than 24. */
-export function aggregateCutoff(now: Date, env: NodeJS.ProcessEnv = process.env): Date {
+export function aggregateCutoff(
+  now: Date,
+  env: Record<string, string | undefined> = process.env,
+): Date {
   const cutoff = new Date(now.getTime());
   cutoff.setUTCMonth(cutoff.getUTCMonth() - aggregateRetentionMonths(env));
   return cutoff;

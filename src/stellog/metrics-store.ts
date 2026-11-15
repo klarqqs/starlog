@@ -12,7 +12,7 @@ type Tx = Prisma.TransactionClient;
 export async function insertObservations(websiteId: string, rows: Observation[]): Promise<void> {
   if (rows.length === 0) return;
 
-  await prisma.client.$transaction(async (tx: Tx) => {
+  await prisma.transaction(async (tx: Tx) => {
     const ready: Observation[] = [];
     for (const row of rows) {
       const next = await materialize(tx, websiteId, row);

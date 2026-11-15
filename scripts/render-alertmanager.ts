@@ -1,5 +1,5 @@
 import { writeFile } from 'node:fs/promises';
-import { renderAlertmanagerConfig } from '../src/stellog/ops-baseline.ts';
+import { renderAlertmanagerConfig } from '../src/stellog/ops-baseline';
 
 const url = process.env.ALERT_WEBHOOK_URL;
 if (!url) {

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createWriteStream } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
-import { deleteExpiredBackups, planBackup } from '../src/stellog/ops-baseline.ts';
+import { deleteExpiredBackups, planBackup } from '../src/stellog/ops-baseline';
 
 const dryRun = process.env.DRY_RUN === '1';
 const backupDir = process.env.BACKUP_DIR || 'backups';

@@ -36,6 +36,8 @@ Migration 29 is the interim collector. The accepted design replaces it in a late
 - New tables get Postgres row-level security. `stellog_operator` is a read-only database role and is not the Umami `admin` application role.
 - Route cardinality past a named per-team hourly cap is stored as `other`. Per-IP bot counters are ephemeral and are not a table.
 
+`src/app/page.tsx` already sends a signed-out visitor to `/home`. `src/app/page.test.tsx` now expects that path.
+
 ## Handover
 
 `docker-compose.yml`
@@ -54,7 +56,11 @@ Migration 29 is the interim collector. The accepted design replaces it in a late
 
 - Ignores `backups/`, generated Alertmanager config, Prometheus textfiles, and Terraform state.
 
-New routes gained hand-written OpenAPI contracts so the explicit contract check covers them. `/s/e` and `/v1` stay outside `src/app/api` and are not part of that check.
+`src/openapi/discover.ts`
+
+- Also walks `src/app/v1`, so `POST /v1/metrics`, `/v1/traces`, and `/v1/logs` are part of the explicit contract check.
+
+New routes gained hand-written OpenAPI contracts. `/s/e` stays outside that walk.
 
 ## Pinned tracker
 
@@ -84,6 +90,10 @@ New routes gained hand-written OpenAPI contracts so the explicit contract check 
 `scripts/update-tracker.js`
 
 - Still rewrites only `public/script.js`. It throws if that path is under `public/s`.
+
+`biome.json`
+
+- The pinned tracker `public/s` is excluded. It is a minified build, and linting it reports the compressor's syntax.
 
 `package.json`
 

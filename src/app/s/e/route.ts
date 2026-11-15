@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     budgets,
   );
 
-  if (!decision.ok) {
+  if (decision.ok === false) {
     if (decision.reason === 'bot') return json({ beep: 'boop' }, 200);
     const status = decision.reason === 'budget' ? 429 : decision.status;
     return json({ message: 'Rejected.' }, status);
