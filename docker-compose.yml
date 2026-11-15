@@ -1,7 +1,11 @@
+# Stellog. This stack builds the Dockerfile in this repository.
 ---
 services:
   umami:
-    image: ghcr.io/umami-software/umami:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: stellog:local
     ports:
       - "3000:3000"
     environment:
