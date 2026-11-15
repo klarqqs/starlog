@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy · Starlog</title>
+  <meta name="description" content="What Starlog collects and what it does not.">
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="/">Star<i>log</i></a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
+<main class="wrap doc"><div class="eyebrow">Privacy</div><h1 style="font-size:44px">What Starlog collects</h1>
+<h2>Web analytics</h2><ul><li>Page views, referrer host, browser, and device type, added to daily totals.</li><li>A unique-visitor count made from a hash of site, day, truncated IP and user agent. The hash changes every day, so visitors cannot be followed across days.</li><li>No cookies. The tracker keeps one flag in session storage to count a new session.</li><li>Events are accepted only from the domain a project registered.</li></ul>
+<h2>API metrics</h2><ul><li>Request counts, status codes and latency histograms per normalized route.</li><li>Stellar addresses, UUIDs, hashes and numeric ids are removed from paths before storage.</li><li>No request bodies, headers, traces or logs are stored.</li></ul>
+<h2>Accounts</h2><ul><li>Project email address and an argon2id password hash. Sessions are stored hashed.</li></ul>
+<h2>Still to come</h2><p>A full GDPR write-up, data-residency statement and erasure workflow are planned in the milestone plan and are not yet published.</p></main>
+<footer><div class="wrap"><div><a class="logo" href="/">Star<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
+<div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">API metrics</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
+<div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>
+<div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF operator sign in</a></div></div></footer>
+</body>
+</html>

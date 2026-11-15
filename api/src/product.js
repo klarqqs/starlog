@@ -55,8 +55,20 @@ export function registerProduct(app, { pools, tx, need }) {
     reply.type('text/javascript; charset=utf-8').header('cache-control', 'public, max-age=300');
     return tracker;
   });
-  for (const path of ['/', '/login', '/app', '/operator', '/operator/login']) {
-    app.get(path, async (req, reply) => {
+  const page = (file) => readFileSync(join(root, 'web', file));
+  const staticPages = { '/': 'home.html', '/docs': 'docs.html', '/pricing': 'pricing.html', '/privacy': 'privacy.html' };
+  for (const [route, file] of Object.entries(staticPages)) {
+    app.get(route, async (req, reply) => {
+      reply.type('text/html; charset=utf-8').header('cache-control', 'public, max-age=300');
+      return page(file);
+    });
+  }
+  app.get('/site.css', async (req, reply) => {
+    reply.type('text/css; charset=utf-8').header('cache-control', 'public, max-age=300');
+    return page('site.css');
+  });
+  for (const route of ['/login', '/app', '/operator', '/operator/login']) {
+    app.get(route, async (req, reply) => {
       reply.type('text/html; charset=utf-8').header('cache-control', 'no-store');
       return readFileSync(pagePath);
     });

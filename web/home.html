@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Starlog: usage analytics for Stellar projects</title>
+  <meta name="description" content="Privacy-first web and API analytics for Stellar projects, with one verified view for SCF.">
+  <link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<header><div class="wrap"><a class="logo" href="/">Star<i>log</i></a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
+<main>
+  <div class="wrap"><div class="hero"><div class="eyebrow">Open-source web and API analytics for Stellar</div>
+    <h1>Verified usage for every Stellar project</h1>
+    <p class="lead">Projects add one snippet and get a private dashboard. SCF gets one view of every project. No cookies, no personal data, free for the ecosystem.</p>
+    <a class="btn p" href="/login?mode=register">Get started for free</a> <a class="btn" href="/docs">Read the docs</a>
+    <div class="mock"><div class="kpis"><div><b>Page views</b><span>last 30 days</span></div><div><b>Visitors</b><span>unique, no cookies</span></div><div><b>p95 latency</b><span>per API route</span></div></div>
+      <div class="bars" aria-hidden="true"><div style="height:40%"></div><div style="height:55%"></div><div style="height:35%"></div><div style="height:70%"></div><div style="height:60%"></div><div style="height:85%"></div><div style="height:50%"></div><div style="height:65%"></div><div style="height:90%"></div><div style="height:58%"></div><div style="height:75%"></div><div style="height:45%"></div></div>
+      <p class="note">Illustration only. Your dashboard shows your own measured numbers.</p></div>
+  </div></div>
+  <section id="features"><div class="wrap"><div class="eyebrow">Web analytics</div><h2>What each project sees</h2><p class="lead" style="margin-left:0">Add your domain, paste one script tag, and the dashboard fills in. Each project sees only its own data.</p>
+    <div class="grid"><div class="card"><h3>Page views and visitors</h3><p>Daily rollups with a selectable time range.</p></div><div class="card"><h3>Referrers</h3><p>Which sites send you traffic.</p></div><div class="card"><h3>Devices and browsers</h3><p>Desktop, mobile and tablet, by browser.</p></div><div class="card"><h3>Share link</h3><p>A revocable public link with totals only.</p></div></div>
+  </div></section>
+  <section id="api"><div class="wrap two"><div><div class="eyebrow">API metrics</div><h2>The half a website tracker cannot do</h2><p style="color:var(--mut)">Create an ingest token per project and send request metrics. Starlog strips Stellar addresses, UUIDs, hashes and ids from paths, then keeps request counts, status codes and p50/p95 latency.</p><a href="/docs#metrics">See the request format →</a></div>
+    <div class="card"><table><thead><tr><th>Route</th><th>Requests</th><th>p95</th></tr></thead><tbody><tr><td><code>/accounts/:id</code></td><td>…</td><td>…</td></tr><tr><td><code>/payments</code></td><td>…</td><td>…</td></tr><tr><td><code>/tx/:id</code></td><td>…</td><td>…</td></tr></tbody></table><p class="note">Example of normalized routes.</p></div></div></section>
+  <section id="operator"><div class="wrap"><div class="eyebrow">For SCF</div><h2>One screen for every project</h2><p class="lead" style="margin-left:0">Operators sign in separately and see all projects side by side, with page views, visitors and API requests. Filter by name, sort by traffic, and choose 7, 30 or 90 days.</p><a class="btn" href="/operator/login">SCF operator sign in</a></div></section>
+  <section><div class="wrap"><div class="dark"><div class="eyebrow">Privacy</div><h2>No cookies. No personal data.</h2><p>Visitors are counted with a daily-rotating hash and a truncated IP. Raw IPs and cookies are never stored. Rollups are kept per project and isolated by Postgres row-level security.</p>
+    <div class="grid"><div class="card"><h3>No consent banner</h3><p>Nothing is stored on the visitor’s device beyond a per-tab session flag.</p></div><div class="card"><h3>Strict isolation</h3><p>Every query runs under one project’s identity.</p></div><div class="card"><h3>Your data stays yours</h3><p>Self-host from one repository, or use the shared service.</p></div></div></div></div></section>
+  <section><div class="wrap" style="text-align:center"><div class="eyebrow">Open source</div><h2>Built in the open</h2><p class="lead">MIT licensed. Rebuild the whole stack from the repository with <code>make up</code>.</p><a class="btn" href="https://github.com/klarqqs/starlog">View the source</a> <a class="btn p" href="/login?mode=register">Get started for free</a></div></section>
+</main>
+<footer><div class="wrap"><div><a class="logo" href="/">Star<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
+<div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">API metrics</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
+<div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>
+<div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF operator sign in</a></div></div></footer>
+</body>
+</html>

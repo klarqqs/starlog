@@ -146,6 +146,7 @@
       };
       $('#tab-in') && ($('#tab-in').onclick = () => setMode('in'));
       $('#tab-up') && ($('#tab-up').onclick = () => setMode('up'));
+      if (!operator && new URLSearchParams(location.search).get('mode') === 'register') setMode('up');
       $('#form').onsubmit = async (e) => {
         e.preventDefault();
         $('#err').textContent = '';
