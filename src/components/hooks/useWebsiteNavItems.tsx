@@ -197,6 +197,12 @@ export function useWebsiteNavItems(websiteId: string) {
           icon: <Bug />,
           path: renderPath('/errors'),
         },
+        {
+          id: 'api',
+          label: 'API',
+          icon: <Lightning />,
+          path: renderPath('/api'),
+        },
       ],
     },
   ];
