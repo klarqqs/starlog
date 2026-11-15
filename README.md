@@ -7,14 +7,17 @@ Built for the SCF #46 RFP. MIT licensed.
 - `infra/compose` Docker Compose: Postgres 16 + Umami baseline
 - `infra/db/migrations` Schema and row-level security (RLS)
 - `infra/db/tests` Tenant-isolation tests
-- `web`, `collector`, `api` Added in later steps
+- `web`, `collector`, `api` Landing page and dashboards, tracker, and the API that serves them
 - `docs` Privacy, security and handover docs
 
 ## Quick start (step 1)
 ```bash
 cp .env.example .env      # set every CHANGE-ME value
-make up                   # Postgres on 127.0.0.1:5432, Umami on 127.0.0.1:3000
+make up                   # Postgres :5432, Umami :3000, Starlog app :4000 (all on 127.0.0.1)
+make operator EMAIL=you@example.org PASSWORD='at-least-12-chars'
 ```
+Open http://127.0.0.1:4000 for the Starlog landing page. Project sign-in is `/login`, SCF operator sign-in is `/operator/login`.
+Umami on :3000 is only the baseline engine; it is not the product front door. In development, verification links print in `make logs`.
 Umami's default first login is `admin` / `umami`. Change it immediately.
 Pin `UMAMI_IMAGE` to an exact version or digest before any real deployment.
 
