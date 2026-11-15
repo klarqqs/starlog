@@ -53,7 +53,8 @@ test.describe('Website tests', () => {
     await expect(page.getByTestId('input-domain').locator('input')).toHaveValue(
       'updatedwebsite.com',
     );
-    await expect(page.locator('textarea')).toContainText('/script.js');
+    await expect(page.locator('textarea')).toContainText('/s/1.js');
+    await expect(page.locator('textarea')).toContainText('integrity=');
 
     await deleteWebsite(request, auth, websiteId);
     await page.goto('/websites');

@@ -14,6 +14,8 @@ export default {
     replace({
       __COLLECT_API_HOST__: process.env.COLLECT_API_HOST || '',
       __COLLECT_API_ENDPOINT__: process.env.COLLECT_API_ENDPOINT || '/api/send',
+      __STELLOG_NONCE__: 'false',
+      __STELLOG_CACHE_HEADER__: 'x-umami-cache',
       delimiters: ['', ''],
       preventAssignment: true,
     }),

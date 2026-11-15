@@ -7,8 +7,8 @@ export const config = {
 };
 
 const TRACKER_PATH = '/script.js';
+const PINNED_TRACKER_PATH = '/s/1.js';
 const RECORDER_PATH = '/recorder.js';
-const COLLECT_PATH = '/api/send';
 const LOGIN_PATH = '/login';
 const BASE_PATH = process.env.BASE_PATH || '';
 
@@ -35,7 +35,7 @@ function customCollectEndpoint(request: NextRequest) {
     const url = request.nextUrl.clone();
 
     if (matchesConfiguredPath(url.pathname, collectEndpoint, BASE_PATH)) {
-      url.pathname = COLLECT_PATH;
+      url.pathname = '/s/e';
       return NextResponse.rewrite(url, { headers: apiHeaders });
     }
   }
@@ -48,8 +48,10 @@ function customScriptName(request: NextRequest) {
     const url = request.nextUrl.clone();
     const names = scriptName.split(',').map(name => name.trim().replace(/^\/+/, ''));
 
-    if (names.find(name => matchesConfiguredPath(url.pathname, name, BASE_PATH))) {
-      url.pathname = TRACKER_PATH;
+    if (
+      names.find(name => name !== 's/1.js' && matchesConfiguredPath(url.pathname, name, BASE_PATH))
+    ) {
+      url.pathname = PINNED_TRACKER_PATH;
       return NextResponse.rewrite(url, { headers: trackerHeaders });
     }
   }
@@ -58,7 +60,12 @@ function customScriptName(request: NextRequest) {
 function customScriptUrl(request: NextRequest) {
   const scriptUrl = process.env.TRACKER_SCRIPT_URL;
 
-  if (scriptUrl && matchesConfiguredPath(request.nextUrl.pathname, TRACKER_PATH, BASE_PATH)) {
+  // Remote URLs are not rewritten. The pinned file in this build is the tracker.
+  if (
+    scriptUrl &&
+    !/^https?:\/\//i.test(scriptUrl) &&
+    matchesConfiguredPath(request.nextUrl.pathname, TRACKER_PATH, BASE_PATH)
+  ) {
     return NextResponse.rewrite(scriptUrl, { headers: trackerHeaders });
   }
 }
@@ -66,6 +73,7 @@ function customScriptUrl(request: NextRequest) {
 function applyStaticScriptHeaders(request: NextRequest, response: NextResponse) {
   if (
     matchesConfiguredPath(request.nextUrl.pathname, TRACKER_PATH, BASE_PATH) ||
+    matchesConfiguredPath(request.nextUrl.pathname, PINNED_TRACKER_PATH, BASE_PATH) ||
     matchesConfiguredPath(request.nextUrl.pathname, RECORDER_PATH, BASE_PATH)
   ) {
     Object.entries(trackerHeaders).forEach(([key, value]) => {

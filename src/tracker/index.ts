@@ -473,15 +473,35 @@ type MetricEntry = PerformanceEntry & {
     if (!payload) return;
 
     try {
+      // The pinned Stellog build replaces these tokens. The legacy build leaves them,
+      // which keeps a single POST to the collect endpoint and the existing cache header.
+      const nonceFlag: string = '__STELLOG_NONCE__';
+      const configuredHeader: string = '__STELLOG_CACHE_HEADER__';
+      const pinnedNonce = nonceFlag === 'true';
+      const cacheHeaderName = configuredHeader.startsWith('x-')
+        ? configuredHeader
+        : 'x-umami-cache';
+      let bodyPayload = payload;
+
+      if (pinnedNonce && website) {
+        const issued = await fetch(`${endpoint}?id=${encodeURIComponent(String(website))}`, {
+          method: 'GET',
+          credentials,
+        });
+        const issuedBody = (await issued.json()) as { nonce?: string };
+        if (!issuedBody?.nonce) return;
+        bodyPayload = { ...payload, nonce: issuedBody.nonce };
+      }
+
       const res = await fetch(endpoint, {
         keepalive: true,
         method: 'POST',
-        body: JSON.stringify({ type, payload }),
+        body: JSON.stringify({ type, payload: bodyPayload }),
         headers: {
           'Content-Type': 'application/json',
           'x-umami-website-id': website as string,
           'x-umami-hostname': hostname,
-          ...(typeof cache !== 'undefined' && { 'x-umami-cache': cache }),
+          ...(typeof cache !== 'undefined' && { [cacheHeaderName]: cache }),
         },
         credentials,
       });

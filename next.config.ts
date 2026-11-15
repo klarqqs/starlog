@@ -91,6 +91,14 @@ const headers = [
     headers: apiHeaders,
   },
   {
+    source: '/s/e',
+    headers: apiHeaders,
+  },
+  {
+    source: '/s/:file.js',
+    headers: trackerHeaders,
+  },
+  {
     source: '/:path*',
     headers: defaultHeaders,
   },
@@ -109,7 +117,8 @@ if (isProd) {
 
 const rewrites = [];
 
-if (trackerScriptURL) {
+// A remote tracker URL would replace this build at request time. Stellog serves the pinned file.
+if (trackerScriptURL && !/^https?:\/\//i.test(trackerScriptURL)) {
   rewrites.push({
     source: TRACKER_SCRIPT,
     destination: trackerScriptURL,
@@ -124,7 +133,7 @@ if (collectApiEndpoint) {
 
   rewrites.push({
     source: collectApiEndpoint,
-    destination: '/api/send',
+    destination: '/s/e',
   });
 }
 
@@ -184,10 +193,13 @@ if (trackerScriptName) {
   if (names) {
     names.forEach(name => {
       const normalizedSource = `/${name.replace(/^\/+/, '')}`;
+      if (normalizedSource === '/s/1.js') {
+        return;
+      }
 
       rewrites.push({
         source: normalizedSource,
-        destination: TRACKER_SCRIPT,
+        destination: '/s/1.js',
       });
 
       headers.push({
@@ -196,13 +208,6 @@ if (trackerScriptName) {
       });
     });
   }
-}
-
-if (isProd && cloudMode) {
-  rewrites.push({
-    source: '/script.js',
-    destination: 'https://cloud.umami.is/script.js',
-  });
 }
 
 /** @type {import('next').NextConfig} */
