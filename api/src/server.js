@@ -19,4 +19,4 @@ const app = await buildApp({ pools, mailer, config: {
   secureCookie: process.env.NODE_ENV === 'production',
   trustProxy: process.env.TRUST_PROXY === '1' } });
 await app.listen({ port: +(process.env.PORT || 4000), host: process.env.HOST || '127.0.0.1' });
-console.log('Starlog API listening');
+console.log('Stellog API listening');

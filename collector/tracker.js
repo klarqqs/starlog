@@ -1,4 +1,4 @@
-/* Starlog web tracker. No cookies. One pageview per page load. */
+/* Stellog web tracker. No cookies. One pageview per page load. */
 (function () {
   var el = document.currentScript;
   if (!el) return;

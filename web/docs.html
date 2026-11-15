@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Docs · Starlog</title>
-  <meta name="description" content="Install the tracker, send API metrics, and self-host Starlog.">
-  <link rel="stylesheet" href="/site.css">
+  <title>Docs · Stellog</title>
+  <meta name="description" content="Install the tracker, send API metrics, and self-host Stellog.">
+  <meta name="theme-color" content="#262626">
+  <link rel="stylesheet" href="/site.css?v=6">
 </head>
 <body>
-<header><div class="wrap"><a class="logo" href="/">Star<i>log</i></a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
+<header><div class="wrap"><a class="logo" href="/">Stellog</a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="text" href="/login">Log in</a><a class="btn" href="/login?mode=register">Sign up</a></div></header>
 <main class="wrap doc"><div class="eyebrow">Documentation</div><h1 style="font-size:44px">Get counted in five minutes</h1>
 <h2 id="start">Quick start</h2><ol><li><a href="/login?mode=register">Register</a> your project and verify your email.</li><li>Add a website or API domain in the dashboard.</li><li>Install the snippet or send metrics (below).</li></ol>
 <h2 id="web">Install the web tracker</h2><p>Paste this in the <code>&lt;head&gt;</code> of your site. Use the site id shown in your dashboard.</p>
@@ -28,7 +29,7 @@
 cd starlog &amp;&amp; cp .env.example .env   # set every CHANGE-ME
 make up
 make operator EMAIL=you@example.org PASSWORD='12+ characters'</code></pre><p>The app is then on <code>http://127.0.0.1:4000</code>. In development, verification links print in <code>make logs</code>.</p></main>
-<footer><div class="wrap"><div><a class="logo" href="/">Star<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
+<footer><div class="wrap"><div><a class="logo" href="/">Stellog</a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
 <div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">API metrics</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
 <div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>
 <div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF operator sign in</a></div></div></footer>

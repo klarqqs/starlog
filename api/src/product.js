@@ -1,13 +1,15 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bucketIndex, normalizePath, percentile, addBuckets, BOUNDS } from './metrics.js';
 import { recordPageview, recordApi } from './rollup.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const tracker = readFileSync(join(root, 'collector/tracker.js'));
-const pagePath = join(root, 'web/index.html');
+const pagePath = join(root, 'web/umami-ui/dist/index.html');
+const uiRoot = join(root, 'web/umami-ui/dist');
+const assetType = { '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.map': 'application/json' };
 const sha256 = (s) => createHash('sha256').update(s).digest();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -66,6 +68,20 @@ export function registerProduct(app, { pools, tx, need }) {
   app.get('/site.css', async (req, reply) => {
     reply.type('text/css; charset=utf-8').header('cache-control', 'public, max-age=300');
     return page('site.css');
+  });
+  app.get('/app.css', async (req, reply) => {
+    reply.type('text/css; charset=utf-8').header('cache-control', 'public, max-age=300');
+    return page('app.css');
+  });
+  app.get('/vendor/wallets.js', async (req, reply) => {
+    reply.type('text/javascript; charset=utf-8').header('cache-control', 'public, max-age=300');
+    return readFileSync(join(root, 'web/vendor/wallets.js'));
+  });
+  app.get('/assets/*', async (req, reply) => {
+    const file = join(uiRoot, 'assets', req.params['*']);
+    if (!file.startsWith(join(uiRoot, 'assets')) || !existsSync(file)) return reply.code(404).send();
+    reply.type(assetType[extname(file)] || 'application/octet-stream').header('cache-control', 'public, max-age=300');
+    return readFileSync(file);
   });
   for (const route of ['/login', '/app', '/operator', '/operator/login']) {
     app.get(route, async (req, reply) => {

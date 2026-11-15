@@ -1,4 +1,4 @@
-# Starlog
+# Stellog
 
 Open-source, privacy-first, multi-tenant web and API analytics for Stellar projects.
 Built for the SCF #46 RFP. MIT licensed.
@@ -13,10 +13,10 @@ Built for the SCF #46 RFP. MIT licensed.
 ## Quick start (step 1)
 ```bash
 cp .env.example .env      # set every CHANGE-ME value
-make up                   # Postgres :5432, Umami :3000, Starlog app :4000 (all on 127.0.0.1)
+make up                   # Postgres :5432, Umami :3000, Stellog app :4000 (all on 127.0.0.1)
 make operator EMAIL=you@example.org PASSWORD='at-least-12-chars'
 ```
-Open http://127.0.0.1:4000 for the Starlog landing page. Project sign-in is `/login`, SCF operator sign-in is `/operator/login`.
+Open http://127.0.0.1:4000 for the Stellog landing page. Project sign-in is `/login`, SCF operator sign-in is `/operator/login`.
 Umami on :3000 is only the baseline engine; it is not the product front door. In development, verification links print in `make logs`.
 Umami's default first login is `admin` / `umami`. Change it immediately.
 Pin `UMAMI_IMAGE` to an exact version or digest before any real deployment.
@@ -44,10 +44,10 @@ If it is unset, every tenant query returns zero rows (fails closed).
 ## Auth API (step 2b)
 ```bash
 cd api && npm ci
-make test-api             # 21 tests on a throwaway Postgres
+make test-api             # 24 tests on a throwaway Postgres
 make e2e                  # full run over real HTTP: register, verify, tracker, metrics, operator view
 ```
-Endpoints: `POST /auth/register|login|logout`, `GET /auth/verify`, `GET /me`,
+Endpoints: `POST /auth/register|login|logout|forgot|reset|wallet`, `GET /auth/verify`, `GET /me`,
 `GET|POST /tenant/sites`, `PATCH /tenant/share`, `GET /tenant/web/summary`,
 `GET /operator/tenants`, `POST /operator/tenants/:id/remove`, `GET /share/:slug`.
 Onboarding real projects and proving adoption: see `docs/onboarding.md`. Passwords use argon2id. Sessions are opaque, hashed in the database, in HttpOnly SameSite=Strict cookies.
@@ -57,6 +57,6 @@ Verification email goes out over SMTP when `SMTP_HOST` is set. With it unset, li
 ## Known limits to address next
 - The SECURITY DEFINER functions rely on the table owner bypassing RLS (a superuser owner does). Use a dedicated owner role with BYPASSRLS if you change this.
 - Register returns 409 for a known email, which reveals that it is registered. Consider a neutral response later.
-- Umami keeps its own database and users. Linking its sites to Starlog tenants is step 3.
+- Umami keeps its own database and users. Linking its sites to Stellog tenants is step 3.
 - Connection pooling must use transaction mode so `set_config(..., true)` cannot leak across requests.
 - Not yet run under Docker. The Compose file is unverified, so run `make up` and report errors. Everything else is tested on real Postgres.

@@ -2,166 +2,172 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Starlog</title>
-  <style>
-    :root { color-scheme: light; --ink: #1c1915; --muted: #5e584f; --line: #e4ddd2; --paper: #f7f4ee; --card: #fffdf9; --accent: #0f6b4c; --danger: #8d2d2d; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font: 16px/1.45 "Iowan Old Style", Palatino, Georgia, serif; color: var(--ink); background: var(--paper); }
-    header, main { width: min(1080px, calc(100% - 32px)); margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; padding: 22px 0 8px; }
-    h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
-    h2 { font-size: 18px; margin: 0 0 10px; }
-    p { color: var(--muted); }
-    a { color: var(--accent); }
-    button, input, select { font: 15px/1.2 ui-sans-serif, system-ui, sans-serif; }
-    button { background: var(--accent); color: white; border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer; }
-    button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-    button.danger { background: var(--danger); }
-    input, select { width: 100%; border: 1px solid var(--line); background: white; border-radius: 8px; padding: 9px 10px; }
-    label { display: block; font: 13px/1.2 ui-sans-serif, system-ui, sans-serif; margin: 10px 0 4px; }
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 12px 0; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .stat b { display: block; font-size: 28px; }
-    .row { display: flex; gap: 8px; align-items: end; }
-    .row > * { flex: 1; }
-    table { width: 100%; border-collapse: collapse; font: 14px/1.3 ui-sans-serif, system-ui, sans-serif; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-    pre, textarea { width: 100%; font: 12px/1.45 ui-monospace, monospace; background: #f3efe7; border-radius: 8px; padding: 10px; border: 0; white-space: pre-wrap; }
-    .error { color: var(--danger); font: 14px ui-sans-serif, system-ui, sans-serif; }
-    .tabs button { background: transparent; color: var(--muted); border-bottom: 2px solid transparent; border-radius: 0; }
-    .tabs button.on { color: var(--ink); border-color: var(--accent); }
-    .hide { display: none; }
-    a.brand { color: var(--ink); text-decoration: none; font-size: 22px; letter-spacing: -0.02em; }
-    header nav { display: flex; gap: 18px; align-items: center; }
-    header nav a { color: var(--ink); text-decoration: none; font: 14px/1 ui-sans-serif, system-ui, sans-serif; }
-    a.btn, a.ghost { display: inline-block; border-radius: 8px; padding: 9px 14px; text-decoration: none; font: 15px/1.2 ui-sans-serif, system-ui, sans-serif; }
-    a.btn, header nav a.btn { background: var(--accent); color: white; }
-    a.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
-    .hero { padding: 54px 0 12px; max-width: 740px; }
-    .hero h2 { font-size: clamp(36px, 6vw, 58px); line-height: 1.02; letter-spacing: -0.03em; margin: 0 0 14px; }
-    .hero p { font-size: 18px; max-width: 46rem; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-    .actions a { text-decoration: none; }
-    .doors, .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .steps { grid-template-columns: repeat(3, 1fr); }
-    .kicker { font: 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-    @media (max-width: 800px) {
-      .grid, .row, .doors, .steps { grid-template-columns: 1fr; display: grid; }
-      header { align-items: flex-start; }
-      header nav { flex-wrap: wrap; justify-content: flex-end; }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Stellog</title>
+  <link rel="stylesheet" href="/app.css?v=3">
 </head>
 <body>
-  <header>
-    <a class="brand" href="/">Starlog</a>
-    <div id="who"></div>
-  </header>
-  <main id="app"></main>
+  <div id="app"></div>
   <script>
     const $ = (s, r = document) => r.querySelector(s);
     const path = location.pathname;
     const api = (url, opts = {}) => fetch(url, { headers: { 'content-type': 'application/json', ...(opts.headers || {}) }, ...opts })
-      .then(async (r) => ({ status: r.status, body: r.status === 204 ? {} : await r.json().catch(() => ({})) }));
+      .then(async (r) => {
+        if (r.status === 204) return { status: r.status, body: {} };
+        const text = await r.text();
+        try { return { status: r.status, body: text ? JSON.parse(text) : {} }; }
+        catch { return { status: r.status, body: { error: 'Stellog could not reach its API from this host.' } }; }
+      });
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
     async function me() { const r = await api('/me'); return r.status === 200 ? r.body : null; }
     function snippet(id) { return '<script defer src="' + location.origin + '/s.js" data-site="' + id + '"><' + '/script>'; }
-
-    function landing(user) {
-      const dash = user ? (user.role === 'operator' ? '/operator' : '/app') : '';
-      document.querySelector('header').innerHTML = `
-        <a class="brand" href="/">Starlog</a>
-        <nav>
-          <a href="/#how">How it works</a>
-          <a href="/login">Project sign in</a>
-          <a href="/operator/login">SCF operator</a>
-          <a class="btn" href="${dash || '/login'}">${dash ? 'Open dashboard' : 'Add your project'}</a>
-        </nav>`;
-      $('#app').innerHTML = `
-        <section class="hero">
-          <p class="kicker">Usage analytics for Stellar projects</p>
-          <h2>Measured traffic for every project. One view for SCF.</h2>
-          <p>Starlog counts real visits to a project’s website and real requests to its API. Each project sees only its own numbers. SCF operators compare all of them, instead of trusting self-reported metrics.</p>
-          <div class="actions">
-            <a class="btn" href="/login">Register a project</a>
-            <a class="ghost" href="/operator/login">SCF operator sign in</a>
-          </div>
-        </section>
-        <section class="doors">
-          <article class="card">
-            <p class="kicker">Projects</p>
-            <h2>Your sites and APIs</h2>
-            <p>Add a domain, paste one script, and read page views, visitors, referrers, devices, and browsers. For an API, send an ingest token. Routes are stored with Stellar addresses and ids removed, plus status codes and p50/p95 latency.</p>
-            <p><a href="/login">Project sign in</a></p>
-          </article>
-          <article class="card">
-            <p class="kicker">SCF operators</p>
-            <h2>Every project, side by side</h2>
-            <p>A separate entrance. Operators can filter and sort projects by page views, visitors, or API requests. A project account cannot open this view, and an operator account is not created from the public form.</p>
-            <p><a href="/operator/login">Operator sign in</a></p>
-          </article>
-        </section>
-        <section id="how">
-          <h2>How a project gets counted</h2>
-          <div class="steps">
-            <article class="card"><p class="kicker">1</p><h2>Add the domain</h2><p>Register the project, verify email, and add the website or API domain.</p></article>
-            <article class="card"><p class="kicker">2</p><h2>Install the snippet</h2><p>The script sends a page view only when the browser’s origin matches that domain. The rollup is stored for that project alone.</p></article>
-            <article class="card"><p class="kicker">3</p><h2>SCF compares</h2><p>Operators open one list of every project. Umami’s own website list is not this view.</p></article>
-          </div>
-        </section>`;
+    function accountLabel(user) {
+      if (user.wallet) return `${user.wallet.slice(0, 4)}…${user.wallet.slice(-4)}`;
+      return user.email;
+    }
+    function metric(label, value) { return `<div class="metric"><span>${label}</span><b>${value}</b></div>`; }
+    function panel(title, rows, cols) {
+      const list = rows || [];
+      const head = cols.map((c) => `<th>${c[0]}</th>`).join('');
+      const body = list.slice(0, 8).map((r) => `<tr>${cols.map((c) => `<td>${esc(c[1](r))}</td>`).join('')}</tr>`).join('')
+        || `<tr><td colspan="${cols.length}">No data yet.</td></tr>`;
+      return `<section class="panel"><h2>${title}</h2><div class="body"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`;
+    }
+    function chart(series) {
+      const list = series || [];
+      const max = Math.max(1, ...list.map((d) => Number(d.page_views) || 0));
+      if (!list.length) return '<div class="chart"><span class="note">No page views in this range.</span></div>';
+      return `<div class="chart" aria-hidden="true">${list.map((d) => `<i style="height:${Math.max(4, Math.round(100 * d.page_views / max))}%" title="${esc(d.day)}: ${d.page_views}"></i>`).join('')}</div>`;
     }
 
     function authScreen(kind, notice) {
       const operator = kind === 'operator';
+      const resetToken = new URLSearchParams(location.search).get('reset');
+      document.body.className = '';
       $('#app').innerHTML = `
-        <section class="card" style="max-width:460px">
-          <p class="kicker">${operator ? 'SCF operator' : 'Stellar project'}</p>
-          <h2>${operator ? 'Operator sign in' : 'Project sign in'}</h2>
-          ${operator ? '' : `<div class="tabs">
-            <button type="button" id="tab-in" class="on">Sign in</button>
-            <button type="button" id="tab-up">Register</button>
-          </div>`}
+        <div class="login"><div>
+          <a class="mark" href="/">Stel<i>log</i></a>
+          <h1 id="heading">${resetToken ? 'Reset password' : 'Login'}</h1>
           <form id="form">
             <div id="project-field" class="hide"><label for="project">Project name</label><input id="project" autocomplete="organization"></div>
-            <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
-            <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+            <div id="email-field" class="${resetToken ? 'hide' : ''}"><label for="email">Email</label><input id="email" type="email" autocomplete="username" ${resetToken ? '' : 'required'}></div>
+            <div id="password-field"><label for="password">${resetToken ? 'New password' : 'Password'}</label><input id="password" type="password" autocomplete="${resetToken ? 'new-password' : 'current-password'}" required></div>
             <p class="error" id="err">${esc(notice || '')}</p>
             <p id="resend-row" class="hide"><a href="#" id="resend">Resend verification email</a></p>
-            <button type="submit" id="submit">${operator ? 'Sign in as operator' : 'Sign in'}</button>
+            <button class="primary" type="submit" id="submit">${resetToken ? 'Update password' : 'Login'}</button>
           </form>
-          <p id="note">${operator
-            ? 'Projects register on the <a href="/login">project sign in</a> page. Operator accounts are issued separately.'
-            : 'SCF staff use the <a href="/operator/login">operator entrance</a>.'}</p>
-        </section>`;
-      let mode = 'in';
+          <div class="links">
+            ${operator ? '<a href="/login">Project login</a>' : '<button type="button" id="tab-up">Create an account</button><button type="button" id="tab-in" class="hide">Login</button>'}
+            ${resetToken ? '' : '<button type="button" id="forgot">Forgot password?</button>'}
+          </div>
+          <p class="note" id="note">${operator ? 'An operator already signed in can add another operator from the dashboard.' : 'SCF staff use the <a href="/operator/login">operator login</a>.'}</p>
+          ${operator ? '' : `<div class="wallets"><button type="button" id="freighter">Freighter</button><button type="button" id="xbull">xBull</button></div>
+          <p class="note">The first time a wallet signs in, enter a project name and press the wallet button again.</p>`}
+        </div></div>`;
+      let mode = resetToken ? 'reset' : 'in';
       const setMode = (next) => {
         mode = next;
-        $('#tab-in')?.classList.toggle('on', mode === 'in');
-        $('#tab-up')?.classList.toggle('on', mode === 'up');
-        $('#project-field').classList.toggle('hide', mode === 'in');
-        $('#submit').textContent = mode === 'in' ? 'Sign in' : 'Create project';
+        $('#project-field')?.classList.toggle('hide', mode !== 'up');
+        $('#password-field')?.classList.toggle('hide', mode === 'forgot');
+        $('#email-field')?.classList.toggle('hide', mode === 'reset');
+        $('#password').required = mode !== 'forgot';
+        $('#email').required = mode !== 'reset';
+        $('#submit').textContent = mode === 'up' ? 'Create account' : mode === 'forgot' ? 'Email reset link' : mode === 'reset' ? 'Update password' : 'Login';
+        const heading = $('#heading');
+        if (heading && !resetToken) heading.textContent = mode === 'up' ? 'Create an account' : mode === 'forgot' ? 'Forgot password' : 'Login';
+        $('#tab-up')?.classList.toggle('hide', mode === 'up');
+        $('#tab-in')?.classList.toggle('hide', mode !== 'up');
         $('#password').autocomplete = mode === 'in' ? 'current-password' : 'new-password';
       };
       $('#tab-in') && ($('#tab-in').onclick = () => setMode('in'));
       $('#tab-up') && ($('#tab-up').onclick = () => setMode('up'));
-      if (!operator && new URLSearchParams(location.search).get('mode') === 'register') setMode('up');
+      $('#forgot') && ($('#forgot').onclick = () => setMode(mode === 'forgot' ? 'in' : 'forgot'));
+      if (!operator && !resetToken && new URLSearchParams(location.search).get('mode') === 'register') setMode('up');
+      if (!operator && new URLSearchParams(location.search).get('verified') === '1') $('#note').textContent = 'Email verified. Sign in.';
       $('#resend') && ($('#resend').onclick = async (e) => {
         e.preventDefault();
         const email = $('#email').value.trim();
         if (!email) { $('#err').textContent = 'Enter your email first.'; return; }
         const r = await api('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) });
         $('#err').textContent = '';
-        $('#note').textContent = r.status === 429 ? 'Too many requests. Try again in a minute.' : (r.body.message || 'Done.');
+        if (r.status === 429) { $('#note').textContent = 'Too many requests. Try again in a minute.'; return; }
+        if (r.body.verifyUrl) $('#note').innerHTML = `This machine is not sending email. <a href="${esc(r.body.verifyUrl)}">Verify this email</a>, then sign in.`;
+        else $('#note').textContent = r.body.message || 'Done.';
       });
+      function signatureText(signed) {
+        if (typeof signed === 'string') return signed;
+        const bytes = signed instanceof Uint8Array ? signed : signed?.data;
+        if (bytes) return btoa(String.fromCharCode(...bytes));
+        throw new Error('The wallet returned a signature Stellog cannot read.');
+      }
+      async function walletLogin(which) {
+        $('#err').textContent = '';
+        let publicKey, sign;
+        try {
+          const wallets = await import('/vendor/wallets.js');
+          if (which === 'freighter') {
+            const freighter = typeof wallets.freighter?.isConnected === 'function' ? wallets.freighter : wallets.freighter?.default;
+            if (!freighter || typeof freighter.requestAccess !== 'function') throw new Error('Freighter could not be loaded.');
+            let installed = true;
+            if (typeof freighter.isConnected === 'function') {
+              const connected = await freighter.isConnected();
+              const flag = connected?.isConnected;
+              installed = flag === true || (flag && typeof flag === 'object');
+            }
+            if (!installed) { $('#err').textContent = 'Freighter is not installed in this browser.'; return; }
+            const access = await freighter.requestAccess();
+            if (access.error || !access.address) { $('#err').textContent = access.error?.message || 'Freighter did not connect.'; return; }
+            publicKey = access.address;
+            sign = async (message) => {
+              const signed = await freighter.signMessage(message, { address: publicKey });
+              if (signed.error || !signed.signedMessage) throw new Error(signed.error?.message || 'Freighter did not sign.');
+              return signatureText(signed.signedMessage);
+            };
+          } else {
+            const Ctor = wallets.xBullWalletConnect;
+            if (typeof Ctor !== 'function') throw new Error('xBull could not be loaded.');
+            const bridge = new Ctor();
+            publicKey = await bridge.connect();
+            sign = async (message) => signatureText((await bridge.signMessage(message, { address: publicKey })).signedMessage);
+          }
+        } catch (e) { $('#err').textContent = e?.message || 'The wallet did not connect.'; return; }
+        const challenge = await api('/auth/wallet/challenge', { method: 'POST', body: JSON.stringify({ publicKey }) });
+        if (challenge.status !== 200) { $('#err').textContent = challenge.body.error || 'Could not start wallet sign-in.'; return; }
+        let signature;
+        try { signature = await sign(challenge.body.message); }
+        catch (e) { $('#err').textContent = e?.message || 'The wallet did not sign.'; return; }
+        const project = $('#project').value.trim();
+        const r = await api('/auth/wallet', { method: 'POST', body: JSON.stringify({ publicKey, signature, message: challenge.body.message, project: project || undefined }) });
+        if (r.status === 409 && r.body.needsProject) {
+          $('#project-field').classList.remove('hide');
+          $('#err').textContent = 'First time with this wallet. Enter a project name, then press the wallet button again.';
+          return;
+        }
+        if (r.status !== 200) { $('#err').textContent = r.body.error || 'Could not sign in with that wallet.'; return; }
+        location.href = '/app';
+      }
+      $('#freighter') && ($('#freighter').onclick = () => walletLogin('freighter'));
+      $('#xbull') && ($('#xbull').onclick = () => walletLogin('xbull'));
       $('#form').onsubmit = async (e) => {
         e.preventDefault();
         $('#err').textContent = '';
         $('#resend-row').classList.add('hide');
         const email = $('#email').value.trim();
         const password = $('#password').value;
+        if (mode === 'forgot') {
+          const r = await api('/auth/forgot', { method: 'POST', body: JSON.stringify({ email }) });
+          if (r.status === 429) { $('#err').textContent = 'Too many requests. Try again in a minute.'; return; }
+          $('#note').innerHTML = r.body.resetUrl ? `${esc(r.body.message)} <a href="${esc(r.body.resetUrl)}">Open the reset link</a>.` : esc(r.body.message || 'Done.');
+          return;
+        }
+        if (mode === 'reset') {
+          const r = await api('/auth/reset', { method: 'POST', body: JSON.stringify({ token: resetToken, password }) });
+          if (r.status !== 200) { $('#err').textContent = r.body.error || 'Could not update the password.'; return; }
+          $('#note').textContent = r.body.message;
+          history.replaceState({}, '', operator ? '/operator/login' : '/login');
+          setMode('in');
+          return;
+        }
         if (!operator && mode === 'up') {
           const r = await api('/auth/register', { method: 'POST', body: JSON.stringify({ project: $('#project').value, email, password }) });
           if (r.status !== 201) { $('#err').textContent = r.body.error || 'Could not register.'; return; }
@@ -174,7 +180,11 @@
         const r = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
         if (r.status !== 200) {
           $('#err').textContent = r.body.error || 'Could not sign in.';
-          if (r.status === 403 && !operator) $('#resend-row').classList.remove('hide');
+          if (r.status === 403 && !operator) {
+            $('#resend-row').classList.remove('hide');
+            const again = await api('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) });
+            if (again.body.verifyUrl) $('#note').innerHTML = `This machine is not sending email. <a href="${esc(again.body.verifyUrl)}">Verify this email</a>, then sign in.`;
+          }
           return;
         }
         const role = r.body.role;
@@ -192,153 +202,176 @@
       };
     }
 
+    function shell(user, items, active) {
+      document.body.className = 'u-app';
+      return `<div class="shell"><aside>
+        <a class="mark" href="/">Stel<i>log</i></a>
+        <nav>${items.map(([id, label]) => `<button type="button" data-nav="${id}" class="${id === active ? 'on' : ''}">${label}</button>`).join('')}</nav>
+        <div class="foot"><span>${esc(accountLabel(user))}</span><button class="ghost" id="out" type="button">Sign out</button></div>
+      </aside><div class="main" id="main"></div></div>`;
+    }
+
     async function tenantScreen(user) {
-      const [sites, summary, tokens, apiSummary] = await Promise.all([
-        api('/tenant/sites'), api('/tenant/web/summary?days=30'), api('/tenant/tokens'), api('/tenant/api/summary?days=30')
-      ]);
-      const web = (sites.body || []).filter((s) => s.kind === 'web');
-      const apis = (sites.body || []).filter((s) => s.kind === 'api');
-      $('#who').innerHTML = `<span>${esc(user.email)}</span> <button class="ghost" id="out" type="button">Sign out</button>`;
+      let days = 30, view = 'overview';
+      $('#app').innerHTML = shell(user, [['overview', 'Overview'], ['websites', 'Websites'], ['api', 'API']], view);
       $('#out').onclick = async () => { await api('/auth/logout', { method: 'POST', body: '{}' }); location.href = '/'; };
-      $('#app').innerHTML = `
-        <div class="grid">
-          <div class="card stat"><span>Page views, 30 days</span><b>${summary.body.totals?.pageViews ?? 0}</b></div>
-          <div class="card stat"><span>Visitors</span><b>${summary.body.totals?.visitors ?? 0}</b></div>
-          <div class="card stat"><span>API requests</span><b>${apiSummary.body.totals?.requests ?? 0}</b></div>
-        </div>
-        <section class="card">
-          <h2>Add a domain</h2>
-          <form id="add" class="row">
-            <div><label for="kind">Kind</label><select id="kind"><option value="web">Website</option><option value="api">API</option></select></div>
-            <div><label for="domain">Domain</label><input id="domain" placeholder="app.example.com" required></div>
-            <button type="submit">Add</button>
-          </form>
-          <p class="error" id="add-err"></p>
-        </section>
-        <section class="card">
-          <h2>Websites</h2>
-          <div id="webs">${web.map(siteCard).join('') || '<p>No website yet.</p>'}</div>
-        </section>
-        <section class="card">
-          <h2>Where visits come from</h2>
-          ${dimTable('Referrer', summary.body.breakdown?.referrer)}
-          ${dimTable('Browser', summary.body.breakdown?.browser)}
-          ${dimTable('Device', summary.body.breakdown?.device)}
-        </section>
-        <section class="card">
-          <h2>API</h2>
-          <div id="apis">${apis.map(apiCard).join('') || '<p>No API domain yet. Add one, then create an ingest token.</p>'}</div>
-          <h2 style="margin-top:18px">Ingest tokens</h2>
-          <form id="token" class="row"><div><label for="label">Label</label><input id="label" placeholder="production"></div><button type="submit">Create token</button></form>
-          <p id="once"></p>
-          <table><thead><tr><th>Label</th><th>Created</th><th></th></tr></thead>
-            <tbody>${(tokens.body || []).map((t) => `<tr><td>${esc(t.label || '—')}</td><td>${esc(t.revoked_at ? 'Revoked' : new Date(t.created_at).toLocaleString())}</td><td>${t.revoked_at ? '' : `<button class="ghost" data-revoke="${t.id}" type="button">Revoke</button>`}</td></tr>`).join('')}</tbody></table>
-          <h2 style="margin-top:18px">Routes</h2>
-          <table><thead><tr><th>Route</th><th>Requests</th><th>Error %</th><th>p50 ms</th><th>p95 ms</th></tr></thead>
-            <tbody>${(apiSummary.body.routes || []).map((r) => `<tr><td>${esc(r.route)}</td><td>${r.requests}</td><td>${r.errorRate}</td><td>${r.p50 ?? '—'}</td><td>${r.p95 ?? '—'}</td></tr>`).join('') || '<tr><td colspan="5">No API traffic yet.</td></tr>'}</tbody></table>
-        </section>`;
-      $('#add').onsubmit = async (e) => {
-        e.preventDefault();
-        const r = await api('/tenant/sites', { method: 'POST', body: JSON.stringify({ kind: $('#kind').value, domain: $('#domain').value.trim() }) });
-        if (r.status !== 201) { $('#add-err').textContent = r.body.error || 'Could not add that domain.'; return; }
-        location.reload();
-      };
-      document.querySelectorAll('[data-test]').forEach((btn) => btn.onclick = async () => {
-        await api(`/tenant/sites/${btn.dataset.test}/test`, { method: 'POST', body: '{}' });
-        location.reload();
-      });
-      $('#token').onsubmit = async (e) => {
-        e.preventDefault();
-        const r = await api('/tenant/tokens', { method: 'POST', body: JSON.stringify({ label: $('#label').value }) });
-        if (r.status !== 201) { $('#once').textContent = r.body.error || 'Could not create a token.'; return; }
-        const domain = apis[0]?.domain || 'api.example.com';
-        $('#once').innerHTML = `<strong>Copy this token now. It is not shown again.</strong><pre>${esc(r.body.token)}</pre>
-          <pre>curl -s -X POST ${location.origin}/v1/metrics \\
+      async function draw() {
+        document.querySelectorAll('[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === view));
+        const [sites, summary, tokens, apiSummary] = await Promise.all([
+          api('/tenant/sites'), api(`/tenant/web/summary?days=${days}`), api('/tenant/tokens'), api(`/tenant/api/summary?days=${days}`)
+        ]);
+        const web = (sites.body || []).filter((s) => s.kind === 'web');
+        const apis = (sites.body || []).filter((s) => s.kind === 'api');
+        const views = summary.body.totals?.pageViews ?? 0;
+        const visitors = summary.body.totals?.visitors ?? 0;
+        const requests = apiSummary.body.totals?.requests ?? 0;
+        const range = `<select id="range"><option value="7" ${days == 7 ? 'selected' : ''}>Last 7 days</option><option value="30" ${days == 30 ? 'selected' : ''}>Last 30 days</option><option value="90" ${days == 90 ? 'selected' : ''}>Last 90 days</option></select>`;
+        let body = '';
+        if (view === 'overview') {
+          body = `<div class="bar"><h1>Overview</h1>${range}</div>
+            <div class="metrics">${metric('Views', views)}${metric('Visitors', visitors)}${metric('API requests', requests)}${metric('Websites', web.length)}</div>
+            ${chart(summary.body.series)}
+            <p class="why">Umami counts website traffic. Stellog also takes an ingest token per project. It strips Stellar addresses, UUIDs, hashes and ids from paths, then keeps request counts, status codes and p50/p95 latency.</p>
+            <div class="panels">
+              ${panel('Referrers', summary.body.breakdown?.referrer, [['Source', (r) => r.key], ['Views', (r) => r.views]])}
+              ${panel('Browsers', summary.body.breakdown?.browser, [['Browser', (r) => r.key], ['Views', (r) => r.views]])}
+              ${panel('Devices', summary.body.breakdown?.device, [['Device', (r) => r.key], ['Views', (r) => r.views]])}
+              ${panel('Routes', apiSummary.body.routes, [['Route', (r) => r.route], ['Requests', (r) => r.requests], ['p95', (r) => r.p95 ?? '—']])}
+            </div>`;
+        } else if (view === 'websites') {
+          body = `<div class="bar"><h1>Websites</h1>${range}</div>
+            <section class="panel"><h2>Add a website</h2><div class="body">
+              <form id="add" class="row"><input id="domain" placeholder="app.example.com" required><button class="primary" type="submit">Add</button></form>
+              <p class="error" id="add-err"></p>
+            </div></section>
+            <div class="panels" style="margin-top:16px">${web.map((s) => `<section class="panel"><h2>${esc(s.domain)}</h2><div class="body">
+              <p class="note">Paste this on that site. A visit counts only when the browser origin matches this domain.</p>
+              <textarea readonly rows="3">${esc(snippet(s.id))}</textarea>
+              <p><button class="ghost" type="button" data-test="${s.id}">Send a test visit</button></p>
+            </div></section>`).join('') || '<p class="note">No website yet.</p>'}</div>`;
+        } else {
+          body = `<div class="bar"><h1>API</h1>${range}</div>
+            <p class="why">Create an ingest token per project and send request metrics. Stellog strips Stellar addresses, UUIDs, hashes and ids from paths, then keeps request counts, status codes and p50/p95 latency.</p>
+            <section class="panel"><h2>API domain</h2><div class="body">
+              <form id="add" class="row"><input id="domain" placeholder="api.example.com" required><button class="primary" type="submit">Add</button></form>
+              <p class="error" id="add-err"></p>
+              ${apis.map((s) => `<p>${esc(s.domain)}</p>`).join('') || '<p class="note">No API domain yet.</p>'}
+            </div></section>
+            <section class="panel" style="margin-top:16px"><h2>Ingest tokens</h2><div class="body">
+              <form id="token" class="row"><input id="label" placeholder="production"><button class="primary" type="submit">Create token</button></form>
+              <p id="once"></p>
+              <table><thead><tr><th>Label</th><th>Created</th><th></th></tr></thead><tbody>
+                ${(tokens.body || []).map((t) => `<tr><td>${esc(t.label || '—')}</td><td>${esc(t.revoked_at ? 'Revoked' : new Date(t.created_at).toLocaleString())}</td><td>${t.revoked_at ? '' : `<button class="ghost" data-revoke="${t.id}" type="button">Revoke</button>`}</td></tr>`).join('')}
+              </tbody></table>
+            </div></section>
+            <div style="margin-top:16px">${panel('Routes', apiSummary.body.routes, [['Route', (r) => r.route], ['Requests', (r) => r.requests], ['Error %', (r) => r.errorRate], ['p50', (r) => r.p50 ?? '—'], ['p95', (r) => r.p95 ?? '—']])}</div>`;
+        }
+        $('#main').innerHTML = body;
+        $('#range') && ($('#range').onchange = (e) => { days = Number(e.target.value); draw(); });
+        $('#add') && ($('#add').onsubmit = async (e) => {
+          e.preventDefault();
+          const r = await api('/tenant/sites', { method: 'POST', body: JSON.stringify({ kind: view === 'api' ? 'api' : 'web', domain: $('#domain').value.trim() }) });
+          if (r.status !== 201) { $('#add-err').textContent = r.body.error || 'Could not add that domain.'; return; }
+          draw();
+        });
+        document.querySelectorAll('[data-test]').forEach((btn) => btn.onclick = async () => {
+          await api(`/tenant/sites/${btn.dataset.test}/test`, { method: 'POST', body: '{}' });
+          view = 'overview'; draw();
+        });
+        $('#token') && ($('#token').onsubmit = async (e) => {
+          e.preventDefault();
+          const r = await api('/tenant/tokens', { method: 'POST', body: JSON.stringify({ label: $('#label').value }) });
+          if (r.status !== 201) { $('#once').textContent = r.body.error || 'Could not create a token.'; return; }
+          const domain = apis[0]?.domain || 'api.example.com';
+          $('#once').innerHTML = `<strong>Copy this token now. It is not shown again.</strong><pre>${esc(r.body.token)}</pre>
+            <pre>curl -s -X POST ${location.origin}/v1/metrics \\
   -H "authorization: Bearer ${esc(r.body.token)}" \\
   -H "content-type: application/json" \\
   -d '{"domain":"${esc(domain)}","points":[{"path":"/accounts/GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/payments","status":200,"latencyMs":42}]}'</pre>`;
-      };
-      document.querySelectorAll('[data-revoke]').forEach((btn) => btn.onclick = async () => {
-        await api(`/tenant/tokens/${btn.dataset.revoke}/revoke`, { method: 'POST', body: '{}' });
-        location.reload();
-      });
-    }
-    function siteCard(s) {
-      return `<article style="margin:10px 0"><strong>${esc(s.domain)}</strong>
-        <p>Paste this on that site. A visit is counted only for this project.</p>
-        <textarea readonly rows="3">${esc(snippet(s.id))}</textarea>
-        <p><button type="button" data-test="${s.id}">Send a test visit</button></p></article>`;
-    }
-    function apiCard(s) { return `<p><strong>${esc(s.domain)}</strong> — send metrics with an ingest token for this domain.</p>`; }
-    function dimTable(title, rows) {
-      const list = rows || [];
-      return `<h2 style="margin-top:14px">${title}</h2><table><tbody>${list.slice(0, 8).map((r) => `<tr><td>${esc(r.key)}</td><td>${r.views}</td></tr>`).join('') || '<tr><td>No data yet.</td></tr>'}</tbody></table>`;
+        });
+        document.querySelectorAll('[data-revoke]').forEach((btn) => btn.onclick = async () => {
+          await api(`/tenant/tokens/${btn.dataset.revoke}/revoke`, { method: 'POST', body: '{}' });
+          draw();
+        });
+      }
+      document.querySelectorAll('[data-nav]').forEach((b) => b.onclick = () => { view = b.dataset.nav; draw(); });
+      draw();
     }
 
     async function operatorScreen(user) {
-      $('#who').innerHTML = `<span>${esc(user.email)} · SCF operator</span> <button class="ghost" id="out" type="button">Sign out</button>`;
+      let days = 30, sort = 'page_views', q = '', view = 'projects';
+      $('#app').innerHTML = shell(user, [['projects', 'Projects'], ['operators', 'Operators']], view);
       $('#out').onclick = async () => { await api('/auth/logout', { method: 'POST', body: '{}' }); location.href = '/'; };
-      let days = 30, sort = 'page_views', q = '';
       async function draw() {
+        document.querySelectorAll('[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === view));
+        if (view === 'operators') {
+          $('#main').innerHTML = `<div class="bar"><h1>Operators</h1></div>
+            <p class="why">This adds another SCF sign-in. It is not on the public login page.</p>
+            <section class="panel"><h2>Add an operator</h2><div class="body">
+              <form id="new-op" class="row"><input id="op-email" type="email" placeholder="Email" required><input id="op-password" type="password" placeholder="Password, 12+ characters" minlength="12" required><button class="primary" type="submit">Create</button></form>
+              <p class="error" id="op-err"></p>
+            </div></section>`;
+          $('#new-op').onsubmit = async (e) => {
+            e.preventDefault();
+            const r = await api('/operator/operators', { method: 'POST', body: JSON.stringify({ email: $('#op-email').value.trim(), password: $('#op-password').value }) });
+            $('#op-err').textContent = r.status === 201 ? r.body.message : (r.body.error || 'Could not create that operator.');
+            if (r.status === 201) $('#new-op').reset();
+          };
+          return;
+        }
         const r = await api(`/operator/tenants?days=${days}`);
         let rows = Array.isArray(r.body) ? r.body : [];
         const query = q.trim().toLowerCase();
         if (query) rows = rows.filter((t) => `${t.name} ${t.slug}`.toLowerCase().includes(query));
         rows.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : (Number(b[sort]) - Number(a[sort])));
-        const body = $('#rows');
-        if (!body) return;
-        body.innerHTML = rows.map((t) => `<tr>
-          <td>${esc(t.name)}<br><span style="color:#5e584f">${esc(t.slug)}</span></td>
-          <td>${esc(t.status)}</td>
-          <td>${Number(t.page_views).toLocaleString()}</td>
-          <td>${Number(t.visitors).toLocaleString()}</td>
-          <td>${Number(t.api_requests).toLocaleString()}</td>
-          <td>${t.status === 'active' ? `<button class="danger" data-remove="${t.id}" type="button">Remove</button>` : ''}</td>
-        </tr>`).join('') || '<tr><td colspan="6">No projects match.</td></tr>';
-        document.querySelectorAll('[data-remove]').forEach((btn) => btn.onclick = async () => {
-          if (!confirm('Remove this project? They will not be able to sign in.')) return;
-          await api(`/operator/tenants/${btn.dataset.remove}/remove`, { method: 'POST', body: '{}' });
-          draw();
-        });
-      }
-      $('#app').innerHTML = `
-        <section class="card">
-          <h2>All projects</h2>
-          <p>Every registered project, sorted by measured traffic. This list is Starlog, not the Umami website list.</p>
-          <div class="row">
-            <div><label for="q">Filter</label><input id="q" placeholder="Name or slug"></div>
-            <div><label for="sort">Sort</label><select id="sort"><option value="page_views">Page views</option><option value="visitors">Visitors</option><option value="api_requests">API requests</option><option value="name">Name</option></select></div>
-            <div><label for="days">Range</label><select id="days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select></div>
+        $('#main').innerHTML = `<div class="bar"><h1>Projects</h1>
+          <select id="days"><option value="7" ${days == 7 ? 'selected' : ''}>Last 7 days</option><option value="30" ${days == 30 ? 'selected' : ''}>Last 30 days</option><option value="90" ${days == 90 ? 'selected' : ''}>Last 90 days</option></select></div>
+          <p class="why">Every Stellog project, with measured page views, visitors and API requests. This is not the Umami website list.</p>
+          <div class="row" style="margin-bottom:16px">
+            <input id="q" placeholder="Filter by name" value="${esc(q)}">
+            <select id="sort"><option value="page_views" ${sort === 'page_views' ? 'selected' : ''}>Views</option><option value="visitors" ${sort === 'visitors' ? 'selected' : ''}>Visitors</option><option value="api_requests" ${sort === 'api_requests' ? 'selected' : ''}>API requests</option><option value="name" ${sort === 'name' ? 'selected' : ''}>Name</option></select>
           </div>
-          <table><thead><tr><th>Project</th><th>Status</th><th>Page views</th><th>Visitors</th><th>API requests</th><th></th></tr></thead><tbody id="rows"></tbody></table>
-        </section>`;
-      $('#q').oninput = (e) => { q = e.target.value; draw(); };
-      $('#sort').onchange = (e) => { sort = e.target.value; draw(); };
-      $('#days').onchange = (e) => { days = e.target.value; draw(); };
+          ${panel('All projects', rows, [['Project', (t) => t.name], ['Status', (t) => t.status], ['Views', (t) => Number(t.page_views).toLocaleString()], ['Visitors', (t) => Number(t.visitors).toLocaleString()], ['API', (t) => Number(t.api_requests).toLocaleString()]])}
+          <div id="actions"></div>`;
+        const actions = $('#actions');
+        rows.filter((t) => t.status === 'active').forEach((t) => {
+          const b = document.createElement('button');
+          b.className = 'ghost'; b.type = 'button'; b.textContent = `Remove ${t.name}`; b.style.margin = '8px 8px 0 0';
+          b.onclick = async () => {
+            if (!confirm('Remove this project? They will not be able to sign in.')) return;
+            await api(`/operator/tenants/${t.id}/remove`, { method: 'POST', body: '{}' });
+            draw();
+          };
+          actions.appendChild(b);
+        });
+        $('#q').onchange = (e) => { q = e.target.value; draw(); };
+        $('#sort').onchange = (e) => { sort = e.target.value; draw(); };
+        $('#days').onchange = (e) => { days = Number(e.target.value); draw(); };
+      }
+      document.querySelectorAll('[data-nav]').forEach((b) => b.onclick = () => { view = b.dataset.nav; draw(); });
       draw();
     }
 
     (async function start() {
       const user = await me();
-      if (path === '/') return landing(user);
       if (path === '/login') {
-        if (user?.role === 'tenant') return location.href = '/app';
-        if (user?.role === 'operator') return location.href = '/operator';
+        if (user?.role === 'tenant') return location.replace('/app');
+        if (user?.role === 'operator') return location.replace('/operator');
         return authScreen('project');
       }
       if (path === '/operator/login') {
-        if (user?.role === 'operator') return location.href = '/operator';
+        if (user?.role === 'operator') return location.replace('/operator');
         if (user?.role === 'tenant') return authScreen('operator', 'You are signed in as a project. Sign out from the project dashboard before using this entrance.');
         return authScreen('operator');
       }
       if (path === '/operator') {
-        if (!user) return location.href = '/operator/login';
-        if (user.role !== 'operator') return location.href = '/app';
+        if (!user) return location.replace('/operator/login');
+        if (user.role !== 'operator') return location.replace('/app');
         return operatorScreen(user);
       }
       if (path === '/app') {
-        if (!user) return location.href = '/login';
-        if (user.role === 'operator') return location.href = '/operator';
+        if (!user) return location.replace('/login');
+        if (user.role === 'operator') return location.replace('/operator');
         return tenantScreen(user);
       }
     })();

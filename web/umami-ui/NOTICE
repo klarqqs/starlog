@@ -1,0 +1,24 @@
+Stellog's sign-in and dashboard run Umami's own application screens.
+
+Source: https://github.com/umami-software/umami
+Commit: b18d5144dfe7342edeeca6f61d13ba3baabed9ad (v3.5.0)
+License: MIT, Copyright Umami Software, Inc.
+
+Adapted from:
+- src/app/login/LoginForm.tsx
+- src/app/login/LoginPage.tsx
+- src/app/(main)/SideNav.tsx
+- src/app/(main)/websites/WebsitesPage.tsx
+- src/app/(main)/websites/[websiteId]/WebsitePage.tsx
+- src/components/metrics/MetricsBar.tsx
+- src/components/common/Panel.tsx
+- src/components/common/PageBody.tsx
+- src/components/common/PageHeader.tsx
+- src/components/svg/Logo.tsx
+
+UI primitives are @umami/react-zen 0.255.0, the library those screens import,
+including @umami/react-zen/styles.full.css.
+
+Stellog changes on those screens: email and project registration, forgot password,
+resend verification, Freighter, xBull, API request metrics, and the operator view.
+Marketing pages are not part of this app.

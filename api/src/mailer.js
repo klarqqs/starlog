@@ -18,14 +18,14 @@ export function createMailer(env = process.env, transport) {
     connectionTimeout: 10000,
     socketTimeout: 15000,
   });
-  const from = env.MAIL_FROM || env.SMTP_USER || 'Starlog <no-reply@localhost>';
+  const from = env.MAIL_FROM || env.SMTP_USER || 'Stellog <no-reply@localhost>';
   return {
     kind: 'smtp',
     async send(m) {
       await t.sendMail({
         from, to: m.to, subject: m.subject,
-        text: `Welcome to Starlog.\n\nVerify your email by opening this link (valid for 24 hours):\n${m.link}\n\nIf you did not create an account, ignore this message.`,
-        html: `<p>Welcome to Starlog.</p><p><a href="${esc(m.link)}">Verify your email</a> (valid for 24 hours).</p><p>If you did not create an account, ignore this message.</p>`,
+        text: `Welcome to Stellog.\n\nVerify your email by opening this link (valid for 24 hours):\n${m.link}\n\nIf you did not create an account, ignore this message.`,
+        html: `<p>Welcome to Stellog.</p><p><a href="${esc(m.link)}">Verify your email</a> (valid for 24 hours).</p><p>If you did not create an account, ignore this message.</p>`,
       });
     },
   };

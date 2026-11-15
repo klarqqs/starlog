@@ -3,6 +3,7 @@ import rateLimit from '@fastify/rate-limit';
 import { hash as argonHash, verify as argonVerify } from '@node-rs/argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import { registerProduct } from './product.js';
+import { validPublicKey, verifySignedMessage } from './wallet.js';
 
 const sha256 = (s) => createHash('sha256').update(s).digest();
 const newToken = () => randomBytes(32).toString('base64url');
@@ -82,7 +83,7 @@ export async function buildApp({ pools, mailer, config = {} }) {
         await pools.auth.query('SELECT starlog.create_email_token($1,$2,$3)', [rows[0].user_id, sha256(token), cfg.tokenHours]);
         const verifyUrl = `${cfg.baseUrl}/auth/verify?token=${token}`;
         let sent = true;
-        try { await mailer.send({ to: email, subject: 'Verify your Starlog email', link: verifyUrl }); }
+        try { await mailer.send({ to: email, subject: 'Verify your Stellog email', link: verifyUrl }); }
         catch (e) { sent = false; req.log?.error?.(e); console.error('[mail] send failed:', e.message); }
         const payload = { message: sent ? 'Account created. Check your email to verify it.'
           : 'Account created, but the verification email could not be sent. Use “Resend verification email” in a few minutes.' };
@@ -99,7 +100,9 @@ export async function buildApp({ pools, mailer, config = {} }) {
   app.get('/auth/verify', async (req, reply) => {
     const token = String(req.query.token || '');
     const { rows } = await pools.auth.query('SELECT starlog.verify_email($1) AS ok', [sha256(token)]);
-    return rows[0].ok ? { message: 'Email verified. You can sign in now.' } : reply.code(400).send({ error: 'This link is invalid or expired.' });
+    if (!rows[0].ok) return reply.code(400).send({ error: 'This link is invalid or expired.' });
+    if ((req.headers.accept || '').includes('text/html')) return reply.redirect('/login?verified=1');
+    return { message: 'Email verified. You can sign in now.' };
   });
 
   // Neutral answer whether or not the email exists, so this cannot be used to find registered emails.
@@ -113,9 +116,81 @@ export async function buildApp({ pools, mailer, config = {} }) {
     const token = newToken();
     await pools.auth.query('SELECT starlog.create_email_token($1,$2,$3)', [u.user_id, sha256(token), cfg.tokenHours]);
     const verifyUrl = `${cfg.baseUrl}/auth/verify?token=${token}`;
-    try { await mailer.send({ to: email.toLowerCase(), subject: 'Verify your Starlog email', link: verifyUrl }); }
+    try { await mailer.send({ to: email.toLowerCase(), subject: 'Verify your Stellog email', link: verifyUrl }); }
     catch (e) { console.error('[mail] resend failed:', e.message); }
     return cfg.exposeVerifyLink ? { ...neutral, verifyUrl } : neutral;
+  });
+
+  const neutralReset = { message: 'If that account exists, a reset link is on its way.' };
+  app.post('/auth/forgot', limit, async (req, reply) => {
+    const { email } = req.body || {};
+    if (typeof email !== 'string' || !EMAIL.test(email)) return neutralReset;
+    const { rows } = await pools.auth.query('SELECT * FROM starlog.login_lookup($1)', [email.toLowerCase()]);
+    const u = rows[0];
+    if (!u) return neutralReset;
+    const token = newToken();
+    await pools.auth.query('SELECT starlog.create_reset_token($1,$2,$3)', [u.user_id, sha256(token), 1]);
+    const resetUrl = `${cfg.baseUrl}${u.role === 'operator' ? '/operator/login' : '/login'}?reset=${token}`;
+    try { await mailer.send({ to: email.toLowerCase(), subject: 'Reset your Stellog password', link: resetUrl }); }
+    catch (e) { console.error('[mail] reset failed:', e.message); }
+    return cfg.exposeVerifyLink ? { ...neutralReset, resetUrl } : neutralReset;
+  });
+
+  app.post('/auth/reset', limit, async (req, reply) => {
+    const { token, password } = req.body || {};
+    if (typeof token !== 'string' || typeof password !== 'string' || password.length < 10 || password.length > 200)
+      return reply.code(400).send({ error: 'Choose a password of 10 to 200 characters.' });
+    const pw = await argonHash(password);
+    const { rows } = await pools.auth.query('SELECT starlog.reset_password($1,$2) AS ok', [sha256(token), pw]);
+    if (!rows[0].ok) return reply.code(400).send({ error: 'This link is invalid or expired.' });
+    return { message: 'Password updated. You can sign in now.' };
+  });
+
+  app.post('/auth/wallet/challenge', limit, async (req, reply) => {
+    const { publicKey } = req.body || {};
+    if (!validPublicKey(publicKey)) return reply.code(400).send({ error: 'That is not a Stellar public key.' });
+    const nonce = newToken();
+    const message = `Stellog sign-in\n${publicKey}\n${nonce}`;
+    await pools.auth.query('SELECT starlog.issue_wallet_challenge($1,$2,$3)', [publicKey, message, sha256(message)]);
+    return { message };
+  });
+
+  app.post('/auth/wallet', limit, async (req, reply) => {
+    const { publicKey, signature, message, project } = req.body || {};
+    if (!validPublicKey(publicKey) || typeof signature !== 'string' || typeof message !== 'string' || message.length > 500)
+      return reply.code(400).send({ error: 'Send the public key, the challenge, and the signature.' });
+    const { rows: challenge } = await pools.auth.query('SELECT starlog.read_wallet_challenge($1,$2) AS message', [publicKey, sha256(message)]);
+    if (challenge[0].message !== message || !verifySignedMessage(publicKey, message, signature))
+      return reply.code(401).send({ error: 'That signature does not match the sign-in challenge.' });
+    const { rows } = await pools.auth.query('SELECT * FROM starlog.login_lookup_wallet($1)', [publicKey]);
+    let user = rows[0];
+    if (!user) {
+      if (typeof project !== 'string' || project.trim().length < 2 || project.length > 60)
+        return reply.code(409).send({ needsProject: true, error: 'Name this project to finish creating it.' });
+      const base = project.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'project';
+      const pw = await argonHash(randomBytes(32).toString('base64url'));
+      let created = null;
+      for (let i = 0; i < 3 && !created; i++) {
+        try {
+          const slug = `${base}-${randomBytes(2).toString('hex')}`;
+          created = (await pools.auth.query('SELECT * FROM starlog.register_wallet($1,$2,$3,$4)', [slug, project.trim(), publicKey, pw])).rows[0];
+        } catch (e) {
+          if (e.constraint === 'users_wallet_uq') {
+            user = (await pools.auth.query('SELECT * FROM starlog.login_lookup_wallet($1)', [publicKey])).rows[0];
+            break;
+          }
+          if (e.constraint !== 'tenants_slug_key') throw e;
+        }
+      }
+      if (!user && created) user = { user_id: created.user_id, role: 'tenant' };
+      if (!user) return reply.code(500).send({ error: 'Could not create the project. Try again.' });
+    }
+    if (user.role === 'operator') return reply.code(403).send({ error: 'Operator accounts sign in with email at the operator entrance.' });
+    await pools.auth.query('SELECT starlog.consume_wallet_challenge($1)', [sha256(message)]);
+    const token = newToken();
+    await pools.auth.query('SELECT starlog.create_session($1,$2,$3)', [user.user_id, sha256(token), cfg.sessionHours]);
+    reply.header('Set-Cookie', cookie(token, cfg.sessionHours * 3600));
+    return { role: 'tenant' };
   });
 
   app.post('/auth/login', limit, async (req, reply) => {
@@ -140,7 +215,9 @@ export async function buildApp({ pools, mailer, config = {} }) {
     return { message: 'Signed out.' };
   });
 
-  app.get('/me', { preHandler: need() }, async (req) => ({ email: req.user.email, role: req.user.role, tenantId: req.user.tenant_id }));
+  app.get('/me', { preHandler: need() }, async (req) => ({
+    email: req.user.email, role: req.user.role, tenantId: req.user.tenant_id, wallet: req.user.wallet_public_key || null,
+  }));
 
   // ------------------------------------------------------------------ tenant routes (role: starlog_tenant)
   // Note: no query below filters by tenant_id. Postgres row-level security does the isolation.
@@ -197,6 +274,21 @@ export async function buildApp({ pools, mailer, config = {} }) {
     if (!UUID.test(req.params.id)) return reply.code(400).send({ error: 'Invalid tenant id.' });
     const r = await pools.operator.query("UPDATE starlog.tenants SET status = 'removed' WHERE id = $1 RETURNING id", [req.params.id]);
     return r.rowCount ? { removed: true } : reply.code(404).send({ error: 'Tenant not found.' });
+  });
+
+  app.post('/operator/operators', { preHandler: need('operator') }, async (req, reply) => {
+    const { email, password } = req.body || {};
+    if (typeof email !== 'string' || !EMAIL.test(email)) return reply.code(400).send({ error: 'Enter a valid email address.' });
+    if (typeof password !== 'string' || password.length < 12 || password.length > 200)
+      return reply.code(400).send({ error: 'Operator passwords must be 12 to 200 characters.' });
+    try {
+      const pw = await argonHash(password);
+      await pools.operator.query('SELECT starlog.create_operator($1,$2)', [email.toLowerCase(), pw]);
+      return reply.code(201).send({ message: 'Operator created. They can sign in at the operator entrance.' });
+    } catch (e) {
+      if (e.constraint === 'users_email_uq') return reply.code(409).send({ error: 'That email is already registered.' });
+      throw e;
+    }
   });
 
   // ------------------------------------------------------------------ public share link (aggregates only)
