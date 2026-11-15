@@ -61,3 +61,14 @@ yarn-error.log*
 
 # local PR review worktrees
 /.review-pr-*/
+
+# operator backups and generated alert delivery
+/backups/
+/infra/monitoring/textfile/*.prom
+/infra/monitoring/alertmanager.generated.yml
+
+# terraform local state
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl.bak

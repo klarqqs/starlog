@@ -5,7 +5,9 @@ on:
 
 jobs:
   stale:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # Disabled. This fork does not auto-close issues, and Umami's Blacksmith runner is not available here.
+    if: false
+    runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write

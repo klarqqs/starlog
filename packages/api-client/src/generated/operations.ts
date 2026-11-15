@@ -66,6 +66,14 @@ export const operations = {
     queryParams: [],
     hasBody: true,
   },
+  createIngestKey: {
+    operationId: 'createIngestKey',
+    method: 'post',
+    path: '/api/websites/{websiteId}/ingest-keys',
+    pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: true,
+  },
   createLink: {
     operationId: 'createLink',
     method: 'post',
@@ -134,6 +142,14 @@ export const operations = {
     operationId: 'createUser',
     method: 'post',
     path: '/api/users',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
+  createWalletChallenge: {
+    operationId: 'createWalletChallenge',
+    method: 'post',
+    path: '/api/auth/wallet/challenge',
     pathParams: [],
     queryParams: [],
     hasBody: true,
@@ -324,6 +340,14 @@ export const operations = {
       'maxResults',
     ],
     hasBody: false,
+  },
+  forgotPassword: {
+    operationId: 'forgotPassword',
+    method: 'post',
+    path: '/api/auth/forgot',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
   },
   getBoard: {
     operationId: 'getBoard',
@@ -1538,6 +1562,14 @@ export const operations = {
     ],
     hasBody: false,
   },
+  getWalletConfig: {
+    operationId: 'getWalletConfig',
+    method: 'get',
+    path: '/api/auth/wallet/config',
+    pathParams: [],
+    queryParams: [],
+    hasBody: false,
+  },
   getWebsite: {
     operationId: 'getWebsite',
     method: 'get',
@@ -1568,6 +1600,14 @@ export const operations = {
     path: '/api/websites/{websiteId}/annotations',
     pathParams: ['websiteId'],
     queryParams: ['startAt', 'endAt', 'search', 'page', 'pageSize', 'maxResults', 'period'],
+    hasBody: false,
+  },
+  getWebsiteApiMetrics: {
+    operationId: 'getWebsiteApiMetrics',
+    method: 'get',
+    path: '/api/websites/{websiteId}/api-metrics',
+    pathParams: ['websiteId'],
+    queryParams: ['startAt', 'endAt', 'unit'],
     hasBody: false,
   },
   getWebsiteAttribution: {
@@ -3058,6 +3098,30 @@ export const operations = {
     queryParams: [],
     hasBody: true,
   },
+  linkWallet: {
+    operationId: 'linkWallet',
+    method: 'post',
+    path: '/api/me/wallets/link',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
+  listIngestKeys: {
+    operationId: 'listIngestKeys',
+    method: 'get',
+    path: '/api/websites/{websiteId}/ingest-keys',
+    pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: false,
+  },
+  listMyWallets: {
+    operationId: 'listMyWallets',
+    method: 'get',
+    path: '/api/me/wallets',
+    pathParams: [],
+    queryParams: [],
+    hasBody: false,
+  },
   listWebsites: {
     operationId: 'listWebsites',
     method: 'get',
@@ -3082,6 +3146,14 @@ export const operations = {
     queryParams: [],
     hasBody: true,
   },
+  loginWithWallet: {
+    operationId: 'loginWithWallet',
+    method: 'post',
+    path: '/api/auth/wallet/login',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
   logout: {
     operationId: 'logout',
     method: 'post',
@@ -3098,11 +3170,35 @@ export const operations = {
     queryParams: [],
     hasBody: true,
   },
+  registerAccount: {
+    operationId: 'registerAccount',
+    method: 'post',
+    path: '/api/auth/register',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
+  resetPassword: {
+    operationId: 'resetPassword',
+    method: 'post',
+    path: '/api/auth/reset',
+    pathParams: [],
+    queryParams: [],
+    hasBody: true,
+  },
   resetWebsite: {
     operationId: 'resetWebsite',
     method: 'post',
     path: '/api/websites/{websiteId}/reset',
     pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: false,
+  },
+  revokeIngestKey: {
+    operationId: 'revokeIngestKey',
+    method: 'delete',
+    path: '/api/websites/{websiteId}/ingest-keys/{keyId}',
+    pathParams: ['websiteId', 'keyId'],
     queryParams: [],
     hasBody: false,
   },
@@ -3135,6 +3231,14 @@ export const operations = {
     method: 'post',
     path: '/api/websites/{websiteId}/transfer',
     pathParams: ['websiteId'],
+    queryParams: [],
+    hasBody: true,
+  },
+  unlinkWallet: {
+    operationId: 'unlinkWallet',
+    method: 'post',
+    path: '/api/me/wallets/unlink',
+    pathParams: [],
     queryParams: [],
     hasBody: true,
   },
@@ -3381,6 +3485,18 @@ export abstract class GeneratedUmamiClient {
   }
 
   /**
+   * Create an API ingest key
+   * Returns the stk_ token once. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs. The collector accepts OTLP JSON.
+   * `POST /api/websites/{websiteId}/ingest-keys`
+   */
+  createIngestKey(
+    input: OperationInput<'createIngestKey'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'createIngestKey'>> {
+    return this.execute('createIngestKey', input, options);
+  }
+
+  /**
    * Create a tracked link
    * Creates a tracked link with a name, destination URL, and slug, optionally assigned to a team.
    * `POST /api/links`
@@ -3486,6 +3602,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'createUser'>> {
     return this.execute('createUser', input, options);
+  }
+
+  /**
+   * Create a wallet challenge
+   * Returns a Stellar transaction for the address to sign. Returns 404 when wallet sign-in is not configured.
+   * `POST /api/auth/wallet/challenge`
+   */
+  createWalletChallenge(
+    input: OperationInput<'createWalletChallenge'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'createWalletChallenge'>> {
+    return this.execute('createWalletChallenge', input, options);
   }
 
   /**
@@ -3750,6 +3878,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'exportWebsite'>> {
     return this.execute('exportWebsite', input, options);
+  }
+
+  /**
+   * Request a password reset
+   * Always returns the same message. The reset link is written to the server log. The response includes resetUrl only when NODE_ENV is not production. This build does not send email.
+   * `POST /api/auth/forgot`
+   */
+  forgotPassword(
+    input: OperationInput<'forgotPassword'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'forgotPassword'>> {
+    return this.execute('forgotPassword', input, options);
   }
 
   /**
@@ -4389,6 +4529,18 @@ export abstract class GeneratedUmamiClient {
   }
 
   /**
+   * Wallet sign-in configuration
+   * Freighter and xBull can be linked after an email account exists. Wallet-only signup is not offered. enabled is false when STELLAR_AUTH_SECRET is unset.
+   * `GET /api/auth/wallet/config`
+   */
+  getWalletConfig(
+    input?: OperationInput<'getWalletConfig'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'getWalletConfig'>> {
+    return this.execute('getWalletConfig', input, options);
+  }
+
+  /**
    * Get a website
    * Returns the specified website's details and configuration.
    * `GET /api/websites/{websiteId}`
@@ -4434,6 +4586,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'getWebsiteAnnotations'>> {
     return this.execute('getWebsiteAnnotations', input, options);
+  }
+
+  /**
+   * API metrics for one website
+   * Request volume, route totals, status-code mix, and p50/p95 latency for the website in the path. The response never includes another website.
+   * `GET /api/websites/{websiteId}/api-metrics`
+   */
+  getWebsiteApiMetrics(
+    input: OperationInput<'getWebsiteApiMetrics'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'getWebsiteApiMetrics'>> {
+    return this.execute('getWebsiteApiMetrics', input, options);
   }
 
   /**
@@ -5097,6 +5261,42 @@ export abstract class GeneratedUmamiClient {
   }
 
   /**
+   * Link a wallet to the current account
+   * Consumes a signed challenge. An account can link up to 5 wallets. The address cannot be linked to a second account.
+   * `POST /api/me/wallets/link`
+   */
+  linkWallet(
+    input: OperationInput<'linkWallet'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'linkWallet'>> {
+    return this.execute('linkWallet', input, options);
+  }
+
+  /**
+   * List API ingest keys
+   * Keys for this website. The secret is not returned. A website id is not an ingest credential.
+   * `GET /api/websites/{websiteId}/ingest-keys`
+   */
+  listIngestKeys(
+    input: OperationInput<'listIngestKeys'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'listIngestKeys'>> {
+    return this.execute('listIngestKeys', input, options);
+  }
+
+  /**
+   * List wallets linked to the current account
+   * Returns public keys only.
+   * `GET /api/me/wallets`
+   */
+  listMyWallets(
+    input?: OperationInput<'listMyWallets'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'listMyWallets'>> {
+    return this.execute('listMyWallets', input, options);
+  }
+
+  /**
    * List websites
    * Returns a paginated list of the current user's websites, optionally including websites accessible through team membership.
    * `GET /api/websites`
@@ -5118,6 +5318,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'login'>> {
     return this.execute('login', input, options);
+  }
+
+  /**
+   * Sign in with a linked wallet
+   * Verifies a signed challenge. The address must already be linked to an email account. An unknown wallet is rejected.
+   * `POST /api/auth/wallet/login`
+   */
+  loginWithWallet(
+    input: OperationInput<'loginWithWallet'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'loginWithWallet'>> {
+    return this.execute('loginWithWallet', input, options);
   }
 
   /**
@@ -5145,6 +5357,30 @@ export abstract class GeneratedUmamiClient {
   }
 
   /**
+   * Create an account
+   * Creates a user from an email address and a password. The email is stored in the username field. The response does not include the password.
+   * `POST /api/auth/register`
+   */
+  registerAccount(
+    input: OperationInput<'registerAccount'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'registerAccount'>> {
+    return this.execute('registerAccount', input, options);
+  }
+
+  /**
+   * Set a new password
+   * Consumes a reset token from /api/auth/forgot and stores the new password.
+   * `POST /api/auth/reset`
+   */
+  resetPassword(
+    input: OperationInput<'resetPassword'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'resetPassword'>> {
+    return this.execute('resetPassword', input, options);
+  }
+
+  /**
    * Reset website analytics
    * Clears the website's collected analytics data while keeping the website configuration.
    * `POST /api/websites/{websiteId}/reset`
@@ -5154,6 +5390,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'resetWebsite'>> {
     return this.execute('resetWebsite', input, options);
+  }
+
+  /**
+   * Revoke an API ingest key
+   * A revoked key is rejected by the collector.
+   * `DELETE /api/websites/{websiteId}/ingest-keys/{keyId}`
+   */
+  revokeIngestKey(
+    input: OperationInput<'revokeIngestKey'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'revokeIngestKey'>> {
+    return this.execute('revokeIngestKey', input, options);
   }
 
   /**
@@ -5196,6 +5444,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'transferWebsite'>> {
     return this.execute('transferWebsite', input, options);
+  }
+
+  /**
+   * Unlink a wallet from the current account
+   * Removes one public key from the signed-in account.
+   * `POST /api/me/wallets/unlink`
+   */
+  unlinkWallet(
+    input: OperationInput<'unlinkWallet'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'unlinkWallet'>> {
+    return this.execute('unlinkWallet', input, options);
   }
 
   /**

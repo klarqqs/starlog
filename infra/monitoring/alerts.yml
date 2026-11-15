@@ -1,0 +1,32 @@
+groups:
+  - name: stellog
+    rules:
+      - alert: StellogHeartbeatDown
+        expr: stellog_heartbeat_up == 0
+        for: 5m
+        annotations:
+          summary: Stellog is not answering /api/heartbeat
+      - alert: StellogDatabaseDown
+        expr: stellog_database_up == 0
+        for: 5m
+        annotations:
+          summary: Stellog cannot run SELECT 1
+      - alert: StellogBackupMissing
+        expr: stellog_backup_present == 0
+        for: 5m
+        annotations:
+          summary: No Stellog database dump is on disk
+      - alert: StellogBackupStale
+        expr: stellog_backup_present == 1 and stellog_backup_age_seconds > 93600
+        for: 5m
+        annotations:
+          summary: The newest Stellog dump is older than 26 hours
+      - alert: StellogCheckStale
+        expr: time() - stellog_check_unixtime > 600
+        annotations:
+          summary: The Stellog check has not reported for 10 minutes
+      - alert: StellogCheckMissing
+        expr: absent(stellog_check_unixtime)
+        for: 10m
+        annotations:
+          summary: Prometheus has no Stellog check metrics

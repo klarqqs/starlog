@@ -1,19 +1,34 @@
-name: Node.js CI
+name: CI
 
 on: [push, pull_request]
 
 permissions:
   contents: read
 
-env:
-  APP_SECRET: "test-app-secret-not-for-production"
-  DATABASE_URL: "postgresql://user:pass@localhost:5432/dummy"
-  SKIP_DB_CHECK: 1
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: stellog
+          POSTGRES_PASSWORD: stellog
+          POSTGRES_DB: stellog
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stellog -d stellog"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      APP_SECRET: "test-app-secret-not-for-production"
+      DATABASE_URL: "postgresql://stellog:stellog@localhost:5432/stellog"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,13 +41,98 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm generate:db:client
+      - run: pnpm db:migrate
+      - run: pnpm test
+      - run: pnpm test:packages
+      - name: Backup and restore refuse to touch the database without an explicit request
+        run: |
+          DRY_RUN=1 ./scripts/backup-db.sh
+          DRY_RUN=1 ./scripts/restore-db.sh stellog-20260101T000000Z.dump
+          if RESTORE_CONFIRM= ./scripts/restore-db.sh stellog-20260101T000000Z.dump; then
+            echo "restore ran without confirmation" >&2
+            exit 1
+          fi
+
+  contracts:
+    runs-on: ubuntu-latest
+    env:
+      APP_SECRET: "test-app-secret-not-for-production"
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/dummy"
+      SKIP_DB_CHECK: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+          run_install: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
       - run: pnpm install
       - run: pnpm lint:i18n
       - run: pnpm openapi:generate
       - run: pnpm openapi:check --explicit
       - run: pnpm check:api:client
       - run: pnpm build:packages
-      - run: pnpm test
-      - run: pnpm test:packages
       - run: pnpm build
+
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+          run_install: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm test:api
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+          run_install: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: ./node_modules/.bin/playwright install --with-deps chromium
+      - run: pnpm test:e2e:docker
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - name: Validate the Docker stack
+        working-directory: infra/terraform
+        run: |
+          terraform init -backend=false
+          terraform validate

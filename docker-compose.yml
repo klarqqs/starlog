@@ -9,11 +9,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://umami:umami@db:5432/umami
+      DATABASE_URL: postgresql://umami:${POSTGRES_PASSWORD:-umami}@db:5432/umami
+      APP_URL: ${APP_URL:-http://127.0.0.1:3000}
       # Generate with: openssl rand -hex 32
       APP_SECRET: ${APP_SECRET:?Set APP_SECRET in your .env file}
       # Required for two-factor authentication, generate with: openssl rand -hex 32
       TWO_FACTOR_ENCRYPTION_KEY: replace-me-with-a-64-character-hex-string
+      # The admin update notice and the telemetry pixel stay off unless an operator turns them back on.
+      DISABLE_TELEMETRY: ${DISABLE_TELEMETRY:-1}
+      DISABLE_UPDATES: ${DISABLE_UPDATES:-1}
     depends_on:
       db:
         condition: service_healthy
@@ -29,7 +33,9 @@ services:
     environment:
       POSTGRES_DB: umami
       POSTGRES_USER: umami
-      POSTGRES_PASSWORD: umami
+      # The default matches a volume that was first created with this file. Set POSTGRES_PASSWORD
+      # before the first boot of a shared host. Changing it later does not alter an existing volume.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-umami}
     volumes:
       - umami-db-data:/var/lib/postgresql/data
     restart: always
@@ -38,5 +44,40 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  # Prometheus reads the textfile written by scripts/ops-check.ts. It is not started by plain `docker compose up`.
+  node-exporter:
+    profiles: [ops]
+    image: prom/node-exporter:v1.8.2
+    command:
+      - --collector.disable-defaults
+      - --collector.textfile
+      - --collector.textfile.directory=/textfile
+    volumes:
+      - ./infra/monitoring/textfile:/textfile:ro
+    restart: always
+  prometheus:
+    profiles: [ops]
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    depends_on:
+      - node-exporter
+      - alertmanager
+    restart: always
+  alertmanager:
+    profiles: [ops]
+    image: prom/alertmanager:v0.28.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.generated.yml
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./infra/monitoring/alertmanager.generated.yml:/etc/alertmanager/alertmanager.generated.yml:ro
+    restart: always
 volumes:
   umami-db-data:

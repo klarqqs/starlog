@@ -1,0 +1,5 @@
+app_secret                 = "replace-with-openssl-rand-hex-32"
+two_factor_encryption_key = "replace-with-openssl-rand-hex-32"
+postgres_password         = "replace-with-a-long-password"
+app_url                   = "https://stats.example"
+host_port                 = 3001

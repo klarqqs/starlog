@@ -142,6 +142,134 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/admin/enrollment': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Read the enrollment mode
+     * @description Open creates active projects. Approval-required creates pending projects for anyone who is not an admin.
+     */
+    get: operations['getEnrollmentMode'];
+    /**
+     * Change the enrollment mode
+     * @description Requires an admin session. An operator key cannot change it.
+     */
+    put: operations['setEnrollmentMode'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/operator-keys': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List operator keys
+     * @description Returns prefixes and status. The secret and its hash are not included.
+     */
+    get: operations['listOperatorKeys'];
+    put?: never;
+    /**
+     * Create an operator key
+     * @description The opk_ token is returned once. Only its hash is stored. The key can read project metrics and cannot change them.
+     */
+    post: operations['createOperatorKey'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/operator-keys/{keyId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke an operator key
+     * @description Sets revoked_at. A revoked key cannot read metrics.
+     */
+    delete: operations['revokeOperatorKey'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Rank projects for an admin
+     * @description Same ranking as the operator read API, plus the current enrollment mode. Requires an admin session. An opk_ key is rejected.
+     */
+    get: operations['listAdminProjects'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/projects/{type}/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove a project
+     * @description Deletes a team and its websites, or a website that has no team. Requires an admin session.
+     */
+    delete: operations['removeProject'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/projects/{type}/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a pending project
+     * @description Sets a pending team and its websites, or a pending unteamed website, to active. Requires an admin session.
+     */
+    post: operations['approveProject'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/admin/teams': {
     parameters: {
       query?: never;
@@ -250,6 +378,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/forgot': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request a password reset
+     * @description Always returns the same message. The reset link is written to the server log. The response includes resetUrl only when NODE_ENV is not production. This build does not send email.
+     */
+    post: operations['forgotPassword'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/auth/login': {
     parameters: {
       query?: never;
@@ -284,6 +432,46 @@ export interface paths {
      * @description Ends the current authentication session by removing its stored token when Redis-backed sessions are enabled.
      */
     post: operations['logout'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/register': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create an account
+     * @description Creates a user from an email address and a password. The email is stored in the username field. The response does not include the password.
+     */
+    post: operations['registerAccount'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/reset': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Set a new password
+     * @description Consumes a reset token from /api/auth/forgot and stores the new password.
+     */
+    post: operations['resetPassword'];
     delete?: never;
     options?: never;
     head?: never;
@@ -344,6 +532,66 @@ export interface paths {
      * @description Validates the current authentication credentials and returns the user and their team memberships.
      */
     post: operations['verify'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/wallet/challenge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create a wallet challenge
+     * @description Returns a Stellar transaction for the address to sign. Returns 404 when wallet sign-in is not configured.
+     */
+    post: operations['createWalletChallenge'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/wallet/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Wallet sign-in configuration
+     * @description Freighter and xBull can be linked after an email account exists. Wallet-only signup is not offered. enabled is false when STELLAR_AUTH_SECRET is unset.
+     */
+    get: operations['getWalletConfig'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/wallet/login': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Sign in with a linked wallet
+     * @description Verifies a signed challenge. The address must already be linked to an email account. An unknown wallet is rejected.
+     */
+    post: operations['loginWithWallet'];
     delete?: never;
     options?: never;
     head?: never;
@@ -710,6 +958,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/me/wallets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List wallets linked to the current account
+     * @description Returns public keys only.
+     */
+    get: operations['listMyWallets'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/me/wallets/link': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Link a wallet to the current account
+     * @description Consumes a signed challenge. An account can link up to 5 wallets. The address cannot be linked to a second account.
+     */
+    post: operations['linkWallet'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/me/wallets/unlink': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Unlink a wallet from the current account
+     * @description Removes one public key from the signed-in account.
+     */
+    post: operations['unlinkWallet'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/me/websites': {
     parameters: {
       query?: never;
@@ -722,6 +1030,26 @@ export interface paths {
      * @description Returns a paginated list of the current user's websites, optionally including websites accessible through team membership.
      */
     get: operations['getMyWebsites'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/operator/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Rank projects for an operator
+     * @description Read-only ranking of teams and unteamed websites. Accepts an admin session or a live opk_ operator key. The key cannot approve, remove, or change enrollment.
+     */
+    get: operations['listOperatorProjects'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1385,6 +1713,26 @@ export interface paths {
      * @description Deletes the specified dated note from the website.
      */
     delete: operations['deleteWebsiteAnnotation'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/websites/{websiteId}/api-metrics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * API metrics for one website
+     * @description Request volume, route totals, status-code mix, and p50/p95 latency for the website in the path. The response never includes another website.
+     */
+    get: operations['getWebsiteApiMetrics'];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -2133,6 +2481,50 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/websites/{websiteId}/ingest-keys': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List API ingest keys
+     * @description Keys for this website. The secret is not returned. A website id is not an ingest credential.
+     */
+    get: operations['listIngestKeys'];
+    put?: never;
+    /**
+     * Create an API ingest key
+     * @description Returns the stk_ token once. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs. The collector accepts OTLP JSON.
+     */
+    post: operations['createIngestKey'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/websites/{websiteId}/ingest-keys/{keyId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke an API ingest key
+     * @description A revoked key is rejected by the collector.
+     */
+    delete: operations['revokeIngestKey'];
     options?: never;
     head?: never;
     patch?: never;
@@ -3022,6 +3414,17 @@ export interface components {
         [key: string]: unknown;
       };
     };
+    CreatedSecret: {
+      /**
+       * Format: uuid
+       * @description Unique identifier of the resource.
+       */
+      id: string;
+      /** @description Display name of the resource. */
+      name: string;
+      prefix: string;
+      token: string;
+    };
     CreateWebsiteRequest: {
       /** @description Domain name associated with the resource. */
       domain: string;
@@ -3033,6 +3436,14 @@ export interface components {
       shareId?: string | null;
       /** @description ID of the associated team. */
       teamId?: string | null;
+    };
+    EnrollmentModeSetting: {
+      /** @enum {string} */
+      mode: 'open' | 'approval-required';
+    };
+    EnrollmentModeSettingOutput: {
+      /** @enum {string} */
+      mode: 'open' | 'approval-required';
     };
     LoginRequest: {
       /** @description Umami password. */
@@ -3099,6 +3510,30 @@ export interface components {
        */
       ok: true;
     };
+    OperatorProject: {
+      errorRate: number;
+      errors: number;
+      /** @description Unique identifier of the resource. */
+      id: string;
+      /** @description Display name of the resource. */
+      name: string;
+      p50: number | null;
+      p50Capped: boolean;
+      p95: number | null;
+      p95Capped: boolean;
+      /** @description Pageview counts for the selected period. */
+      pageviews: number;
+      pendingProperties: number;
+      properties: number;
+      requests: number;
+      /** @enum {string} */
+      status: 'active' | 'pending';
+      /** @enum {string} */
+      type: 'team' | 'website';
+      /** @description Unique visitor counts for the selected period. */
+      visitors: number;
+      websiteIds: string[];
+    };
     ReplayConfig: {
       /** @description CSS selector for elements excluded from recordings. */
       blockSelector?: string;
@@ -3136,6 +3571,40 @@ export interface components {
       replayEnabled?: boolean;
       /** @description Fraction of sessions to record for replay, from 0 to 1. */
       sampleRate?: number;
+    };
+    TenantApiMetrics: {
+      p50: number | null;
+      p50Capped: boolean;
+      p95: number | null;
+      p95Capped: boolean;
+      requests: number;
+      routes: {
+        p50: number | null;
+        p50Capped: boolean;
+        p95: number | null;
+        p95Capped: boolean;
+        requests: number;
+        route: string;
+      }[];
+      series: {
+        x: string;
+        y: number;
+      }[];
+      statuses: {
+        requests: number;
+        share: number;
+        statusCode: number;
+      }[];
+      /**
+       * @description Time interval used to group results: minute, hour, day, month, or year.
+       * @enum {string}
+       */
+      unit: 'hour' | 'day';
+      /**
+       * Format: uuid
+       * @description ID of the website.
+       */
+      websiteId: string;
     };
     TimeSeriesPoint: {
       /** @description Bucket start (ISO date/time). */
@@ -4298,6 +4767,510 @@ export interface operations {
       };
     };
   };
+  getEnrollmentMode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The current enrollment mode. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnrollmentModeSettingOutput'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  setEnrollmentMode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnrollmentModeSetting'];
+      };
+    };
+    responses: {
+      /** @description The saved enrollment mode. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EnrollmentModeSettingOutput'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  listOperatorKeys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Operator keys. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            keys: {
+              /** @description Date and time the record was created. */
+              createdAt: string;
+              /**
+               * Format: uuid
+               * @description Unique identifier of the resource.
+               */
+              id: string;
+              /** @description Visible prefix used to identify an API key. */
+              keyPrefix: string;
+              /** @description Date and time the credential was last used. */
+              lastUsedAt: string | null;
+              /** @description Display name of the resource. */
+              name: string;
+              /** @description Date and time the credential was revoked. */
+              revokedAt: string | null;
+            }[];
+          };
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  createOperatorKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description Display name of the resource. */
+          name: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The new key. Copy the token now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreatedSecret'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  revokeOperatorKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the API key. */
+        keyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The key was revoked. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Ok'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  listAdminProjects: {
+    parameters: {
+      query: {
+        /** @description End of the date range as a Unix timestamp in milliseconds. */
+        endAt: number;
+        order?: 'asc' | 'desc';
+        q?: string;
+        /** @description Order products by revenue, units or orders. */
+        sort?: 'name' | 'pageviews' | 'visitors' | 'requests' | 'errors' | 'p95';
+        /** @description Start of the date range as a Unix timestamp in milliseconds. */
+        startAt: number;
+        status?: 'active' | 'pending' | 'all';
+        /** @description Time interval used to group results: minute, hour, day, month, or year. */
+        unit?: 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Enrollment mode and the ranked projects. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @enum {string} */
+            enrollmentMode: 'open' | 'approval-required';
+            projects: components['schemas']['OperatorProject'][];
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  removeProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier of the resource. */
+        id: string;
+        type: 'team' | 'website';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The project was removed. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Ok'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  approveProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Unique identifier of the resource. */
+        id: string;
+        type: 'team' | 'website';
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The project is active. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Ok'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
   getAdminTeams: {
     parameters: {
       query?: {
@@ -5030,6 +6003,55 @@ export interface operations {
       };
     };
   };
+  forgotPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description Username of the account. */
+          username: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The same message whether or not the account exists. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @description Human-readable explanation of the result. */
+            message: string;
+            resetUrl?: string;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
   login: {
     parameters: {
       query?: never;
@@ -5144,6 +6166,112 @@ export interface operations {
            *         "code": "unauthorized",
            *         "message": "Unauthorized.",
            *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  registerAccount: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description Password used to authenticate the account. */
+          password: string;
+          /** @description Username of the account. */
+          username: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The new account. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /**
+             * Format: uuid
+             * @description Unique identifier of the resource.
+             */
+            id: string;
+            /** @description Permission role assigned to the user. */
+            role: string;
+            /** @description Username of the account. */
+            username: string;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  resetPassword: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description Password used to authenticate the account. */
+          password: string;
+          token: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The password was changed. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @description Human-readable explanation of the result. */
+            message: string;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
            *       }
            *     }
            */
@@ -5330,6 +6458,203 @@ export interface operations {
            *         "code": "unauthorized",
            *         "message": "Unauthorized.",
            *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  createWalletChallenge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          address: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The unsigned challenge. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            networkPassphrase: string;
+            transaction: string;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  getWalletConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Whether wallet linking is configured. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            enabled: boolean;
+            networkPassphrase: string;
+            wallets: ('freighter' | 'xbull')[];
+          };
+        };
+      };
+    };
+  };
+  loginWithWallet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          transaction: string;
+        };
+      };
+    };
+    responses: {
+      /** @description A session for the linked account. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            token: string;
+            /** @description User associated with the resource. */
+            user: {
+              /** @description Date and time the record was created. */
+              createdAt: string | null;
+              /**
+               * Format: uuid
+               * @description Unique identifier of the resource.
+               */
+              id: string;
+              /** @description Whether the user has administrator privileges. */
+              isAdmin: boolean;
+              passwordChangeRequired: boolean;
+              /** @description Permission role assigned to the user. */
+              role: string;
+              /** @description Teams associated with the user. */
+              teams: ({
+                /** @description Unique identifier of the resource. */
+                id: string;
+                /** @description Display name of the resource. */
+                name: string;
+              } & {
+                [key: string]: unknown;
+              })[];
+              /** @description Username of the account. */
+              username: string;
+            };
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
            *       }
            *     }
            */
@@ -7860,6 +9185,215 @@ export interface operations {
       };
     };
   };
+  listMyWallets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Linked wallets. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            wallets: {
+              /** @description Date and time the record was created. */
+              createdAt: string;
+              publicKey: string;
+            }[];
+          };
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  linkWallet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          transaction: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The linked public key. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            linked: string;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  unlinkWallet: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          address: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The wallet was unlinked. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @constant */
+            unlinked: true;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
   getMyWebsites: {
     parameters: {
       query?: {
@@ -7987,6 +9521,76 @@ export interface operations {
             search?: string;
             /** @description Whether to sort results in descending order. */
             sortDescending?: boolean;
+          };
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  listOperatorProjects: {
+    parameters: {
+      query: {
+        /** @description End of the date range as a Unix timestamp in milliseconds. */
+        endAt: number;
+        order?: 'asc' | 'desc';
+        q?: string;
+        /** @description Order products by revenue, units or orders. */
+        sort?: 'name' | 'pageviews' | 'visitors' | 'requests' | 'errors' | 'p95';
+        /** @description Start of the date range as a Unix timestamp in milliseconds. */
+        startAt: number;
+        status?: 'active' | 'pending' | 'all';
+        /** @description Time interval used to group results: minute, hour, day, month, or year. */
+        unit?: 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Projects in the requested window. Pending websites are counted, and their traffic is omitted. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            projects: components['schemas']['OperatorProject'][];
           };
         };
       };
@@ -13189,6 +14793,72 @@ export interface operations {
            *         "code": "not-found",
            *         "message": "Not found.",
            *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  getWebsiteApiMetrics: {
+    parameters: {
+      query: {
+        /** @description End of the date range as a Unix timestamp in milliseconds. */
+        endAt: number;
+        /** @description Start of the date range as a Unix timestamp in milliseconds. */
+        startAt: number;
+        /** @description Time interval used to group results: minute, hour, day, month, or year. */
+        unit?: 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year';
+      };
+      header?: never;
+      path: {
+        /** @description Website ID. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description API metrics for the requested website. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TenantApiMetrics'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
            *       }
            *     }
            */
@@ -18429,6 +20099,188 @@ export interface operations {
            *     }
            */
           'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  listIngestKeys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Website ID. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ingest keys for the website. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @description Date and time the record was created. */
+            createdAt: string;
+            /**
+             * Format: uuid
+             * @description Unique identifier of the resource.
+             */
+            id: string;
+            /** @description Visible prefix used to identify an API key. */
+            keyPrefix: string;
+            /** @description Display name of the resource. */
+            name: string;
+            /** @description Date and time the credential was revoked. */
+            revokedAt: string | null;
+          }[];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  createIngestKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Website ID. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @description Display name of the resource. */
+          name: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The new key. Copy the token now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreatedSecret'];
+        };
+      };
+      /** @description Bad request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "bad-request",
+           *         "message": "Bad request.",
+           *         "status": 400
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  revokeIngestKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the API key. */
+        keyId: string;
+        /** @description ID of the website. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The key was revoked. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Ok'];
         };
       };
       /** @description Unauthorized. */
