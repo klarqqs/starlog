@@ -157,6 +157,11 @@ model Website {
   sessionReplays      SessionReplay[]
   sessionReplaysSaved SessionReplaySaved[]
   heatmapEvents       HeatmapEvent[]
+  ingestKeys          IngestKey[]
+  apiMetricRaw        ApiMetricRaw[]
+  apiMetricHours      ApiMetricHour[]
+  apiMetricDays       ApiMetricDay[]
+  apiMetricCursors    ApiMetricCursor[]
 
   @@index([userId])
   @@index([teamId])
@@ -616,4 +621,117 @@ model ErrorRateLimit {
   count     Int
 
   @@map("error_rate_limit")
+}
+
+// Stellog API metrics. The ingest key is the tenant. Raw rows are short-lived.
+// Hour and day rows are the retained aggregate. The cursor stores the last
+// cumulative OTLP value so a later export adds only the increase.
+
+model IngestKey {
+  id        String    @id @map("ingest_key_id") @db.Uuid
+  websiteId String    @map("website_id") @db.Uuid
+  name      String    @db.VarChar(255)
+  keyHash   String    @unique @map("key_hash") @db.VarChar(128)
+  keyPrefix String    @map("key_prefix") @db.VarChar(16)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@map("ingest_key")
+}
+
+model ApiMetricRaw {
+  id           String   @id @map("metric_id") @db.Uuid
+  websiteId    String   @map("website_id") @db.Uuid
+  serviceName  String   @map("service_name") @db.VarChar(255)
+  route        String   @db.VarChar(500)
+  statusCode   Int      @map("status_code")
+  latencyMs    Float?   @map("latency_ms")
+  requestCount Int      @map("request_count")
+  latencySumMs Float    @default(0) @map("latency_sum_ms")
+  observedAt   DateTime @map("observed_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([observedAt])
+  @@index([websiteId, observedAt])
+  @@map("api_metric_raw")
+}
+
+model ApiMetricHour {
+  websiteId    String   @map("website_id") @db.Uuid
+  bucketStart  DateTime @map("bucket_start") @db.Timestamptz(6)
+  serviceName  String   @map("service_name") @db.VarChar(255)
+  route        String   @db.VarChar(500)
+  statusCode   Int      @map("status_code")
+  requestCount Int      @default(0) @map("request_count")
+  latencySumMs Float    @default(0) @map("latency_sum_ms")
+  latencyCount Int      @default(0) @map("latency_count")
+  h5           Int      @default(0)
+  h10          Int      @default(0)
+  h25          Int      @default(0)
+  h50          Int      @default(0)
+  h100         Int      @default(0)
+  h250         Int      @default(0)
+  h500         Int      @default(0)
+  h1000        Int      @default(0)
+  h2500        Int      @default(0)
+  h5000        Int      @default(0)
+  h10000       Int      @default(0)
+  hInf         Int      @default(0) @map("h_inf")
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@id([websiteId, bucketStart, serviceName, route, statusCode])
+  @@index([bucketStart])
+  @@map("api_metric_hour")
+}
+
+model ApiMetricDay {
+  websiteId    String   @map("website_id") @db.Uuid
+  bucketStart  DateTime @map("bucket_start") @db.Timestamptz(6)
+  serviceName  String   @map("service_name") @db.VarChar(255)
+  route        String   @db.VarChar(500)
+  statusCode   Int      @map("status_code")
+  requestCount Int      @default(0) @map("request_count")
+  latencySumMs Float    @default(0) @map("latency_sum_ms")
+  latencyCount Int      @default(0) @map("latency_count")
+  h5           Int      @default(0)
+  h10          Int      @default(0)
+  h25          Int      @default(0)
+  h50          Int      @default(0)
+  h100         Int      @default(0)
+  h250         Int      @default(0)
+  h500         Int      @default(0)
+  h1000        Int      @default(0)
+  h2500        Int      @default(0)
+  h5000        Int      @default(0)
+  h10000       Int      @default(0)
+  hInf         Int      @default(0) @map("h_inf")
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@id([websiteId, bucketStart, serviceName, route, statusCode])
+  @@index([bucketStart])
+  @@map("api_metric_day")
+}
+
+model ApiMetricCursor {
+  websiteId   String   @map("website_id") @db.Uuid
+  serviceName String   @map("service_name") @db.VarChar(255)
+  route       String   @db.VarChar(500)
+  statusCode  Int      @map("status_code")
+  metricName  String   @map("metric_name") @db.VarChar(255)
+  lastCount   Int      @map("last_count")
+  lastSum     Float    @map("last_sum")
+  lastHist    Json     @map("last_hist")
+  updatedAt   DateTime @map("updated_at") @db.Timestamptz(6)
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@id([websiteId, serviceName, route, statusCode, metricName])
+  @@map("api_metric_cursor")
 }
