@@ -81,8 +81,11 @@ export async function buildApp({ pools, mailer, config = {} }) {
         const token = newToken();
         await pools.auth.query('SELECT starlog.create_email_token($1,$2,$3)', [rows[0].user_id, sha256(token), cfg.tokenHours]);
         const verifyUrl = `${cfg.baseUrl}/auth/verify?token=${token}`;
-        await mailer.send({ to: email, subject: 'Verify your Starlog email', link: verifyUrl });
-        const payload = { message: 'Account created. Check your email to verify it.' };
+        let sent = true;
+        try { await mailer.send({ to: email, subject: 'Verify your Starlog email', link: verifyUrl }); }
+        catch (e) { sent = false; req.log?.error?.(e); console.error('[mail] send failed:', e.message); }
+        const payload = { message: sent ? 'Account created. Check your email to verify it.'
+          : 'Account created, but the verification email could not be sent. Use “Resend verification email” in a few minutes.' };
         if (cfg.exposeVerifyLink) payload.verifyUrl = verifyUrl;
         return reply.code(201).send(payload);
       } catch (e) {
@@ -97,6 +100,22 @@ export async function buildApp({ pools, mailer, config = {} }) {
     const token = String(req.query.token || '');
     const { rows } = await pools.auth.query('SELECT starlog.verify_email($1) AS ok', [sha256(token)]);
     return rows[0].ok ? { message: 'Email verified. You can sign in now.' } : reply.code(400).send({ error: 'This link is invalid or expired.' });
+  });
+
+  // Neutral answer whether or not the email exists, so this cannot be used to find registered emails.
+  app.post('/auth/resend', limit, async (req, reply) => {
+    const { email } = req.body || {};
+    const neutral = { message: 'If that account exists and is not verified yet, a new email is on its way.' };
+    if (typeof email !== 'string' || !EMAIL.test(email)) return neutral;
+    const { rows } = await pools.auth.query('SELECT * FROM starlog.login_lookup($1)', [email.toLowerCase()]);
+    const u = rows[0];
+    if (!u || u.email_verified) return neutral;
+    const token = newToken();
+    await pools.auth.query('SELECT starlog.create_email_token($1,$2,$3)', [u.user_id, sha256(token), cfg.tokenHours]);
+    const verifyUrl = `${cfg.baseUrl}/auth/verify?token=${token}`;
+    try { await mailer.send({ to: email.toLowerCase(), subject: 'Verify your Starlog email', link: verifyUrl }); }
+    catch (e) { console.error('[mail] resend failed:', e.message); }
+    return cfg.exposeVerifyLink ? { ...neutral, verifyUrl } : neutral;
   });
 
   app.post('/auth/login', limit, async (req, reply) => {

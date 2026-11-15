@@ -1,5 +1,5 @@
 COMPOSE=docker compose -f infra/compose/docker-compose.yml --env-file .env
-.PHONY: up down logs psql test-db test-api operator
+.PHONY: up down logs psql test-db test-api operator e2e
 up:
 	$(COMPOSE) up -d --build
 down:
@@ -16,3 +16,5 @@ test-api:
 operator:
 	@test -n "$(EMAIL)" -a -n "$(PASSWORD)" || { echo "Usage: make operator EMAIL=... PASSWORD=..."; exit 1; }
 	$(COMPOSE) run --rm api node scripts/create-operator.js "$(EMAIL)" "$(PASSWORD)"
+e2e:
+	bash infra/scripts/e2e.sh

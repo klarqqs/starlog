@@ -129,6 +129,7 @@
             <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
             <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
             <p class="error" id="err">${esc(notice || '')}</p>
+            <p id="resend-row" class="hide"><a href="#" id="resend">Resend verification email</a></p>
             <button type="submit" id="submit">${operator ? 'Sign in as operator' : 'Sign in'}</button>
           </form>
           <p id="note">${operator
@@ -147,9 +148,18 @@
       $('#tab-in') && ($('#tab-in').onclick = () => setMode('in'));
       $('#tab-up') && ($('#tab-up').onclick = () => setMode('up'));
       if (!operator && new URLSearchParams(location.search).get('mode') === 'register') setMode('up');
+      $('#resend') && ($('#resend').onclick = async (e) => {
+        e.preventDefault();
+        const email = $('#email').value.trim();
+        if (!email) { $('#err').textContent = 'Enter your email first.'; return; }
+        const r = await api('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) });
+        $('#err').textContent = '';
+        $('#note').textContent = r.status === 429 ? 'Too many requests. Try again in a minute.' : (r.body.message || 'Done.');
+      });
       $('#form').onsubmit = async (e) => {
         e.preventDefault();
         $('#err').textContent = '';
+        $('#resend-row').classList.add('hide');
         const email = $('#email').value.trim();
         const password = $('#password').value;
         if (!operator && mode === 'up') {
@@ -158,10 +168,15 @@
           if (r.body.verifyUrl) $('#note').innerHTML = `Account created. <a href="${esc(r.body.verifyUrl)}">Verify this email</a>, then sign in.`;
           else $('#note').textContent = r.body.message;
           setMode('in');
+          $('#resend-row').classList.remove('hide');
           return;
         }
         const r = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-        if (r.status !== 200) { $('#err').textContent = r.body.error || 'Could not sign in.'; return; }
+        if (r.status !== 200) {
+          $('#err').textContent = r.body.error || 'Could not sign in.';
+          if (r.status === 403 && !operator) $('#resend-row').classList.remove('hide');
+          return;
+        }
         const role = r.body.role;
         if (operator && role !== 'operator') {
           await api('/auth/logout', { method: 'POST', body: '{}' });

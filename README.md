@@ -44,18 +44,19 @@ If it is unset, every tenant query returns zero rows (fails closed).
 ## Auth API (step 2b)
 ```bash
 cd api && npm ci
-make test-api             # 13 integration tests on a throwaway Postgres
+make test-api             # 21 tests on a throwaway Postgres
+make e2e                  # full run over real HTTP: register, verify, tracker, metrics, operator view
 ```
 Endpoints: `POST /auth/register|login|logout`, `GET /auth/verify`, `GET /me`,
 `GET|POST /tenant/sites`, `PATCH /tenant/share`, `GET /tenant/web/summary`,
 `GET /operator/tenants`, `POST /operator/tenants/:id/remove`, `GET /share/:slug`.
-Passwords use argon2id. Sessions are opaque, hashed in the database, in HttpOnly SameSite=Strict cookies.
+Onboarding real projects and proving adoption: see `docs/onboarding.md`. Passwords use argon2id. Sessions are opaque, hashed in the database, in HttpOnly SameSite=Strict cookies.
 Create the first operator with `api/scripts/create-operator.js`.
-Dev emails print to the console. Replace the mailer with SMTP before production.
+Verification email goes out over SMTP when `SMTP_HOST` is set. With it unset, links print in the log (development only), and `NODE_ENV=production` refuses to start without SMTP. `POST /auth/resend` sends a new link.
 
 ## Known limits to address next
 - The SECURITY DEFINER functions rely on the table owner bypassing RLS (a superuser owner does). Use a dedicated owner role with BYPASSRLS if you change this.
 - Register returns 409 for a known email, which reveals that it is registered. Consider a neutral response later.
 - Umami keeps its own database and users. Linking its sites to Starlog tenants is step 3.
 - Connection pooling must use transaction mode so `set_config(..., true)` cannot leak across requests.
-- Not yet run under Docker. Compose file is unverified, so run `make up` and report errors.
+- Not yet run under Docker. The Compose file is unverified, so run `make up` and report errors. Everything else is tested on real Postgres.
