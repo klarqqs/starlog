@@ -3,6 +3,7 @@ import rateLimit from '@fastify/rate-limit';
 import { hash as argonHash, verify as argonVerify } from '@node-rs/argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import { registerProduct } from './product.js';
+import { registerAccounts } from './accounts.js';
 
 const sha256 = (s) => createHash('sha256').update(s).digest();
 const newToken = () => randomBytes(32).toString('base64url');
@@ -205,6 +206,7 @@ export async function buildApp({ pools, mailer, config = {} }) {
     return rows[0] ? rows[0] : reply.code(404).send({ error: 'This link is not shared.' });
   });
 
+  registerAccounts(app, { pools, mailer, cfg, need, limit, helpers: { EMAIL, newToken, cookie } });
   registerProduct(app, { pools, tx, need });
 
   app.setErrorHandler((err, req, reply) => {

@@ -67,7 +67,11 @@ export function registerProduct(app, { pools, tx, need }) {
     reply.type('text/css; charset=utf-8').header('cache-control', 'public, max-age=300');
     return page('site.css');
   });
-  for (const route of ['/login', '/app', '/operator', '/operator/login']) {
+  app.get('/wallet.js', async (req, reply) => {
+    reply.type('text/javascript; charset=utf-8').header('cache-control', 'public, max-age=300');
+    return page('wallet.js');
+  });
+  for (const route of ['/login', '/forgot', '/reset', '/app', '/operator', '/operator/login']) {
     app.get(route, async (req, reply) => {
       reply.type('text/html; charset=utf-8').header('cache-control', 'no-store');
       return readFileSync(pagePath);

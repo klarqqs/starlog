@@ -22,10 +22,15 @@ export function createMailer(env = process.env, transport) {
   return {
     kind: 'smtp',
     async send(m) {
+      const copy = {
+        verify: ['Welcome to Starlog.', 'Verify your email', 'Verify your email by opening this link (valid for 24 hours):', 'If you did not create an account, ignore this message.'],
+        reset: ['A password reset was requested for your Starlog account.', 'Choose a new password', 'Set a new password by opening this link (valid for 1 hour):', 'If you did not ask for this, ignore this message. Your password stays the same.'],
+        invite: ['You have been invited to operate Starlog for SCF.', 'Accept the invite and set a password', 'Set your password by opening this link (valid for 72 hours):', 'If you were not expecting this, ignore this message.'],
+      }[m.kind || 'verify'];
       await t.sendMail({
         from, to: m.to, subject: m.subject,
-        text: `Welcome to Starlog.\n\nVerify your email by opening this link (valid for 24 hours):\n${m.link}\n\nIf you did not create an account, ignore this message.`,
-        html: `<p>Welcome to Starlog.</p><p><a href="${esc(m.link)}">Verify your email</a> (valid for 24 hours).</p><p>If you did not create an account, ignore this message.</p>`,
+        text: `${copy[0]}\n\n${copy[2]}\n${m.link}\n\n${copy[3]}`,
+        html: `<p>${copy[0]}</p><p><a href="${esc(m.link)}">${copy[1]}</a></p><p>${copy[3]}</p>`,
       });
     },
   };

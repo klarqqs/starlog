@@ -134,8 +134,41 @@ UPDATE starlog.tenants SET status='removed' WHERE slug='alpha';
 BEGIN;
 SET LOCAL ROLE starlog_tenant;
 SELECT starlogtest.eq('removed tenant share is gone', (SELECT count(*) FROM starlog.shared_web_totals('alpha',30)), 0);
+COMMIT;
+BEGIN;
+SET LOCAL ROLE starlog_auth;
 SELECT starlogtest.eq('removed tenant cannot log in', (SELECT count(*) FROM starlog.login_lookup('a@alpha.test')), 0);
 SELECT starlogtest.eq('operator can log in', (SELECT count(*) FROM starlog.login_lookup('op@scf.test')), 1);
+COMMIT;
+
+-- 7. Accounts (004): only starlog_auth may call the account functions or see wallets.
+SELECT starlogtest.eq('seed: a wallet row exists', (SELECT count(*) FROM (SELECT 1 FROM starlog.link_wallet((SELECT id FROM starlog.users WHERE email='op@scf.test'), 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7') ) x), 1);
+DO $$ DECLARE r text; BEGIN
+  FOREACH r IN ARRAY ARRAY['starlog_tenant','starlog_operator','starlog_ingest'] LOOP
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', r);
+      PERFORM * FROM starlog.wallet_lookup('GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7');
+      RAISE EXCEPTION 'FAIL % called wallet_lookup', r;
+    EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'ok   % cannot call wallet_lookup', r; END;
+    RESET ROLE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', r);
+      PERFORM starlog.reset_password('\x00'::bytea, 'x');
+      RAISE EXCEPTION 'FAIL % called reset_password', r;
+    EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'ok   % cannot call reset_password', r; END;
+    RESET ROLE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', r);
+      PERFORM count(*) FROM starlog.wallets;
+      RAISE EXCEPTION 'FAIL % read wallets table', r;
+    EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'ok   % cannot read wallets table', r; END;
+    RESET ROLE;
+  END LOOP;
+END $$;
+BEGIN;
+SET LOCAL ROLE starlog_auth;
+SELECT starlogtest.eq('auth: a wallet resolves to its user', (SELECT count(*) FROM starlog.wallet_lookup('GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7')), 1);
+SELECT starlogtest.eq('auth: a second wallet link for the same key is refused', (SELECT count(*) FROM starlog.link_wallet((SELECT user_id FROM starlog.wallet_lookup('GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7')), 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN7') WHERE link_wallet), 0);
 COMMIT;
 
 DROP SCHEMA starlogtest CASCADE;

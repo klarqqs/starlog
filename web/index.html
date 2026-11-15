@@ -70,6 +70,108 @@
     async function me() { const r = await api('/me'); return r.status === 200 ? r.body : null; }
     function snippet(id) { return '<script defer src="' + location.origin + '/s.js" data-site="' + id + '"><' + '/script>'; }
 
+    // ---- wallet helpers (Freighter and xBull). The wallet script is ours, bundled in /wallet.js.
+    const walletReady = () => window.StarlogWallet ? Promise.resolve() : new Promise((res, rej) => {
+      const el = document.createElement('script'); el.src = '/wallet.js'; el.onload = res;
+      el.onerror = () => rej(new Error('Could not load the wallet script.')); document.head.appendChild(el);
+    });
+    async function walletProof(id) {
+      const cfg = (await api('/auth/wallet/config')).body;
+      await walletReady();
+      const { signedTxXdr } = await window.StarlogWallet.signChallenge(id, async (address) => {
+        const r = await api('/auth/wallet/challenge', { method: 'POST', body: JSON.stringify({ address }) });
+        if (r.status !== 200) throw new Error(r.body.error || 'Could not start wallet sign-in.');
+        return r.body.transaction;
+      }, cfg.networkPassphrase);
+      return signedTxXdr;
+    }
+    const walletError = (e) => e?.message && e.message !== 'undefined' ? e.message : 'The wallet request was cancelled, or the extension is not installed.';
+    const WALLET_NAMES = { freighter: 'Freighter', xbull: 'xBull' };
+
+    async function walletCard() {
+      const cfg = (await api('/auth/wallet/config')).body;
+      if (!cfg.enabled) return '';
+      const list = (await api('/me/wallets')).body || [];
+      return `<section class="card" id="wallets"><h2>Wallets</h2>
+        <p>Link a wallet to sign in with Freighter or xBull instead of typing your password. Linking only proves you hold the key. Nothing is sent to the network.</p>
+        ${list.map((w) => `<p><code>${esc(w.public_key)}</code> <button class="ghost" type="button" data-unlink="${esc(w.public_key)}">Unlink</button></p>`).join('') || '<p>No wallet linked yet.</p>'}
+        <p><button type="button" data-link="freighter">Link Freighter</button> <button type="button" data-link="xbull">Link xBull</button></p>
+        <p class="error" id="wallet-err"></p></section>`;
+    }
+    function bindWalletCard() {
+      document.querySelectorAll('[data-link]').forEach((b) => b.onclick = async () => {
+        $('#wallet-err').textContent = '';
+        try {
+          const transaction = await walletProof(b.dataset.link);
+          const r = await api('/me/wallets/link', { method: 'POST', body: JSON.stringify({ transaction }) });
+          if (r.status !== 201) { $('#wallet-err').textContent = r.body.error || 'Could not link that wallet.'; return; }
+          location.reload();
+        } catch (e) { $('#wallet-err').textContent = walletError(e); }
+      });
+      document.querySelectorAll('[data-unlink]').forEach((b) => b.onclick = async () => {
+        await api('/me/wallets/unlink', { method: 'POST', body: JSON.stringify({ address: b.dataset.unlink }) });
+        location.reload();
+      });
+    }
+    async function operatorsCard() {
+      const list = (await api('/operator/operators')).body || [];
+      return `<section class="card" id="operators"><h2>SCF operators</h2>
+        <p>People who can see every project. Invite a colleague by email. They set their own password from the link.</p>
+        <table><thead><tr><th>Email</th><th>Status</th><th></th></tr></thead><tbody>${list.map((o) => `<tr><td>${esc(o.email)}${o.isYou ? ' (you)' : ''}</td><td>${o.email_verified ? 'Active' : 'Invited'}</td><td>${o.isYou ? '' : `<button class="danger" type="button" data-rmop="${o.id}">Remove</button>`}</td></tr>`).join('')}</tbody></table>
+        <form id="invite" class="row"><div><label for="op-email">Invite an operator</label><input id="op-email" type="email" placeholder="name@example.org" required></div><button type="submit">Send invite</button></form>
+        <p class="error" id="op-err"></p><p id="op-msg"></p></section>`;
+    }
+    function bindOperatorsCard() {
+      $('#invite').onsubmit = async (e) => {
+        e.preventDefault(); $('#op-err').textContent = ''; $('#op-msg').textContent = '';
+        const r = await api('/operator/operators', { method: 'POST', body: JSON.stringify({ email: $('#op-email').value.trim() }) });
+        if (r.status !== 201) { $('#op-err').textContent = r.body.error || 'Could not invite that person.'; return; }
+        $('#op-msg').innerHTML = esc(r.body.message) + (r.body.inviteUrl ? ` <a href="${esc(r.body.inviteUrl)}">Dev invite link</a>` : '');
+        setTimeout(() => location.reload(), r.body.inviteUrl ? 8000 : 1500);
+      };
+      document.querySelectorAll('[data-rmop]').forEach((b) => b.onclick = async () => {
+        if (!confirm('Remove this operator?')) return;
+        const r = await api(`/operator/operators/${b.dataset.rmop}/remove`, { method: 'POST', body: '{}' });
+        if (r.status !== 200) { $('#op-err').textContent = r.body.error || 'Could not remove.'; return; }
+        location.reload();
+      });
+    }
+    async function addCards(withOperators) {
+      const app = $('#app');
+      if (withOperators) { app.insertAdjacentHTML('beforeend', await operatorsCard()); bindOperatorsCard(); }
+      const w = await walletCard();
+      if (w) { app.insertAdjacentHTML('beforeend', w); bindWalletCard(); }
+    }
+
+    function forgotScreen() {
+      $('#app').innerHTML = `<section class="card" style="max-width:460px"><h2>Forgot your password?</h2>
+        <p>Enter your account email. If it exists, we send a link to choose a new password. It is valid for 1 hour.</p>
+        <form id="forgot"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+        <p class="error" id="err"></p><button type="submit">Send reset link</button></form><p id="note"></p>
+        <p><a href="/login">Project sign in</a> · <a href="/operator/login">Operator sign in</a></p></section>`;
+      $('#forgot').onsubmit = async (e) => {
+        e.preventDefault();
+        const r = await api('/auth/forgot', { method: 'POST', body: JSON.stringify({ email: $('#email').value.trim() }) });
+        if (r.status === 429) { $('#err').textContent = 'Too many requests. Try again in a minute.'; return; }
+        $('#note').innerHTML = esc(r.body.message || 'Done.') + (r.body.resetUrl ? ` <a href="${esc(r.body.resetUrl)}">Dev reset link</a>` : '');
+      };
+    }
+    function resetScreen() {
+      const token = new URLSearchParams(location.search).get('token') || '';
+      $('#app').innerHTML = `<section class="card" style="max-width:460px"><h2>Choose a new password</h2>
+        <form id="reset"><label for="pw">New password (10 characters or more)</label><input id="pw" type="password" autocomplete="new-password" minlength="10" required>
+        <label for="pw2">Repeat it</label><input id="pw2" type="password" autocomplete="new-password" minlength="10" required>
+        <p class="error" id="err"></p><button type="submit">Save password</button></form><p id="note"></p></section>`;
+      $('#reset').onsubmit = async (e) => {
+        e.preventDefault();
+        if ($('#pw').value !== $('#pw2').value) { $('#err').textContent = 'The two passwords do not match.'; return; }
+        const r = await api('/auth/reset', { method: 'POST', body: JSON.stringify({ token, password: $('#pw').value }) });
+        if (r.status !== 200) { $('#err').textContent = r.body.error || 'Could not save the password.'; return; }
+        $('#reset').remove();
+        $('#note').innerHTML = `${esc(r.body.message)} <a href="/login">Project sign in</a> · <a href="/operator/login">Operator sign in</a>`;
+      };
+    }
+
     function landing(user) {
       const dash = user ? (user.role === 'operator' ? '/operator' : '/app') : '';
       document.querySelector('header').innerHTML = `
@@ -132,6 +234,9 @@
             <p id="resend-row" class="hide"><a href="#" id="resend">Resend verification email</a></p>
             <button type="submit" id="submit">${operator ? 'Sign in as operator' : 'Sign in'}</button>
           </form>
+          <p><a href="/forgot">Forgot your password?</a></p>
+          <div id="wallet-row" class="hide"><p style="margin-bottom:6px">Or sign in with a wallet you already linked:</p>
+            <button type="button" class="ghost" data-wallet="freighter">Freighter</button> <button type="button" class="ghost" data-wallet="xbull">xBull</button></div>
           <p id="note">${operator
             ? 'Projects register on the <a href="/login">project sign in</a> page. Operator accounts are issued separately.'
             : 'SCF staff use the <a href="/operator/login">operator entrance</a>.'}</p>
@@ -148,6 +253,18 @@
       $('#tab-in') && ($('#tab-in').onclick = () => setMode('in'));
       $('#tab-up') && ($('#tab-up').onclick = () => setMode('up'));
       if (!operator && new URLSearchParams(location.search).get('mode') === 'register') setMode('up');
+      api('/auth/wallet/config').then((c) => { if (c.body.enabled) $('#wallet-row').classList.remove('hide'); });
+      document.querySelectorAll('[data-wallet]').forEach((b) => b.onclick = async () => {
+        $('#err').textContent = '';
+        try {
+          const transaction = await walletProof(b.dataset.wallet);
+          const r = await api('/auth/wallet/login', { method: 'POST', body: JSON.stringify({ transaction }) });
+          if (r.status !== 200) { $('#err').textContent = r.body.error || 'Wallet sign-in failed.'; return; }
+          if (operator && r.body.role !== 'operator') { await api('/auth/logout', { method: 'POST', body: '{}' }); $('#err').textContent = 'This entrance is for SCF operators. Project accounts sign in on the project page.'; return; }
+          if (!operator && r.body.role === 'operator') { await api('/auth/logout', { method: 'POST', body: '{}' }); $('#err').textContent = 'Operator accounts use the SCF operator entrance.'; return; }
+          location.href = operator ? '/operator' : '/app';
+        } catch (e) { $('#err').textContent = walletError(e); }
+      });
       $('#resend') && ($('#resend').onclick = async (e) => {
         e.preventDefault();
         const email = $('#email').value.trim();
@@ -321,6 +438,8 @@
     (async function start() {
       const user = await me();
       if (path === '/') return landing(user);
+      if (path === '/forgot') return forgotScreen();
+      if (path === '/reset') return resetScreen();
       if (path === '/login') {
         if (user?.role === 'tenant') return location.href = '/app';
         if (user?.role === 'operator') return location.href = '/operator';
@@ -334,12 +453,14 @@
       if (path === '/operator') {
         if (!user) return location.href = '/operator/login';
         if (user.role !== 'operator') return location.href = '/app';
-        return operatorScreen(user);
+        await operatorScreen(user);
+        return addCards(true);
       }
       if (path === '/app') {
         if (!user) return location.href = '/login';
         if (user.role === 'operator') return location.href = '/operator';
-        return tenantScreen(user);
+        await tenantScreen(user);
+        return addCards(false);
       }
     })();
   </script>

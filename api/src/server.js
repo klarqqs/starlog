@@ -1,6 +1,7 @@
 import pg from 'pg';
 import { buildApp } from './app.js';
 import { createMailer } from './mailer.js';
+import { walletKeyFromEnv } from './accounts.js';
 
 const need = (k) => { if (!process.env[k]) { console.error(`Missing env var ${k}`); process.exit(1); } return process.env[k]; };
 const pool = (k) => new pg.Pool({ connectionString: need(k), max: 10 });
@@ -13,6 +14,7 @@ const mailer = createMailer();
 console.log(`Mailer: ${mailer.kind}`);
 
 const app = await buildApp({ pools, mailer, config: {
+  walletKey: walletKeyFromEnv(),
   baseUrl: process.env.PUBLIC_URL || 'http://127.0.0.1:4000',
   exposeVerifyLink: process.env.NODE_ENV !== 'production',
   allowedOrigin: process.env.ALLOWED_ORIGIN || null,

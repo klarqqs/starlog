@@ -1,0 +1,9 @@
+{
+  "name": "starlog-wallet-bundle",
+  "private": true,
+  "type": "module",
+  "description": "Builds ../wallet.js (Freighter and xBull only). Run: npm ci && npm run build",
+  "scripts": { "build": "esbuild entry.js --bundle --minify --format=iife --target=es2020 --legal-comments=none --outfile=../wallet.js" },
+  "dependencies": { "@creit.tech/stellar-wallets-kit": "2.8.0" },
+  "devDependencies": { "esbuild": "0.28.2" }
+}
