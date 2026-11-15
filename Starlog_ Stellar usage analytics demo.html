@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Starlog: verified usage for Stellar projects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6fb;--surface:#fff;--ink:#141a3a;--mute:#5d6485;--line:#dde1ee;--brand:#4b3fe0;--brand-ink:#fff;--warm:#e8912d;--ok:#1f9d6b;--bad:#d4493f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10142b;--surface:#181e3d;--ink:#eef0fb;--mute:#9aa2c8;--line:#2a3158;--brand:#8b82ff;--brand-ink:#10142b;--warm:#f0a850;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10142b;--surface:#181e3d;--ink:#eef0fb;--mute:#9aa2c8;--line:#2a3158;--brand:#8b82ff;--brand-ink:#10142b;--warm:#f0a850;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 "Instrument Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.1;margin:0 0 .5em;letter-spacing:-.02em}
+h1{font-size:clamp(2.2rem,7vw,4rem);font-weight:800}h2{font-size:1.6rem;font-weight:700}h3{font-size:1.1rem;font-weight:700}
+a{color:var(--brand)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 18px}
+nav{display:flex;align-items:center;gap:14px;padding:14px 0;flex-wrap:wrap}
+nav .logo{font:800 1.3rem "Bricolage Grotesque",sans-serif;color:var(--ink);text-decoration:none;margin-right:auto}
+nav a.l{color:var(--mute);text-decoration:none;font-weight:500}
+.btn{display:inline-block;border:0;border-radius:10px;padding:10px 18px;font:600 15px "Instrument Sans",sans-serif;background:var(--brand);color:var(--brand-ink);cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.hero{display:grid;gap:28px;padding:36px 0 48px;grid-template-columns:1fr}
+@media(min-width:820px){.hero{grid-template-columns:1.1fr 1fr;align-items:center}}
+.hero p{color:var(--mute);font-size:1.12rem;max-width:46ch}
+.live{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
+.live .big{font:800 2.6rem "Bricolage Grotesque",sans-serif}
+.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:6px;animation:p 1.6s infinite}
+@keyframes p{50%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.pulse{animation:none}}
+.sec{padding:30px 0;border-top:1px solid var(--line)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card p{color:var(--mute);margin:0;font-size:.95rem}
+.stat{font:800 1.8rem "Bricolage Grotesque",sans-serif}
+.small{color:var(--mute);font-size:.88rem}
+form{display:grid;gap:12px;max-width:400px}
+label{display:grid;gap:4px;font-weight:600;font-size:.92rem}
+input,select,textarea{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.tabs{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font:600 14px "Instrument Sans";cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th button{all:unset;cursor:pointer;font-weight:700}
+.bar{display:grid;grid-template-columns:110px 1fr 56px;gap:8px;align-items:center;margin:6px 0;font-size:.9rem}
+.bar i{display:block;height:9px;border-radius:5px;background:var(--brand)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto;font-size:.82rem;margin:8px 0}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:600;background:var(--line);color:var(--ink)}
+.tag.warm{background:var(--warm);color:#1a1200}
+.err{color:var(--bad);font-weight:600}
+footer{padding:28px 0 40px;color:var(--mute);font-size:.88rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav id="nav"></nav>
+<main id="main"></main>
+<footer>Starlog is a demo built for the SCF #46 Web and API Analytics RFP. Sign-in is simulated in your browser, and all data shown is synthetic.</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var mem={};
+function store(k,v){try{if(v===undefined){var r=localStorage.getItem(k);return r?JSON.parse(r):(mem[k]||null)}localStorage.setItem(k,JSON.stringify(v));mem[k]=v}catch(e){if(v===undefined)return mem[k]||null;mem[k]=v}}
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+var $=function(s){return document.querySelector(s)};
+var PROJECTS=[
+{id:"orbit",name:"Orbit Wallet",kind:"Wallet",base:2400,api:90000,seed:1},
+{id:"lumen",name:"Lumen Pay",kind:"Payments",base:1700,api:140000,seed:2},
+{id:"anchor",name:"Anchor Hub",kind:"Anchor",base:900,api:210000,seed:3},
+{id:"soroswap",name:"Soroban Swap",kind:"DeFi",base:3100,api:60000,seed:4},
+{id:"meridian",name:"Meridian SDK Docs",kind:"Dev tools",base:650,api:30000,seed:5},
+{id:"beacon",name:"Beacon Explorer",kind:"Explorer",base:1300,api:260000,seed:6}];
+var COUNTRIES=["United States","Nigeria","Brazil","Germany","India","Argentina","Philippines","Turkey"];
+var REFS=["Direct","stellar.org","x.com","Google","GitHub","Discord"];
+var DEV=["Mobile","Desktop","Tablet"];
+var BROWSERS=["Chrome","Safari","Firefox","Edge"];
+var ROUTES=["/accounts/:id","/transactions/:hash","/assets/:code","/ledgers/:seq","/claimable/:uuid","/offers"];
+function seriesFor(p,days){
+ var r=rng(p.seed*977),out=[],i,v;
+ for(i=0;i<days;i++){v=Math.round(p.base*(0.7+i/days*0.5)*(1+0.18*Math.sin(i/2.2))*(0.9+r()*0.2));out.push(v)}
+ return out}
+function sum(a){return a.reduce(function(x,y){return x+y},0)}
+function split(total,names,seed){var r=rng(seed),w=names.map(function(){return .2+r()}),t=sum(w);return names.map(function(n,i){return{n:n,v:Math.round(total*w[i]/t)}}).sort(function(a,b){return b.v-a.v})}
+function metrics(p,days,extra){
+ var s=seriesFor(p,30).slice(-days);
+ if(extra&&s.length)s[s.length-1]+=extra;
+ var views=sum(s),r=rng(p.seed*31);
+ return{series:s,views:views,visitors:Math.round(views*(0.52+r()*0.1)),bounce:Math.round(38+r()*22),dur:Math.round(70+r()*110),
+  refs:split(views,REFS,p.seed+10),geo:split(views,COUNTRIES,p.seed+20),dev:split(views,DEV,p.seed+30),br:split(views,BROWSERS,p.seed+40),
+  req:Math.round(p.api*days/30)}}
+function apiRows(p,days){
+ var r=rng(p.seed*53);
+ return ROUTES.map(function(rt,i){var req=Math.round(p.api*days/30*(0.35/(i+1))*(0.8+r()*.4));return{route:rt,req:req,err:+(r()*4.5).toFixed(1),p50:Math.round(40+r()*90),p95:Math.round(180+r()*420)}})}
+function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":""+n}
+function mins(s){return Math.floor(s/60)+"m "+(s%60)+"s"}
+function line(vals,w,h,color){
+ var max=Math.max.apply(null,vals.concat([1])),n=vals.length,pts=vals.map(function(v,i){return(n>1?i/(n-1)*w:0).toFixed(1)+","+(h-4-(v/max)*(h-12)).toFixed(1)}).join(" ");
+ return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" role="img" aria-label="Page views over time"><polyline fill="none" stroke="'+(color||"var(--brand)")+'" stroke-width="2.5" stroke-linejoin="round" points="'+pts+'"/><polyline fill="'+(color||"var(--brand)")+'" fill-opacity=".1" stroke="none" points="0,'+h+' '+pts+' '+w+','+h+'"/></svg>'}
+function bars(list){var m=list[0]?list[0].v:1;return list.map(function(x){return'<div class="bar"><span>'+x.n+'</span><i style="width:'+Math.max(4,x.v/m*100)+'%"></i><span class="small">'+fmt(x.v)+'</span></div>'}).join("")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+
+var state={days:30,tab:"web",sort:"views",dir:-1,q:"",cmp:[]};
+function db(){var d=store("starlog:db");if(!d){d={users:[],tenants:{},removed:[],extra:{}};store("starlog:db",d)}return d}
+function save(d){store("starlog:db",d)}
+function me(){return store("starlog:session")}
+function allProjects(){var d=db();return PROJECTS.concat(d.users.filter(function(u){return u.role==="tenant"&&u.custom}).map(function(u){return{id:u.pid,name:u.project,kind:"New",base:0,api:0,seed:u.pid.length*7}})).filter(function(p){return db().removed.indexOf(p.id)<0})}
+function findP(id){return allProjects().filter(function(p){return p.id===id})[0]}
+
+function nav(){
+ var s=me(),h='<a class="logo" href="#home">Starlog</a><a class="l" href="#home">Overview</a>';
+ if(s){h+='<a class="l" href="#'+(s.role==="operator"?"operator":"app")+'">'+(s.role==="operator"?"Global view":"Dashboard")+'</a><button class="btn ghost sm" id="out">Sign out</button>'}
+ else h+='<a class="btn sm" href="#login">Sign in</a>';
+ $("#nav").innerHTML=h;var o=$("#out");if(o)o.onclick=function(){store("starlog:session",null);mem["starlog:session"]=null;try{localStorage.removeItem("starlog:session")}catch(e){}location.hash="home"}}
+
+function home(){
+ var tot=sum(PROJECTS.map(function(p){return metrics(p,1).views}));
+ $("#main").innerHTML='<section class="hero"><div><h1>Know which Stellar projects are really used.</h1><p>One shared, privacy-first analytics service. Projects get free dashboards for their site and API. SCF gets verified usage numbers instead of self-reported ones.</p><div class="row" style="justify-content:flex-start;margin-top:18px"><a class="btn" href="#login">Try the demo</a><a class="btn ghost" href="#share-orbit">See a shared page</a></div></div>'+
+ '<div class="live"><span class="small"><span class="pulse"></span>Verified page views across demo projects, today</span><div class="big" id="liveN">'+tot.toLocaleString()+'</div><div id="liveC">'+line(seriesFor(PROJECTS[1],30),360,110)+'</div><span class="small">Counted from real browser scripts only. Server-side posts are rejected.</span></div></section>'+
+ '<section class="sec"><h2>Built for the people who fund and the people who build</h2><div class="grid">'+
+ '<div class="card"><h3>Projects</h3><p>Sign up in a minute, paste one pinned script, and see page views, visitors, referrers, countries and devices. No cookie banner needed.</p></div>'+
+ '<div class="card"><h3>API owners</h3><p>Send OpenTelemetry to one extra endpoint. We keep only request counts, status codes and latency per normalized route.</p></div>'+
+ '<div class="card"><h3>SCF reviewers</h3><p>One global view to filter, sort and compare every enrolled project side by side.</p></div></div></section>'+
+ '<section class="sec"><h2>How trust works</h2><div class="grid"><div class="card"><div class="stat">0</div><p>cookies, and IPs are truncated before geolocation</p></div><div class="card"><div class="stat">1</div><p>pinned script version. No remote code updates</p></div><div class="card"><div class="stat">100%</div><p>open source monorepo, ready for community handover</p></div></div></section>';
+ var n=tot;clearInterval(window.__t);window.__t=setInterval(function(){var e=$("#liveN");if(!e){clearInterval(window.__t);return}n+=Math.floor(Math.random()*4)+1;e.textContent=n.toLocaleString()},1200)}
+
+function login(){
+ $("#main").innerHTML='<section class="sec" style="border:0"><h1 style="font-size:2.2rem">Sign in or create an account</h1><div class="grid" style="align-items:start"><div class="card"><h3>Quick demo</h3><p style="margin-bottom:12px">Jump in with a ready-made account.</p><div class="row" style="justify-content:flex-start"><button class="btn" data-d="tenant">Project owner</button><button class="btn ghost" data-d="operator">SCF operator</button></div></div>'+
+ '<div class="card"><h3>Register your project</h3><form id="f"><label>Project name<input name="project" required minlength="2"></label><label>Email<input name="email" type="email" required></label><label>Password<input name="pw" type="password" required minlength="6"></label><button class="btn" type="submit">Create account</button><span class="small" id="msg"></span></form></div>'+
+ '<div class="card"><h3>Returning user</h3><form id="g"><label>Email<input name="email" type="email" required></label><label>Password<input name="pw" type="password" required></label><button class="btn ghost" type="submit">Sign in</button><span class="small" id="msg2"></span></form></div></div></section>';
+ document.querySelectorAll("[data-d]").forEach(function(b){b.onclick=function(){var r=b.dataset.d;store("starlog:session",r==="operator"?{role:"operator",email:"reviewer@scf.example"}:{role:"tenant",email:"team@orbit.example",pid:"orbit"});location.hash=r==="operator"?"operator":"app"}});
+ $("#f").onsubmit=function(e){e.preventDefault();var f=new FormData(e.target),d=db(),em=f.get("email").toLowerCase();
+  if(d.users.some(function(u){return u.email===em})){$("#msg").textContent="That email is already registered. Sign in instead.";return}
+  var pid=(f.get("project").toLowerCase().replace(/[^a-z0-9]+/g,"")||"proj")+Math.floor(Math.random()*900+100);
+  d.users.push({email:em,pw:f.get("pw"),role:"tenant",pid:pid,project:f.get("project"),custom:true});save(d);
+  store("starlog:session",{role:"tenant",email:em,pid:pid});location.hash="app"};
+ $("#g").onsubmit=function(e){e.preventDefault();var f=new FormData(e.target),em=f.get("email").toLowerCase(),u=db().users.filter(function(x){return x.email===em&&x.pw===f.get("pw")})[0];
+  if(!u){$("#msg2").textContent="Email or password is wrong. Check both and try again.";return}
+  store("starlog:session",{role:u.role,email:em,pid:u.pid});location.hash="app"}}
+
+function dashboard(pid,readonly){
+ var p=findP(pid);if(!p){$("#main").innerHTML='<section class="sec"><h2>Project not found</h2><p>This project was removed or never enrolled. <a href="#home">Back to overview</a></p></section>';return}
+ var d=db(),extra=d.extra[pid]||0,m=metrics(p,state.days,extra),shared=d.tenants[pid]&&d.tenants[pid].shared,isNew=p.base===0;
+ if(isNew){m.series=[];for(var i=0;i<state.days;i++)m.series.push(i===state.days-1?extra:0);m.views=extra;m.visitors=extra;m.bounce=0;m.dur=0;m.refs=extra?[{n:"Direct",v:extra}]:[];m.geo=extra?[{n:"United States",v:extra}]:[];m.dev=extra?[{n:"Desktop",v:extra}]:[];m.br=extra?[{n:"Chrome",v:extra}]:[]}
+ var h='<section class="sec" style="border:0"><div class="row"><div><h1 style="font-size:2rem;margin:0">'+esc(p.name)+'</h1><span class="small">'+(readonly?"Shared read-only view. Aggregated data only.":"Private to your team")+'</span></div>';
+ if(!readonly)h+='<span class="tag">'+(isNew?"Waiting for first event":"Receiving events")+'</span>';
+ h+='</div><div class="tabs" role="group" aria-label="View">';
+ [["web","Website"],["api","API"]].concat(readonly?[]:[["setup","Install and share"]]).forEach(function(t){h+='<button data-tab="'+t[0]+'" aria-pressed="'+(state.tab===t[0])+'">'+t[1]+'</button>'});
+ if(state.tab!=="setup")[7,30].forEach(function(x){h+='<button data-days="'+x+'" aria-pressed="'+(state.days===x)+'">Last '+x+' days</button>'});
+ h+='</div>';
+ if(state.tab==="web"){
+  h+='<div class="grid"><div class="card"><span class="small">Page views</span><div class="stat">'+fmt(m.views)+'</div></div><div class="card"><span class="small">Unique visitors</span><div class="stat">'+fmt(m.visitors)+'</div></div><div class="card"><span class="small">Bounce rate</span><div class="stat">'+m.bounce+'%</div></div><div class="card"><span class="small">Avg session</span><div class="stat">'+mins(m.dur)+'</div></div></div>'+
+  '<div class="card" style="margin-top:14px">'+line(m.series,700,170)+'</div>'+
+  '<div class="grid" style="margin-top:14px"><div class="card"><h3>Referrers</h3>'+(bars(m.refs)||'<p>No data yet. Fire a test event in Install and share.</p>')+'</div><div class="card"><h3>Countries</h3>'+(bars(m.geo.slice(0,5))||'<p>No data yet.</p>')+'</div><div class="card"><h3>Devices</h3>'+(bars(m.dev)||'<p>No data yet.</p>')+'</div><div class="card"><h3>Browsers</h3>'+(bars(m.br)||'<p>No data yet.</p>')+'</div></div>'}
+ if(state.tab==="api"){
+  var rows=isNew?[]:apiRows(p,state.days);
+  h+='<div class="card scroll"><h3>Endpoint traffic</h3>'+(rows.length?'<table><tr><th>Route</th><th>Requests</th><th>Error rate</th><th>p50 ms</th><th>p95 ms</th></tr>'+rows.map(function(r){return'<tr><td>'+r.route+'</td><td>'+fmt(r.req)+'</td><td class="'+(r.err>3?"err":"")+'">'+r.err+'%</td><td>'+r.p50+'</td><td>'+r.p95+'</td></tr>'}).join("")+'</table><p class="small">Paths are normalized: IDs, G/C/M addresses, UUIDs and hashes become placeholders.</p>':'<p>No API data yet. Add the OpenTelemetry exporter from Install and share.</p>')+'</div>'}
+ if(state.tab==="setup"&&!readonly){
+  var link=location.href.split("#")[0]+"#share-"+pid;
+  h+='<div class="grid"><div class="card"><h3>1. Add the script</h3><pre>&lt;script defer\n  src="https://stats.example/s/v1.0.3/a.js"\n  integrity="sha384-DEMO..."\n  data-site="'+pid+'"&gt;&lt;/script&gt;</pre><p class="small">Version-pinned with an integrity hash. You choose when to upgrade.</p><button class="btn sm" id="fire">Fire a test event</button> <span class="small" id="fm"></span></div>'+
+  '<div class="card"><h3>2. Export API metrics</h3><pre>OTEL_EXPORTER_OTLP_ENDPOINT=\n  https://ingest.example\nOTEL_EXPORTER_OTLP_HEADERS=\n  authorization=Bearer &lt;tenant-token&gt;\nOTEL_SERVICE_NAME='+pid+'</pre><p class="small">Dual-export to your own APM too. We drop traces and logs on arrival.</p></div>'+
+  '<div class="card"><h3>3. Share and export</h3><label style="grid-template-columns:auto 1fr;align-items:center"><input type="checkbox" id="sh" style="width:auto"'+(shared?" checked":"")+'>Public read-only link</label>'+(shared?'<pre>'+esc(link)+'</pre>':'<p class="small">Off. Turn on to show aggregates to reviewers or partners. Turn off to revoke.</p>')+'<button class="btn ghost sm" id="csv">Show CSV export</button><textarea id="ct" rows="5" style="display:none;margin-top:8px" readonly></textarea></div></div>'}
+ $("#main").innerHTML=h+'</section>';
+ document.querySelectorAll("[data-tab]").forEach(function(b){b.onclick=function(){state.tab=b.dataset.tab;dashboard(pid,readonly)}});
+ document.querySelectorAll("[data-days]").forEach(function(b){b.onclick=function(){state.days=+b.dataset.days;dashboard(pid,readonly)}});
+ var f=$("#fire");if(f)f.onclick=function(){var x=db();x.extra[pid]=(x.extra[pid]||0)+1;save(x);$("#fm").textContent="Event received. Check the Website tab."};
+ var sh=$("#sh");if(sh)sh.onchange=function(){var x=db();x.tenants[pid]=x.tenants[pid]||{};x.tenants[pid].shared=sh.checked;save(x);dashboard(pid,false)};
+ var c=$("#csv");if(c)c.onclick=function(){var t=$("#ct");t.style.display="block";t.value="date_offset,page_views\n"+m.series.map(function(v,i){return(i-m.series.length+1)+","+v}).join("\n");t.select()}}
+
+function operator(){
+ var s=me();if(!s||s.role!=="operator"){$("#main").innerHTML='<section class="sec"><h2>Operators only</h2><p>Sign in as an SCF operator to see the global view. <a href="#login">Sign in</a></p></section>';return}
+ var d=db(),rows=allProjects().map(function(p){var m=metrics(p,state.days,d.extra[p.id]||0);var a=apiRows(p,state.days);return{p:p,views:m.views,visitors:m.visitors,bounce:m.bounce,dur:m.dur,req:p.base===0?0:sum(a.map(function(r){return r.req})),err:p.base===0?0:+(sum(a.map(function(r){return r.err}))/a.length).toFixed(1),growth:p.base===0?0:Math.round((m.series[m.series.length-1]/Math.max(1,m.series[0])-1)*100)}});
+ rows=rows.filter(function(r){return r.p.name.toLowerCase().indexOf(state.q)>=0}).sort(function(a,b){return(a[state.sort]-b[state.sort])*state.dir});
+ var cols=[["views","Page views"],["visitors","Visitors"],["bounce","Bounce %"],["dur","Session"],["req","API requests"],["err","API errors %"],["growth","Growth %"]];
+ var h='<section class="sec" style="border:0"><div class="row"><div><h1 style="font-size:2rem;margin:0">Global view</h1><span class="small">All enrolled projects, last '+state.days+' days. Operators only.</span></div><span class="tag warm">SCF operator</span></div>'+
+ '<div class="tabs"><button data-days="7" aria-pressed="'+(state.days===7)+'">Last 7 days</button><button data-days="30" aria-pressed="'+(state.days===30)+'">Last 30 days</button><input id="q" placeholder="Filter projects" value="'+esc(state.q)+'" style="max-width:220px"></div>'+
+ '<div class="card scroll"><table><tr><th>Compare</th><th>Project</th>'+cols.map(function(c){return'<th><button data-s="'+c[0]+'">'+c[1]+(state.sort===c[0]?(state.dir<0?" ▼":" ▲"):"")+'</button></th>'}).join("")+'<th>Action</th></tr>'+
+ rows.map(function(r){return'<tr><td><input type="checkbox" style="width:auto" data-c="'+r.p.id+'"'+(state.cmp.indexOf(r.p.id)>=0?" checked":"")+' aria-label="Compare '+esc(r.p.name)+'"></td><td><strong>'+esc(r.p.name)+'</strong> <span class="small">'+r.p.kind+'</span></td><td>'+fmt(r.views)+'</td><td>'+fmt(r.visitors)+'</td><td>'+r.bounce+'</td><td>'+mins(r.dur)+'</td><td>'+fmt(r.req)+'</td><td class="'+(r.err>3?"err":"")+'">'+r.err+'</td><td>'+r.growth+'</td><td><button class="btn ghost sm" data-r="'+r.p.id+'">Remove</button></td></tr>'}).join("")+'</table></div>';
+ if(state.cmp.length===2){h+='<div class="grid" style="margin-top:14px">'+state.cmp.map(function(id){var p=findP(id);if(!p)return"";var m=metrics(p,state.days,db().extra[id]||0);return'<div class="card"><h3>'+esc(p.name)+'</h3>'+line(m.series,400,110)+'<p class="small">'+fmt(m.views)+' views, '+fmt(m.visitors)+' visitors, '+m.bounce+'% bounce</p></div>'}).join("")+'</div>'}
+ else h+='<p class="small" style="margin-top:12px">Tick two projects to compare them side by side.</p>';
+ $("#main").innerHTML=h+'</section>';
+ document.querySelectorAll("[data-days]").forEach(function(b){b.onclick=function(){state.days=+b.dataset.days;operator()}});
+ document.querySelectorAll("[data-s]").forEach(function(b){b.onclick=function(){state.dir=state.sort===b.dataset.s?-state.dir:-1;state.sort=b.dataset.s;operator()}});
+ document.querySelectorAll("[data-c]").forEach(function(b){b.onchange=function(){var i=state.cmp.indexOf(b.dataset.c);if(i>=0)state.cmp.splice(i,1);else{state.cmp.push(b.dataset.c);if(state.cmp.length>2)state.cmp.shift()}operator()}});
+ document.querySelectorAll("[data-r]").forEach(function(b){b.onclick=function(){var x=db();x.removed.push(b.dataset.r);save(x);operator()}});
+ var q=$("#q");q.oninput=function(){state.q=q.value.toLowerCase();var pos=q.selectionStart;operator();var n=$("#q");n.focus();n.setSelectionRange(pos,pos)}}
+
+function route(){
+ var h=location.hash.replace("#","")||"home",s=me();nav();window.scrollTo(0,0);
+ if(h==="login")return login();
+ if(h==="operator")return operator();
+ if(h==="app"){if(!s){location.hash="login";return}if(s.role==="operator"){location.hash="operator";return}state.tab=state.tab==="setup"?"web":state.tab;return dashboard(s.pid,false)}
+ if(h.indexOf("share-")===0){var id=h.slice(6),d=db();var okShare=(d.tenants[id]&&d.tenants[id].shared)||id==="orbit";if(!okShare){$("#main").innerHTML='<section class="sec"><h2>This link is no longer shared</h2><p>The project owner turned sharing off. Ask them for a new link.</p></section>';return}state.tab=state.tab==="setup"?"web":state.tab;return dashboard(id,true)}
+ home()}
+window.addEventListener("hashchange",route);route();
+})();
+</script>
+</body>
+</html>
