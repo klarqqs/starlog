@@ -1,0 +1,129 @@
+import prisma from '@/lib/prisma';
+import {
+  type ApiStat,
+  type EnrollmentStatus,
+  type OperatorSort,
+  rankProjects,
+  type WebStat,
+} from '@/stellog/operator-report';
+import { metricGrain } from '@/stellog/tenant-report';
+
+const HIST_COLUMNS = [
+  'h5',
+  'h10',
+  'h25',
+  'h50',
+  'h100',
+  'h250',
+  'h500',
+  'h1000',
+  'h2500',
+  'h5000',
+  'h10000',
+  'h_inf',
+] as const;
+
+export async function readOperatorProjects(
+  start: Date,
+  end: Date,
+  options: {
+    unit?: string;
+    q?: string;
+    status?: EnrollmentStatus | 'all';
+    sort?: OperatorSort;
+    order?: 'asc' | 'desc';
+  } = {},
+) {
+  const [teams, websites, webStats, apiStats] = await Promise.all([
+    prisma.client.team.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, enrollmentStatus: true },
+    }),
+    prisma.client.website.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, teamId: true, enrollmentStatus: true },
+    }),
+    webStatsFor(start, end),
+    apiStatsFor(start, end, metricGrain(start, end, options.unit)),
+  ]);
+
+  return rankProjects(
+    teams.map(team => ({
+      id: team.id,
+      name: team.name,
+      status: asStatus(team.enrollmentStatus),
+    })),
+    websites.map(website => ({
+      id: website.id,
+      name: website.name,
+      teamId: website.teamId,
+      status: asStatus(website.enrollmentStatus),
+    })),
+    webStats,
+    apiStats,
+    options,
+  );
+}
+
+async function webStatsFor(start: Date, end: Date): Promise<WebStat[]> {
+  const rows = await prisma.rawQuery(
+    `
+    select website_id as "websiteId",
+      count(*) filter (where event_type = 1)::int as pageviews,
+      count(distinct session_id) filter (where event_type = 1)::int as visitors
+    from website_event
+    where created_at >= {{start}} and created_at <= {{end}}
+    group by website_id
+    `,
+    { start, end },
+    'operatorWebStats',
+  );
+  return rows.map((row: WebStat) => ({
+    websiteId: row.websiteId,
+    pageviews: Number(row.pageviews),
+    visitors: Number(row.visitors),
+  }));
+}
+
+async function apiStatsFor(start: Date, end: Date, grain: 'hour' | 'day'): Promise<ApiStat[]> {
+  const table = grain === 'hour' ? 'api_metric_hour' : 'api_metric_day';
+  const columns = HIST_COLUMNS.map(
+    column => `coalesce(sum(${column}), 0)::int as "${column}"`,
+  ).join(', ');
+  const rows = await prisma.rawQuery(
+    `
+    select website_id as "websiteId",
+      coalesce(sum(request_count), 0)::int as requests,
+      coalesce(sum(case when status_code >= 500 then request_count else 0 end), 0)::int as errors,
+      coalesce(sum(latency_count), 0)::int as "latencyCount",
+      ${columns}
+    from ${table}
+    where bucket_start >= {{start}} and bucket_start <= {{end}}
+    group by website_id
+    `,
+    { start, end },
+    'operatorApiStats',
+  );
+  return rows.map((row: Record<string, number | string>) => ({
+    websiteId: String(row.websiteId),
+    requests: Number(row.requests),
+    errors: Number(row.errors),
+    latencyCount: Number(row.latencyCount),
+    h5: Number(row.h5),
+    h10: Number(row.h10),
+    h25: Number(row.h25),
+    h50: Number(row.h50),
+    h100: Number(row.h100),
+    h250: Number(row.h250),
+    h500: Number(row.h500),
+    h1000: Number(row.h1000),
+    h2500: Number(row.h2500),
+    h5000: Number(row.h5000),
+    h10000: Number(row.h10000),
+    hInf: Number(row.h_inf),
+  }));
+}
+
+function asStatus(value: string): EnrollmentStatus {
+  return value === 'pending' ? 'pending' : 'active';
+}

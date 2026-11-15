@@ -8,6 +8,7 @@ import { getCloudWebsiteLimit } from '@/lib/subscription';
 import { canCreateTeamWebsite, canCreateWebsite } from '@/permissions';
 import { createShare, createWebsite, getTeamWebsiteCount, getWebsiteCount } from '@/queries/prisma';
 import { getAllUserWebsitesIncludingTeamAccess, getUserWebsites } from '@/queries/prisma/website';
+import { enrollmentStatusFor } from '@/stellog/operator-enrollment';
 import { createWebsiteRequestSchema, listWebsitesQuerySchema } from './request-schema';
 
 export async function GET(request: Request) {
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
   if (!teamId) {
     data.userId = auth.user.id;
   }
+  data.enrollmentStatus = await enrollmentStatusFor(!!auth.user.isAdmin, teamId);
 
   const website = await createWebsite(data);
 

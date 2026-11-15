@@ -9,6 +9,7 @@ import { pagingParams, sortingParams } from '@/lib/schema';
 import { getCloudTeamLimit } from '@/lib/subscription';
 import { canCreateTeam } from '@/permissions';
 import { createTeam, getUserOwnedTeamCount, getUserTeams } from '@/queries/prisma';
+import { enrollmentStatusFor } from '@/stellog/operator-enrollment';
 
 export async function GET(request: Request) {
   const schema = z.object({
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       id: teamId,
       name,
       accessCode: `team_${getRandomChars(16)}`,
+      enrollmentStatus: await enrollmentStatusFor(!!auth.user.isAdmin),
     },
     teamOwnerId,
   );

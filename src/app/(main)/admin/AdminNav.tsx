@@ -3,7 +3,7 @@ import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
 import { NavMenu } from '@/components/common/NavMenu';
 import { useMessages, useNavigation } from '@/components/hooks';
-import { ArrowLeft, Globe, ShieldCheck, User, Users } from '@/components/icons';
+import { ArrowLeft, ChartColumn, Globe, ShieldCheck, User, Users } from '@/components/icons';
 
 export function AdminNav({ onItemClick }: { onItemClick?: () => void }) {
   const { t, labels } = useMessages();
@@ -18,6 +18,12 @@ export function AdminNav({ onItemClick }: { onItemClick?: () => void }) {
           label: t(labels.users),
           path: '/admin/users',
           icon: <User />,
+        },
+        {
+          id: 'projects',
+          label: 'Projects',
+          path: '/admin/projects',
+          icon: <ChartColumn />,
         },
         {
           id: 'websites',

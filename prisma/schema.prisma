@@ -33,6 +33,7 @@ model User {
   twoFactorOtpUseds    TwoFactorOtpUsed[]
   twoFactorRateLimit   TwoFactorRateLimit?
   apiKeys              ApiKey[]
+  operatorApiKeys      OperatorApiKey[]
   passwordResets       PasswordReset[]
   wallets              Wallet[]
 
@@ -141,6 +142,7 @@ model Website {
   createdAt DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  enrollmentStatus String @default("active") @map("enrollment_status") @db.VarChar(20)
 
   recorderEnabled Boolean @default(false) @map("recorder_enabled")
   replayConfig    Json?   @map("replay_config")
@@ -278,6 +280,7 @@ model Team {
   createdAt         DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  enrollmentStatus  String    @default("active") @map("enrollment_status") @db.VarChar(20)
 
   websites Website[]
   members  TeamUser[]
@@ -571,6 +574,23 @@ model AppSetting {
   value String
 
   @@map("app_setting")
+}
+
+// Stellog operator key. The hash is stored. The token is returned once, at creation.
+model OperatorApiKey {
+  id         String    @id @map("operator_api_key_id") @db.Uuid
+  name       String    @db.VarChar(100)
+  keyHash    String    @unique @map("key_hash") @db.VarChar(128)
+  keyPrefix  String    @map("key_prefix") @db.VarChar(16)
+  createdBy  String    @map("created_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@map("operator_api_key")
 }
 
 model ErrorIssue {
