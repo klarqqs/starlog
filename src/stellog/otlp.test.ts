@@ -199,6 +199,20 @@ describe('extractSignal metrics', () => {
       count: 9,
       temporality: 'cumulative',
       hasLatency: false,
+      hist: {
+        h5: 0,
+        h10: 0,
+        h25: 0,
+        h50: 0,
+        h100: 0,
+        h250: 0,
+        h500: 0,
+        h1000: 0,
+        h2500: 0,
+        h5000: 0,
+        h10000: 0,
+        hInf: 0,
+      },
     });
   });
 });

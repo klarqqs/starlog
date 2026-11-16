@@ -87,8 +87,10 @@ async function webStatsFor(start: Date, end: Date): Promise<WebStat[]> {
 
 async function apiStatsFor(start: Date, end: Date, grain: 'hour' | 'day'): Promise<ApiStat[]> {
   const table = grain === 'hour' ? 'api_metric_hour' : 'api_metric_day';
+  // A counter records requests and no latency. Its histogram must not move a percentile.
   const columns = HIST_COLUMNS.map(
-    column => `coalesce(sum(${column}), 0)::int as "${column}"`,
+    column =>
+      `coalesce(sum(case when latency_count > 0 then ${column} else 0 end), 0)::int as "${column}"`,
   ).join(', ');
   const rows = await prisma.rawQuery(
     `

@@ -281,7 +281,6 @@ function counterPoint(
   const count = finite(point.asInt ?? point.asDouble);
   if (!route || statusCode === null || !observedAt || count === null || count < 0) return null;
   const hist = emptyHist();
-  hist.hInf = count;
   return {
     serviceName,
     route,
