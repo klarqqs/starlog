@@ -10,6 +10,7 @@ export type Config = {
   telemetryDisabled: boolean;
   trackerScriptName?: string;
   updatesDisabled: boolean;
+  demoMode: boolean;
 };
 
 /**
@@ -27,5 +28,6 @@ export function getConfig(): Config {
     telemetryDisabled: !!process.env.DISABLE_TELEMETRY,
     trackerScriptName: process.env.TRACKER_SCRIPT_NAME,
     updatesDisabled: !!process.env.DISABLE_UPDATES,
+    demoMode: process.env.STELLOG_DEMO_MODE === '1',
   };
 }

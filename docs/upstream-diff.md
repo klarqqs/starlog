@@ -170,3 +170,7 @@ The website key routes call Umami's existing `canUpdateWebsite`. They do not cha
 `src/app/(main)/admin/AdminLayout.tsx`
 
 - An `operator` can open `/admin/projects` only. Other admin pages stay closed. An admin is unchanged.
+
+`src/lib/config.ts`
+
+- `demoMode` is true when `STELLOG_DEMO_MODE=1`. The signed-in shell shows "Demo data: synthetic".

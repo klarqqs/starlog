@@ -92,7 +92,8 @@ export function App({ children }) {
             This team is temporarily unavailable.
           </Text>
           <Text color="muted">
-            This team&apos;s subscription payment is overdue. Please contact the team owner to restore access.
+            This team&apos;s subscription payment is overdue. Please contact the team owner to
+            restore access.
           </Text>
         </Column>
       </Grid>
@@ -113,6 +114,20 @@ export function App({ children }) {
       </Column>
       <Column overflowX="hidden" minHeight="0" position="relative">
         <TopNav />
+        {config.demoMode && (
+          <div
+            role="status"
+            style={{
+              background: '#f5e6b8',
+              color: '#3a2e00',
+              textAlign: 'center',
+              padding: '8px 12px',
+              fontWeight: 650,
+            }}
+          >
+            Demo data: synthetic
+          </div>
+        )}
         <Column
           alignItems="center"
           aria-hidden={accessBlocked || undefined}
