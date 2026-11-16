@@ -1,0 +1,4 @@
+# Replace demo.example.com with the public hostname, then copy this to /etc/caddy/Caddyfile.
+demo.example.com {
+	reverse_proxy 127.0.0.1:3000
+}

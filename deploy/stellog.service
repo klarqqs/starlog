@@ -1,0 +1,14 @@
+[Unit]
+Description=Stellog demo
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=stellog
+WorkingDirectory=/opt/stellog
+EnvironmentFile=/etc/stellog.env
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

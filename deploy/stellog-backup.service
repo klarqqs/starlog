@@ -1,0 +1,8 @@
+[Unit]
+Description=Stellog Postgres backup
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/stellog.env
+WorkingDirectory=/opt/stellog
+ExecStart=/opt/stellog/scripts/backup-vps.sh
