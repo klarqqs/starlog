@@ -34,6 +34,7 @@ export type OperatorWebsite = {
   name: string;
   teamId: string | null;
   status: EnrollmentStatus;
+  domain?: string | null;
 };
 
 export type OperatorTeam = {
@@ -63,6 +64,8 @@ export type OperatorProject = {
   properties: number;
   pendingProperties: number;
   websiteIds: string[];
+  /** Public site used for the project icon. A website domain wins over an api. domain. */
+  domain: string | null;
   pageviews: number;
   visitors: number;
   requests: number;
@@ -99,6 +102,14 @@ export function statusForEnrollment(
   if (isAdmin) return 'active';
   if (teamStatus === 'pending') return 'pending';
   return mode === 'approval-required' ? 'pending' : 'active';
+}
+
+/** Prefer a public website over an api. hostname so the icon matches the product. */
+export function projectDomain(current: string | null, next?: string | null) {
+  if (!next) return current;
+  if (!current) return next;
+  if (current.startsWith('api.') && !next.startsWith('api.')) return next;
+  return current;
 }
 
 /** Add or remove one id, and never keep more than `max` selected. */
@@ -144,6 +155,7 @@ export function rankProjects(
     const teamKey = website.teamId ? projectId('team', website.teamId) : '';
     const project = website.teamId ? projects.get(teamKey) : undefined;
     const bucket = project ?? standalone(projects, website);
+    bucket.domain = projectDomain(bucket.domain, website.domain);
     if (website.status === 'pending') {
       bucket.pendingProperties += 1;
       continue;
@@ -207,6 +219,7 @@ function emptyProject(
     properties: 0,
     pendingProperties: 0,
     websiteIds: [],
+    domain: null,
     pageviews: 0,
     visitors: 0,
     requests: 0,

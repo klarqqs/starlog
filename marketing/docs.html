@@ -14,7 +14,7 @@
 <h2 id="web">Install the tracker</h2><p>Each website has a script tag in its settings. Paste that tag in the <code>&lt;head&gt;</code> of the site. The tracker is Umami’s and does not use cookies.</p>
 <h2 id="signin">Sign in, password reset and wallets</h2><p>Sign in at <a href="/login">/login</a>. Forgot the password? <a href="/login/forgot">Request a reset link</a>. It lasts 1 hour, works once, and signs that account out everywhere. In development the link is printed by the server.</p>
 <p>After you sign in, open Settings → Wallets and link <strong>Freighter</strong> or <strong>xBull</strong> (up to 5). Linking asks the wallet to sign a short challenge. Nothing is sent to the Stellar network. The wallet buttons on the sign-in page then work. A wallet belongs to one account.</p>
-<h2 id="operator">SCF operators</h2><p>Operators sign in at <a href="/operator/login">/operator/login</a>. That door accepts admin accounts only and opens the admin view of every website, user, and team. The first admin is the seeded account <code>admin</code>. Its first password is <code>umami</code>, and the app requires a new password immediately.</p>
+<h2 id="operator">SCF operators</h2><p>Operators sign in at <a href="/operator/login">/operator/login</a>. The button says “Sign in as operator.” The username is not an email. Project accounts use <a href="/login">project sign in</a> and are turned away from the operator door. A signed-in operator opens the read-only view of every project.</p>
 <h2 id="selfhost">Self-host</h2><pre><code>git clone https://github.com/klarqqs/starlog
 cd starlog &amp;&amp; cp .env.example .env
 pnpm install

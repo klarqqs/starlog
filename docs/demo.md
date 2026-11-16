@@ -1,20 +1,20 @@
 # Stellog demo walkthrough
 
-About ten minutes. The app is the Umami 3.5.0 fork with Postgres. Names that start with `Demo` are synthetic. When `STELLOG_DEMO_MODE=1`, signed-in pages show a banner: **Demo data: synthetic**.
+About ten minutes. The app is the Umami 3.5.0 fork with Postgres. The public site is [https://stellog-eta.vercel.app](https://stellog-eta.vercel.app). Its home page shows a screenshot of the overview chart from the running app.
 
 Credentials are in `.env.demo` on the machine that ran `scripts/seed-demo.ts`. That file is gitignored. This guide does not repeat the passwords.
 
-Sign-in for a project account is `/login`. Sign-in for the operator is `/operator/login`.
+Sign-in for a project account is `/login`. Sign-in for the operator is `/operator/login`, labeled “Sign in as operator.” The operator username is not an email.
 
 ## 1. Tenant web view
 
-Sign in at `/login` as `demo-tenant@stellog.demo`. Open **Websites**, then **Demo Lobstr site**. Set the date range to **Last 30 days**.
+Sign in at `/login` as `demo-tenant@stellog.demo`. Open **Websites**, then a project site such as **Authline**. Set the date range to **Last 30 days**.
 
-You should see pageviews, visitors, countries, browsers, and referrers such as `stellar.org` and `google.com`. The banner reads "Demo data: synthetic".
+You should see pageviews, visitors, countries, browsers, and referrers such as `stellar.org` and `google.com`.
 
 ## 2. Tenant API view
 
-Open **Demo Lobstr api**. Open the API page. Last 30 days.
+Open an API property, such as **Authline API**. Open the API page. Last 30 days.
 
 You should see request volume, a status split, p50 and p95, and routes. The stored routes include `/payments/{id}`, `/orders/{uuid}`, `/accounts/{account}`, `/contracts/{contract}`, `/tx/{hash}`, and `/health`. A numeric id, a UUID, a Stellar G-address, a Stellar C-address, a hex hash, and a trailing slash were sent and normalized.
 
@@ -22,7 +22,7 @@ You should see request volume, a status split, p50 and p95, and routes. The stor
 
 Sign out. Sign in as `demo-operator` at `/operator/login`. You land on `/admin/projects`.
 
-Set **Last 30 days**. The table lists 25 projects named for Stellar products (`Demo Lobstr`, `Demo Freighter`, `Demo MoneyGram`, and the rest), with a rank, error rate, p95, and a trend against the previous 30 days. Sort by API requests, then by error rate. Filter the name to `Lobstr`.
+Set **Last 30 days**. The table lists the SCF projects (Authline, JetPad, Obba, and the rest), each with its site icon, a rank, error rate, p95, and a trend against the previous 30 days. Sort by API requests, then by error rate. Filter the name to `Authline`.
 
 Select up to four projects. A fifth checkbox does not add a column. The side-by-side panel shows the same error rate, p95, and trends.
 

@@ -14,10 +14,12 @@ import {
 } from '@umami/react-zen';
 import { useState } from 'react';
 import { Empty } from '@/components/common/Empty';
+import { Favicon } from '@/components/common/Favicon';
 import Link from '@/components/common/Link';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useApi, useDateRange, useLoginQuery, useNavigation } from '@/components/hooks';
+import { AiSummaryButton } from '@/components/input/AiSummaryButton';
 import { DateFilter } from '@/components/input/DateFilter';
 import { ChangeLabel } from '@/components/metrics/ChangeLabel';
 import { limitSelection } from '@/stellog/operator-report';
@@ -30,6 +32,7 @@ type Project = {
   properties: number;
   pendingProperties: number;
   websiteIds: string[];
+  domain: string | null;
   pageviews: number;
   visitors: number;
   requests: number;
@@ -112,11 +115,14 @@ export function OperatorProjectsPage() {
   return (
     <Column gap="6" margin="2">
       <PageHeader title="Projects">
-        <DateFilter
-          value={query.date || '24hour'}
-          onChange={value => setParam('date', value)}
-          showAllTime={false}
-        />
+        <Row gap="3" alignItems="center">
+          <DateFilter
+            value={query.date || '24hour'}
+            onChange={value => setParam('date', value)}
+            showAllTime={false}
+          />
+          <AiSummaryButton scope="projects" />
+        </Row>
       </PageHeader>
       <Panel>
         <Column gap="4">
@@ -178,13 +184,16 @@ export function OperatorProjectsPage() {
                   {(row: (typeof projects)[number]) => row.rank}
                 </DataColumn>
                 <DataColumn id="name" label="Project" width="minmax(148px, 1.5fr)" style={oneLine}>
-                  {(row: (typeof projects)[number]) =>
-                    row.websiteIds[0] ? (
-                      <Link href={`/websites/${row.websiteIds[0]}`}>{row.name}</Link>
-                    ) : (
-                      <Text>{row.name}</Text>
-                    )
-                  }
+                  {(row: (typeof projects)[number]) => (
+                    <Row gap="2" alignItems="center">
+                      <Favicon domain={row.domain} />
+                      {row.websiteIds[0] ? (
+                        <Link href={`/websites/${row.websiteIds[0]}`}>{row.name}</Link>
+                      ) : (
+                        <Text>{row.name}</Text>
+                      )}
+                    </Row>
+                  )}
                 </DataColumn>
                 <DataColumn
                   id="pageviews"

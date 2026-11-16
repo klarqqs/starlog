@@ -7,6 +7,7 @@ import {
   type OperatorTeam,
   type OperatorWebsite,
   parseProjectId,
+  projectDomain,
   projectId,
   rankProjects,
   statusForEnrollment,
@@ -87,6 +88,30 @@ describe('rankProjects', () => {
     });
 
     expect(ranked.map(project => project.name)).toEqual(['Alpha']);
+  });
+
+  test('uses the website domain for the icon when the team also has an API', () => {
+    const ranked = rankProjects(
+      teams,
+      [
+        { ...websites[0], domain: 'api.alpha.test' },
+        { ...websites[2], domain: 'beta.test' },
+        {
+          id: sitePending,
+          name: 'Alpha site',
+          teamId: teamA,
+          status: 'active',
+          domain: 'alpha.test',
+        },
+      ],
+      [],
+      [],
+      { status: 'all' },
+    );
+    expect(ranked.find(project => project.name === 'Alpha')?.domain).toBe('alpha.test');
+    expect(ranked.find(project => project.name === 'Beta')?.domain).toBe('beta.test');
+    expect(projectDomain('api.a.test', 'a.test')).toBe('a.test');
+    expect(projectDomain('a.test', 'api.a.test')).toBe('a.test');
   });
 
   test('a website without a team is its own project', () => {

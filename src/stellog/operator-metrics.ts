@@ -45,7 +45,7 @@ export async function readOperatorProjects(
     }),
     prisma.client.website.findMany({
       where: { deletedAt: null },
-      select: { id: true, name: true, teamId: true, enrollmentStatus: true },
+      select: { id: true, name: true, domain: true, teamId: true, enrollmentStatus: true },
     }),
     webStatsFor(start, end),
     apiStatsFor(start, end, grain),
@@ -64,6 +64,7 @@ export async function readOperatorProjects(
       name: website.name,
       teamId: website.teamId,
       status: asStatus(website.enrollmentStatus),
+      domain: website.domain,
     })),
     webStats,
     apiStats,

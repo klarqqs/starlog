@@ -16,6 +16,7 @@ export const operatorProjectSchema = z
     properties: z.number().int(),
     pendingProperties: z.number().int(),
     websiteIds: z.array(z.uuid()),
+    domain: z.string().nullable(),
     pageviews: z.number().int(),
     visitors: z.number().int(),
     requests: z.number().int(),

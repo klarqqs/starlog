@@ -232,3 +232,5 @@ Profile, Password, Team members, and Wallets use the settings page width. Each p
 `src/components/hooks/useWebsiteNavItems.tsx` and `src/app/(main)/websites/[websiteId]/ledger/LedgerPage.tsx`
 
 - A property has a Stellar section named Ledger, and the same table is on the property overview under the metric cards. It lists wallet, trustline, and payment reports, with the transaction hash linked to Stellar Expert. Replay, heatmaps, revenue, search console, and ads stay unlinked.
+- The project ranking shows the same favicon as the websites list. Ledger assets show a 16px mark beside USDC, EURC, and XLM. AI Summary sits beside the date filter, with the AI mark on the button, and opens a dialog. The model call stays on the server. Shares, the change versus the previous period, and identical figures are computed before the model writes.
+- The public home page uses the same dark surfaces, borders, and blue button as the app. The hero is a screenshot of the overview chart, not a drawn illustration.

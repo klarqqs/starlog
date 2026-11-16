@@ -5,6 +5,7 @@ import { PageBody } from '@/components/common/PageBody';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useLoginQuery, useMyOverviewQuery, useNavigation } from '@/components/hooks';
+import { AiSummaryButton } from '@/components/input/AiSummaryButton';
 import { DateFilter } from '@/components/input/DateFilter';
 import { ROLES } from '@/lib/constants';
 import type { MySite } from '@/stellog/my-overview';
@@ -29,6 +30,7 @@ export function ApisPage() {
           {hasApis && (
             <Row gap="3" alignItems="center">
               <DateFilter value={value} onChange={setValue} showAllTime={false} />
+              <AiSummaryButton scope="apis" />
             </Row>
           )}
         </PageHeader>
@@ -70,6 +72,7 @@ function apiTotals(sites: MySite[]): OperatorProject {
     properties: sites.length,
     pendingProperties: 0,
     websiteIds: sites.map(site => site.websiteId),
+    domain: null,
     pageviews: add(site => site.pageviews),
     visitors: add(site => site.visitors),
     requests,

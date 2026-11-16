@@ -2,6 +2,7 @@
 
 import { Column, DataColumn, DataTable, Text } from '@umami/react-zen';
 import { WebsiteControls } from '@/app/(main)/websites/[websiteId]/WebsiteControls';
+import { AssetLabel } from '@/components/common/AssetLabel';
 import { DateDistance } from '@/components/common/DateDistance';
 import { LoadingPanel } from '@/components/common/LoadingPanel';
 import { Panel } from '@/components/common/Panel';
@@ -59,8 +60,8 @@ export function LedgerReports({ websiteId }: { websiteId: string }) {
               <DataColumn id="network" label="Network" width="minmax(100px, 0.8fr)" style={oneLine}>
                 {(row: LedgerRow) => networkLabel(row.network)}
               </DataColumn>
-              <DataColumn id="asset" label="Asset" width="minmax(80px, 0.6fr)" style={oneLine}>
-                {(row: LedgerRow) => row.asset || '—'}
+              <DataColumn id="asset" label="Asset" width="minmax(100px, 0.7fr)" style={oneLine}>
+                {(row: LedgerRow) => <AssetLabel asset={row.asset} />}
               </DataColumn>
               <DataColumn id="success" label="Result" width="minmax(100px, 0.7fr)" style={oneLine}>
                 {(row: LedgerRow) => resultLabel(row.success)}

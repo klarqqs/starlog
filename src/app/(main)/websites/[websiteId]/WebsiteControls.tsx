@@ -1,5 +1,6 @@
 import { Column, Grid, Row } from '@umami/react-zen';
 import { useShare } from '@/components/hooks';
+import { AiSummaryButton } from '@/components/input/AiSummaryButton';
 import { ExportButton } from '@/components/input/ExportButton';
 import { FilterBar } from '@/components/input/FilterBar';
 import { MonthFilter } from '@/components/input/MonthFilter';
@@ -38,6 +39,9 @@ export function WebsiteControls({
         <Row alignItems="center" justifyContent={{ base: 'flex-start', md: 'flex-end' }}>
           {allowDateFilter && (
             <WebsiteDateFilter websiteId={websiteId} allowCompare={allowCompare} />
+          )}
+          {allowDateFilter && !share && websiteId && (
+            <AiSummaryButton scope="website" websiteId={websiteId} />
           )}
           {allowDownload && <ExportButton websiteId={websiteId} />}
           {allowMonthFilter && <MonthFilter />}

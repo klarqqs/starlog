@@ -6,6 +6,7 @@ import { PageBody } from '@/components/common/PageBody';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useLoginQuery, useMyOverviewQuery, useNavigation } from '@/components/hooks';
+import { AiSummaryButton } from '@/components/input/AiSummaryButton';
 import { DateFilter } from '@/components/input/DateFilter';
 import { ROLES } from '@/lib/constants';
 import { isReadOnlyOperator } from '@/stellog/project-nav';
@@ -26,6 +27,7 @@ export function OverviewPage() {
         <PageHeader title="Overview">
           <Row gap="3" alignItems="center">
             <DateFilter value={value} onChange={setValue} showAllTime={false} />
+            <AiSummaryButton scope="overview" />
           </Row>
         </PageHeader>
         {empty ? (

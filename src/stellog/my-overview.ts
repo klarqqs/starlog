@@ -97,6 +97,7 @@ function emptyTotals(): OperatorProject {
     properties: 0,
     pendingProperties: 0,
     websiteIds: [],
+    domain: null,
     pageviews: 0,
     visitors: 0,
     requests: 0,

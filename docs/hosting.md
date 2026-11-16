@@ -1,6 +1,6 @@
 # Hosting a Stellog demo
 
-This is a self-hosted Umami 3.5.0 fork on Postgres. Nothing in this document has been deployed for you. Two paths avoid Docker Desktop: a Linux VPS, and Fly.io's remote builders. Railway is the same Node process with its own Postgres.
+This is a self-hosted Umami 3.5.0 fork on Postgres. The shared demo is [https://stellog-eta.vercel.app](https://stellog-eta.vercel.app). Two paths avoid Docker Desktop: a Linux VPS, and Fly.io's remote builders. Railway is the same Node process with its own Postgres.
 
 Copy `deploy/env.example` to the server's env file. Do not commit that copy. Generate `APP_SECRET` with `openssl rand -base64 32`.
 

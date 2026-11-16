@@ -68,6 +68,7 @@ function usageTotals(
     properties: 1,
     pendingProperties: 0,
     websiteIds: [websiteId],
+    domain: null,
     pageviews: stats.pageviews,
     visitors: 0,
     requests: current.requests,
