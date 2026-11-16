@@ -6,6 +6,8 @@ Environment: the local production server, not a container. `docker info` did not
 
 The script `scripts/smoke-test.ts` exited 0. Credentials stayed in gitignored `.env.smoke`.
 
+The server was built from the local working tree. Protobuf decoding, the team-key migration, retention, the prune script, and the privacy changes are still uncommitted, so these five commits do not by themselves contain that code. The rows below describe the server that was running.
+
 | Requirement | Status | Evidence from this smoke |
 | --- | --- | --- |
 | Stay on Umami and Postgres | BUILT | The production server answered on `127.0.0.1:3000` and wrote to Postgres. Package name `stellog`, version 3.5.0. |
