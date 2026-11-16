@@ -144,3 +144,10 @@ No Umami route, tracker, query, or auth file was edited for the collector. New c
 - `DELETE /api/websites/:websiteId/ingest-keys/:keyId`
 
 The website key routes call Umami's existing `canUpdateWebsite`. They do not change that function.
+
+## Local website domain
+
+`src/lib/constants.ts`
+
+- `DOMAIN_REGEX` accepts an IPv4 address with an optional port, so a local site can be registered as `127.0.0.1:3000` and match that page's origin. Hostnames and `localhost` are unchanged.
+
