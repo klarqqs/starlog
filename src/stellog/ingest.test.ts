@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { ingestOtlp } from './ingest';
+import { type IngestKeyScope, ingestOtlp } from './ingest';
 import type { Observation } from './otlp';
 
 const now = new Date('2026-11-15T20:00:00.000Z');
@@ -8,11 +8,15 @@ const startNano = String(now.getTime() * 1e6 - 5e6);
 const websiteA = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const websiteB = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
-function deps(keys: Record<string, string>) {
+function team(websites: Array<{ id: string; name: string }>): IngestKeyScope {
+  return { teamId: '11111111-1111-1111-1111-111111111111', websites };
+}
+
+function deps(keys: Record<string, IngestKeyScope>) {
   const inserted: Array<{ websiteId: string; rows: Observation[] }> = [];
   return {
     inserted,
-    findKey: async (token: string) => (keys[token] ? { websiteId: keys[token] } : null),
+    findKey: async (token: string) => keys[token] ?? null,
     insert: async (websiteId: string, rows: Observation[]) => {
       inserted.push({ websiteId, rows });
     },
@@ -52,8 +56,8 @@ function traceBody(tenantId?: string) {
 }
 
 describe('ingestOtlp', () => {
-  test('writes only the website bound to the ingest key', async () => {
-    const store = deps({ stk_a: websiteA });
+  test('service.name selects the website inside the team', async () => {
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'api' }]) });
     const result = await ingestOtlp(
       {
         authorization: 'Bearer stk_a',
@@ -75,7 +79,7 @@ describe('ingestOtlp', () => {
   });
 
   test('rejects a payload that names another tenant and stores nothing', async () => {
-    const store = deps({ stk_a: websiteA });
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'api' }]) });
     const result = await ingestOtlp(
       {
         authorization: 'Bearer stk_a',
@@ -92,7 +96,7 @@ describe('ingestOtlp', () => {
   });
 
   test('accepts the matching tenant id in any case', async () => {
-    const store = deps({ stk_a: websiteA });
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'api' }]) });
     const result = await ingestOtlp(
       {
         authorization: 'Bearer stk_a',
@@ -108,7 +112,7 @@ describe('ingestOtlp', () => {
   });
 
   test('a key for tenant B cannot write tenant A', async () => {
-    const store = deps({ stk_b: websiteB });
+    const store = deps({ stk_b: team([{ id: websiteB, name: 'api' }]) });
     const result = await ingestOtlp(
       {
         authorization: 'Bearer stk_b',
@@ -124,7 +128,7 @@ describe('ingestOtlp', () => {
   });
 
   test('missing and unknown keys are rejected', async () => {
-    const store = deps({ stk_a: websiteA });
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'api' }]) });
     expect(
       (
         await ingestOtlp(
@@ -157,7 +161,7 @@ describe('ingestOtlp', () => {
   });
 
   test('drops logs without calling insert', async () => {
-    const store = deps({ stk_a: websiteA });
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'api' }]) });
     const result = await ingestOtlp(
       {
         authorization: 'Bearer stk_a',
@@ -178,8 +182,45 @@ describe('ingestOtlp', () => {
     expect(store.inserted).toHaveLength(0);
   });
 
+  test('a sibling website on the same team is accepted by tenant.id', async () => {
+    const store = deps({
+      stk_a: team([
+        { id: websiteA, name: 'api' },
+        { id: websiteB, name: 'other' },
+      ]),
+    });
+    const result = await ingestOtlp(
+      {
+        authorization: 'Bearer stk_a',
+        signal: 'traces',
+        contentType: 'application/json',
+        bodyText: traceBody(websiteB),
+        now,
+      },
+      store,
+    );
+    expect(result.status).toBe(200);
+    expect(store.inserted.map(row => row.websiteId)).toEqual([websiteB]);
+  });
+
+  test('an unknown service name stores nothing', async () => {
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'billing' }]) });
+    const result = await ingestOtlp(
+      {
+        authorization: 'Bearer stk_a',
+        signal: 'traces',
+        contentType: 'application/json',
+        bodyText: traceBody(),
+        now,
+      },
+      store,
+    );
+    expect(result.status).toBe(403);
+    expect(store.inserted).toHaveLength(0);
+  });
+
   test('refuses protobuf', async () => {
-    const store = deps({ stk_a: websiteA });
+    const store = deps({ stk_a: team([{ id: websiteA, name: 'api' }]) });
     const result = await ingestOtlp(
       {
         authorization: 'Bearer stk_a',

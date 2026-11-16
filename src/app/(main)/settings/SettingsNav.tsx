@@ -2,7 +2,7 @@ import { Column, Row, Text, Tooltip, TooltipTrigger } from '@umami/react-zen';
 import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
 import { useMessages, useNavigation } from '@/components/hooks';
-import { ArrowLeft, KeyRound, Settings2, ShieldCheck, UserCircle, Users } from '@/components/icons';
+import { ArrowLeft, KeyRound, ShieldCheck, UserCircle, Users } from '@/components/icons';
 
 export function SettingsNav({
   isCollapsed,
@@ -19,34 +19,22 @@ export function SettingsNav({
       label: t(labels.settings),
       items: [
         {
-          id: 'preferences',
-          label: t(labels.preferences),
-          path: renderUrl('/settings/preferences'),
-          icon: <Settings2 />,
-        },
-        {
           id: 'profile',
           label: t(labels.profile),
           path: renderUrl('/settings/profile'),
           icon: <UserCircle />,
         },
         {
-          id: 'teams',
-          label: t(labels.teams),
-          path: renderUrl('/settings/teams'),
-          icon: <Users />,
-        },
-        {
           id: 'security',
-          label: t(labels.security),
+          label: 'Password',
           path: renderUrl('/settings/security'),
           icon: <ShieldCheck />,
         },
         {
-          id: 'api-keys',
-          label: t(labels.apiKeys),
-          path: renderUrl('/settings/api-keys'),
-          icon: <KeyRound />,
+          id: 'teams',
+          label: 'Team members',
+          path: renderUrl('/settings/teams'),
+          icon: <Users />,
         },
         {
           id: 'wallets',

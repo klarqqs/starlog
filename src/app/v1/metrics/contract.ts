@@ -17,7 +17,7 @@ const ingest = defineOperation({
     operationId: 'ingestOtlpMetrics',
     summary: 'Ingest OTLP metrics JSON',
     description:
-      'Bearer token is a website ingest key (stk_). Protobuf is rejected. A tenant.id that does not match the key stores nothing.',
+      'Bearer token is a team ingest key (stk_). JSON and protobuf are accepted, and gzip is accepted. tenant.id or service.name must select a website of that team.',
     tags: ['Collection'],
     requestBody: {
       required: true,

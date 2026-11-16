@@ -10,6 +10,7 @@ const keyRow = z.object({
   keyPrefix: z.string(),
   revokedAt: z.string().nullable(),
   createdAt: z.string(),
+  rotatedFromId: z.uuid().nullable(),
 });
 
 const listIngestKeys = defineOperation({
@@ -21,7 +22,7 @@ const listIngestKeys = defineOperation({
     operationId: 'listIngestKeys',
     summary: 'List API ingest keys',
     description:
-      'Keys for this website. The secret is not returned. A website id is not an ingest credential.',
+      'Keys for this website’s team. The secret is not returned. A website id is not an ingest credential. tenant.id or service.name selects a website in the team.',
     tags: ['Websites'],
     requestParams: { path: websiteIdPathSchema },
     responses: {
@@ -40,7 +41,7 @@ const createIngestKey = defineOperation({
     operationId: 'createIngestKey',
     summary: 'Create an API ingest key',
     description:
-      'Returns the stk_ token once. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs. The collector accepts OTLP JSON.',
+      'Creates a team ingest key and returns the stk_ token once. The key writes only to websites of this team. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs.',
     tags: ['Websites'],
     requestParams: { path: websiteIdPathSchema },
     requestBody: {

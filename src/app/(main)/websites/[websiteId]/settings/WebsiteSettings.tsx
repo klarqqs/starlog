@@ -4,6 +4,7 @@ import { WebsiteData } from './WebsiteData';
 import { WebsiteEditForm } from './WebsiteEditForm';
 import { WebsiteReplaySettings } from './WebsiteReplaySettings';
 import { WebsiteShareForm } from './WebsiteShareForm';
+import { WebsiteIngestKeys } from './WebsiteIngestKeys';
 import { WebsiteTrackingCode } from './WebsiteTrackingCode';
 
 export function WebsiteSettings({ websiteId }: { websiteId: string; openExternal?: boolean }) {
@@ -14,6 +15,9 @@ export function WebsiteSettings({ websiteId }: { websiteId: string; openExternal
       </Panel>
       <Panel>
         <WebsiteTrackingCode websiteId={websiteId} />
+      </Panel>
+      <Panel>
+        <WebsiteIngestKeys websiteId={websiteId} />
       </Panel>
       <Panel>
         <WebsiteReplaySettings websiteId={websiteId} />

@@ -5,8 +5,10 @@ import { PageBody } from '@/components/common/PageBody';
 
 export function SettingsLayout({ children }: { children: ReactNode }) {
   return (
-    <Column gap="6" margin="2" width="100%">
-      <PageBody>{children}</PageBody>
-    </Column>
+    <PageBody>
+      <Column gap="6" margin="2" width="100%">
+        {children}
+      </Column>
+    </PageBody>
   );
 }

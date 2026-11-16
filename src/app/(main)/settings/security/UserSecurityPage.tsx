@@ -3,13 +3,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Column, Row, Switch, Text, Tooltip, TooltipTrigger } from '@umami/react-zen';
 import { useState } from 'react';
 import { Badge } from '@/components/common/Badge';
-import { PageBody } from '@/components/common/PageBody';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useConfig, useMessages, useTwoFactorStatusQuery } from '@/components/hooks';
 import { TwoFactorDisableModal } from '@/components/modals/TwoFactorDisableModal';
 import { TwoFactorSetupModal } from '@/components/modals/TwoFactorSetupModal';
-import { PasswordChangeButton } from './PasswordChangeButton';
+import { PasswordEditForm } from './PasswordEditForm';
 
 export function UserSecurityPage() {
   const { t, labels, messages } = useMessages();
@@ -45,55 +44,30 @@ export function UserSecurityPage() {
   if (isLoading) return null;
 
   return (
-    <PageBody>
-      <Column gap="6">
-        <PageHeader title={t(labels.security)} />
-        {!cloudMode && (
-          <Panel>
-            <Column gap="4">
-              <Row alignItems="center" gap="3">
-                <Text weight="bold">{t(labels.password)}</Text>
-              </Row>
-              <Row>
-                <PasswordChangeButton />
-              </Row>
-            </Column>
-          </Panel>
-        )}
-        <Panel>
-          <Column gap="4">
-            <Row alignItems="center" gap="3">
-              <Text weight="bold">{t(labels.twoFactorAuth)}</Text>
-              {isEnabled ? (
-                <Badge variant="good">{t(labels.twoFactorActive)}</Badge>
-              ) : (
-                <Badge variant="gray">{t(labels.twoFactorStatusNotConfigured)}</Badge>
-              )}
-            </Row>
-
-            {showConfigurationError ? (
-              <Text>{t(messages.twoFactorErrorNotConfigured)}</Text>
-            ) : isEnabled ? (
-              <Text>{t(messages.twoFactorActiveDescription)}</Text>
+    <Column gap="6" width="100%">
+      <PageHeader title="Password" />
+      <Panel width="100%">
+        {!cloudMode && <PasswordEditForm onSave={() => undefined} />}
+        <Column gap="4">
+          <Row alignItems="center" gap="3">
+            <Text weight="bold">{t(labels.twoFactorAuth)}</Text>
+            {isEnabled ? (
+              <Badge variant="good">{t(labels.twoFactorActive)}</Badge>
             ) : (
-              <Text>{t(messages.twoFactorUserDescription)}</Text>
+              <Badge variant="gray">{t(labels.twoFactorStatusNotConfigured)}</Badge>
             )}
+          </Row>
 
-            {isConfigured === true && isEnabled && isRequired ? (
-              <TooltipTrigger>
-                <Row alignItems="center" gap="3">
-                  <Switch
-                    isSelected={isEnabled}
-                    isDisabled={isEnabled && isRequired}
-                    onChange={handleToggle}
-                  />
-                  <Text>{t(labels.twoFactorEnable)}</Text>
-                </Row>
-                <Tooltip>{t(messages.twoFactorRequiredMessage)}</Tooltip>
-              </TooltipTrigger>
-            ) : null}
+          {showConfigurationError ? (
+            <Text>{t(messages.twoFactorErrorNotConfigured)}</Text>
+          ) : isEnabled ? (
+            <Text>{t(messages.twoFactorActiveDescription)}</Text>
+          ) : (
+            <Text>{t(messages.twoFactorUserDescription)}</Text>
+          )}
 
-            {isConfigured === true && !isEnabled ? (
+          {isConfigured === true && isEnabled && isRequired ? (
+            <TooltipTrigger>
               <Row alignItems="center" gap="3">
                 <Switch
                   isSelected={isEnabled}
@@ -102,27 +76,39 @@ export function UserSecurityPage() {
                 />
                 <Text>{t(labels.twoFactorEnable)}</Text>
               </Row>
-            ) : null}
+              <Tooltip>{t(messages.twoFactorRequiredMessage)}</Tooltip>
+            </TooltipTrigger>
+          ) : null}
 
-            {isConfigured === true && isEnabled && !isRequired ? (
-              <Row alignItems="center" gap="3">
-                <Switch
-                  isSelected={isEnabled}
-                  isDisabled={isEnabled && isRequired}
-                  onChange={handleToggle}
-                />
-                <Text>{t(labels.twoFactorEnable)}</Text>
-              </Row>
-            ) : null}
+          {isConfigured === true && !isEnabled ? (
+            <Row alignItems="center" gap="3">
+              <Switch
+                isSelected={isEnabled}
+                isDisabled={isEnabled && isRequired}
+                onChange={handleToggle}
+              />
+              <Text>{t(labels.twoFactorEnable)}</Text>
+            </Row>
+          ) : null}
 
-            {isConfigured === true && isEnabled && isRequired && (
-              <Text size="sm" color="muted">
-                {t(messages.twoFactorRequiredMessage)}
-              </Text>
-            )}
-          </Column>
-        </Panel>
-      </Column>
+          {isConfigured === true && isEnabled && !isRequired ? (
+            <Row alignItems="center" gap="3">
+              <Switch
+                isSelected={isEnabled}
+                isDisabled={isEnabled && isRequired}
+                onChange={handleToggle}
+              />
+              <Text>{t(labels.twoFactorEnable)}</Text>
+            </Row>
+          ) : null}
+
+          {isConfigured === true && isEnabled && isRequired && (
+            <Text size="sm" color="muted">
+              {t(messages.twoFactorRequiredMessage)}
+            </Text>
+          )}
+        </Column>
+      </Panel>
 
       {showSetup && <TwoFactorSetupModal required={false} onClose={handleSetupClose} />}
       {showDisable && (
@@ -131,6 +117,6 @@ export function UserSecurityPage() {
           onSuccess={handleDisableSuccess}
         />
       )}
-    </PageBody>
+    </Column>
   );
 }

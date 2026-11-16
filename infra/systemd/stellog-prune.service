@@ -1,0 +1,8 @@
+[Unit]
+Description=Prune Stellog API metrics
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/stellog
+Environment=DRY_RUN=0
+ExecStart=/usr/bin/node /opt/stellog/node_modules/.bin/tsx /opt/stellog/scripts/prune-metrics.ts

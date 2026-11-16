@@ -14,6 +14,7 @@ import {
   Video,
 } from '@/components/icons';
 import { Funnel, Gauge, Lightning, Magnet, Money, Network, Path, Target } from '@/components/svg';
+import { HIDDEN_WEBSITE_NAV } from '@/stellog/project-nav';
 import { useConfig } from './useConfig';
 import { useMessages } from './useMessages';
 import { useNavigation } from './useNavigation';
@@ -82,6 +83,17 @@ export function useWebsiteNavItems(websiteId: string) {
               },
             ]
           : []),
+      ],
+    },
+    {
+      label: 'Stellar',
+      items: [
+        {
+          id: 'ledger',
+          label: 'Ledger',
+          icon: <Network />,
+          path: renderPath('/ledger'),
+        },
       ],
     },
     {
@@ -207,7 +219,14 @@ export function useWebsiteNavItems(websiteId: string) {
     },
   ];
 
-  const selectedKey = items
+  const visible = items
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item => !HIDDEN_WEBSITE_NAV.has(item.id)),
+    }))
+    .filter(section => section.items.length > 0);
+
+  const selectedKey = visible
     .flatMap(e => e.items)
     .find(
       ({ path }) =>
@@ -216,5 +235,5 @@ export function useWebsiteNavItems(websiteId: string) {
           (path.split('?')[0].endsWith('/errors') && pathname.includes('/errors/'))),
     )?.id;
 
-  return { items, selectedKey, renderPath };
+  return { items: visible, selectedKey, renderPath };
 }

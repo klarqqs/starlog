@@ -18,6 +18,7 @@ services:
       # Required for two-factor authentication, generate with: openssl rand -hex 32
       TWO_FACTOR_ENCRYPTION_KEY: replace-me-with-a-64-character-hex-string
       # The admin update notice and the telemetry pixel stay off unless an operator turns them back on.
+      SALT_ROTATION: ${SALT_ROTATION:-day}
       DISABLE_TELEMETRY: ${DISABLE_TELEMETRY:-1}
       DISABLE_UPDATES: ${DISABLE_UPDATES:-1}
     depends_on:

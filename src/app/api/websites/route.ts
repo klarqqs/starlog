@@ -7,7 +7,11 @@ import { badRequest, json, unauthorized } from '@/lib/response';
 import { getCloudWebsiteLimit } from '@/lib/subscription';
 import { canCreateTeamWebsite, canCreateWebsite } from '@/permissions';
 import { createShare, createWebsite, getTeamWebsiteCount, getWebsiteCount } from '@/queries/prisma';
-import { getAllUserWebsitesIncludingTeamAccess, getUserWebsites } from '@/queries/prisma/website';
+import {
+  getAllUserWebsitesIncludingTeamAccess,
+  getEveryWebsite,
+  getUserWebsites,
+} from '@/queries/prisma/website';
 import { enrollmentStatusFor } from '@/stellog/operator-enrollment';
 import { createWebsiteRequestSchema, listWebsitesQuerySchema } from './request-schema';
 
@@ -21,6 +25,10 @@ export async function GET(request: Request) {
   const userId = auth.user.id;
 
   const filters = await getQueryFilters(query);
+
+  if (auth.user.role === 'operator') {
+    return json(await getEveryWebsite(filters));
+  }
 
   if (query.includeTeams) {
     return json(await getAllUserWebsitesIncludingTeamAccess(userId, filters));

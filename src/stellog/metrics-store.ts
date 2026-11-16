@@ -4,8 +4,9 @@ import prisma from '@/lib/prisma';
 import type { CumulativePoint } from './cumulative';
 import { emptyHist, type Hist } from './histogram';
 import { deltaOf, type Observation } from './otlp';
-import { aggregateCutoff, rawCutoff, startOfUtcDay, startOfUtcHour } from './retention';
+import { aggregateCutoff, hourCutoff, rawCutoff, startOfUtcDay, startOfUtcHour } from './retention';
 import { groupObservations, type RollupGroup } from './rollup';
+import { assignRouteCap, routeCapLimit } from './route-cap';
 
 type Tx = Prisma.TransactionClient;
 
@@ -19,6 +20,23 @@ export async function insertObservations(websiteId: string, rows: Observation[])
       if (next && Math.round(next.count) > 0) ready.push(next);
     }
     if (ready.length === 0) return;
+
+    const website = await tx.website.findUnique({
+      where: { id: websiteId },
+      select: { teamId: true },
+    });
+    const cap = routeCapLimit();
+    const knownByHour = new Map<string, Set<string>>();
+    for (const row of ready) {
+      const bucket = startOfUtcHour(row.observedAt);
+      const key = bucket.toISOString();
+      let known = knownByHour.get(key);
+      if (!known) {
+        known = await knownRoutes(tx, websiteId, website?.teamId ?? null, bucket);
+        knownByHour.set(key, known);
+      }
+      row.route = assignRouteCap(known, row.route, cap);
+    }
 
     await tx.apiMetricRaw.createMany({
       data: ready.map(row => ({
@@ -198,6 +216,22 @@ async function upsertRollup(
   `;
 }
 
+async function knownRoutes(tx: Tx, websiteId: string, teamId: string | null, bucket: Date) {
+  const websites = teamId
+    ? await tx.website.findMany({ where: { teamId }, select: { id: true } })
+    : [{ id: websiteId }];
+  const rows = await tx.apiMetricHour.findMany({
+    where: {
+      websiteId: { in: websites.map(website => website.id) },
+      bucketStart: bucket,
+      route: { not: 'other' },
+    },
+    select: { route: true },
+    distinct: ['route'],
+  });
+  return new Set(rows.map(row => row.route));
+}
+
 export async function listRawForWebsite(websiteId: string) {
   return prisma.client.apiMetricRaw.findMany({
     where: { websiteId },
@@ -222,11 +256,12 @@ export async function rollupForWebsite(websiteId: string) {
 
 export async function pruneApiMetrics(now = new Date()) {
   const rawBefore = rawCutoff(now);
-  const aggregateBefore = aggregateCutoff(now);
+  const hourBefore = hourCutoff(now);
+  const dayBefore = aggregateCutoff(now);
   const [raw, hours, days] = await Promise.all([
     prisma.client.apiMetricRaw.deleteMany({ where: { observedAt: { lt: rawBefore } } }),
-    prisma.client.apiMetricHour.deleteMany({ where: { bucketStart: { lt: aggregateBefore } } }),
-    prisma.client.apiMetricDay.deleteMany({ where: { bucketStart: { lt: aggregateBefore } } }),
+    prisma.client.apiMetricHour.deleteMany({ where: { bucketStart: { lt: hourBefore } } }),
+    prisma.client.apiMetricDay.deleteMany({ where: { bucketStart: { lt: dayBefore } } }),
   ]);
   return { raw: raw.count, hours: hours.count, days: days.count };
 }

@@ -159,7 +159,6 @@ model Website {
   sessionReplays      SessionReplay[]
   sessionReplaysSaved SessionReplaySaved[]
   heatmapEvents       HeatmapEvent[]
-  ingestKeys          IngestKey[]
   apiMetricRaw        ApiMetricRaw[]
   apiMetricHours      ApiMetricHour[]
   apiMetricDays       ApiMetricDay[]
@@ -282,8 +281,9 @@ model Team {
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
   enrollmentStatus  String    @default("active") @map("enrollment_status") @db.VarChar(20)
 
-  websites Website[]
-  members  TeamUser[]
+  websites   Website[]
+  members    TeamUser[]
+  ingestKeys IngestKey[]
   links    Link[]
   pixels   Pixel[]
   boards   Board[]
@@ -643,22 +643,23 @@ model ErrorRateLimit {
   @@map("error_rate_limit")
 }
 
-// Stellog API metrics. The ingest key is the tenant. Raw rows are short-lived.
-// Hour and day rows are the retained aggregate. The cursor stores the last
-// cumulative OTLP value so a later export adds only the increase.
+// Stellog API metrics. The ingest key belongs to a team. Raw rows are short-lived.
+// Hour rows are kept about 90 days. Day rows are kept at least 24 months.
+// The cursor stores the last cumulative OTLP value so a later export adds only the increase.
 
 model IngestKey {
-  id        String    @id @map("ingest_key_id") @db.Uuid
-  websiteId String    @map("website_id") @db.Uuid
-  name      String    @db.VarChar(255)
-  keyHash   String    @unique @map("key_hash") @db.VarChar(128)
-  keyPrefix String    @map("key_prefix") @db.VarChar(16)
-  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id            String    @id @map("ingest_key_id") @db.Uuid
+  teamId        String    @map("team_id") @db.Uuid
+  name          String    @db.VarChar(255)
+  keyHash       String    @unique @map("key_hash") @db.VarChar(128)
+  keyPrefix     String    @map("key_prefix") @db.VarChar(16)
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz(6)
+  rotatedFromId String?   @map("rotated_from_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  @@index([websiteId])
+  @@index([teamId])
   @@map("ingest_key")
 }
 

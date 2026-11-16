@@ -15,8 +15,9 @@ const websiteId = uuid();
 let exitCode = 0;
 
 try {
-  await prisma.client.website.create({ data: { id: websiteId, name: 'api-metrics-load' } });
+  await prisma.client.website.create({ data: { id: websiteId, name: 'load' } });
   const key = await createIngestKey(websiteId, 'load');
+  const bytesBefore = await tableBytes();
   const server = createServer((req, res) => {
     void serve(req, res, key.token);
   });
@@ -39,6 +40,8 @@ try {
           burst,
           storedRequests: stored,
           normalizedRoute: rollup.hours[0]?.route ?? null,
+          bytesBefore,
+          bytesAfter: await tableBytes(),
         },
         null,
         2,
@@ -191,4 +194,16 @@ function round(value: number) {
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function tableBytes() {
+  const rows = (await prisma.client.$queryRawUnsafe(
+    `SELECT c.relname AS name, pg_total_relation_size(c.oid) AS bytes
+     FROM pg_class c
+     JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public'
+       AND c.relname IN ('api_metric_raw', 'api_metric_hour', 'api_metric_day', 'api_metric_cursor')
+     ORDER BY c.relname`,
+  )) as Array<{ name: string; bytes: bigint }>;
+  return Object.fromEntries(rows.map(row => [row.name, Number(row.bytes)]));
 }

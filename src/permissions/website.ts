@@ -1,18 +1,22 @@
+import type { Website } from '@/generated/prisma/client';
 import { hasPermission } from '@/lib/auth';
 import { PERMISSIONS } from '@/lib/constants';
 import { getEntity } from '@/lib/entity';
 import { getBillingAccess, getTeamBillingScope, getWebsiteBillingScope } from '@/lib/load';
 import prisma from '@/lib/prisma';
 import type { Auth } from '@/lib/types';
-import type { Website } from '@/generated/prisma/client';
 import { getTeamUser, getWebsite } from '@/queries/prisma';
 
 async function hasWebsiteBillingAccess(website: Pick<Website, 'userId' | 'teamId'>) {
   return !(await getBillingAccess(await getWebsiteBillingScope(website))).isPastDue;
 }
 
+function canReadEveryWebsite(user?: Auth['user']) {
+  return !!user && (user.isAdmin === true || user.role === 'operator' || user.isOperator === true);
+}
+
 export async function canViewWebsite({ user, shareToken }: Auth, websiteId: string) {
-  if (user?.isAdmin) {
+  if (canReadEveryWebsite(user)) {
     return true;
   }
 
@@ -53,7 +57,7 @@ export async function canViewBatchWebsites({ user, shareToken }: Auth, websiteId
 
   const requestedIds = Array.from(new Set(websiteIds));
 
-  if (user?.isAdmin) {
+  if (canReadEveryWebsite(user)) {
     return requestedIds;
   }
 
@@ -130,7 +134,7 @@ export async function canViewBatchWebsites({ user, shareToken }: Auth, websiteId
 }
 
 export async function canViewAllWebsites({ user }: Auth) {
-  return user?.isAdmin ?? false;
+  return canReadEveryWebsite(user);
 }
 
 export async function canCreateWebsite({ user }: Auth) {

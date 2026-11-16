@@ -2515,13 +2515,13 @@ export interface paths {
     };
     /**
      * List API ingest keys
-     * @description Keys for this website. The secret is not returned. A website id is not an ingest credential.
+     * @description Keys for this website’s team. The secret is not returned. A website id is not an ingest credential. tenant.id or service.name selects a website in the team.
      */
     get: operations['listIngestKeys'];
     put?: never;
     /**
      * Create an API ingest key
-     * @description Returns the stk_ token once. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs. The collector accepts OTLP JSON.
+     * @description Creates a team ingest key and returns the stk_ token once. The key writes only to websites of this team. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs.
      */
     post: operations['createIngestKey'];
     delete?: never;
@@ -2545,6 +2545,26 @@ export interface paths {
      * @description A revoked key is rejected by the collector.
      */
     delete: operations['revokeIngestKey'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/websites/{websiteId}/ingest-keys/{keyId}/rotate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Rotate an API ingest key
+     * @description Revokes the current key and returns a new stk_ token once. The new row records rotatedFromId.
+     */
+    post: operations['rotateIngestKey'];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -3425,7 +3445,7 @@ export interface paths {
     put?: never;
     /**
      * Ingest OTLP logs JSON
-     * @description Accepts an OTLP JSON log payload, keeps derived metrics, and discards the rest. Bearer token is a website ingest key. Protobuf is rejected.
+     * @description Accepts an OTLP JSON or protobuf log payload, including gzip, and discards the log bodies. Bearer token is a team ingest key.
      */
     post: operations['ingestOtlpLogs'];
     delete?: never;
@@ -3445,7 +3465,7 @@ export interface paths {
     put?: never;
     /**
      * Ingest OTLP metrics JSON
-     * @description Bearer token is a website ingest key (stk_). Protobuf is rejected. A tenant.id that does not match the key stores nothing.
+     * @description Bearer token is a team ingest key (stk_). JSON and protobuf are accepted, and gzip is accepted. tenant.id or service.name must select a website of that team.
      */
     post: operations['ingestOtlpMetrics'];
     delete?: never;
@@ -3465,7 +3485,7 @@ export interface paths {
     put?: never;
     /**
      * Ingest OTLP traces JSON
-     * @description Derives route, status, and latency from server spans, then discards the spans. Bearer token is a website ingest key. Protobuf is rejected.
+     * @description Derives route, status, and latency from server spans, then discards the spans. Bearer token is a team ingest key. JSON, protobuf, and gzip are accepted.
      */
     post: operations['ingestOtlpTraces'];
     delete?: never;
@@ -20320,6 +20340,7 @@ export interface operations {
             name: string;
             /** @description Date and time the credential was revoked. */
             revokedAt: string | null;
+            rotatedFromId: string | null;
           }[];
         };
       };
@@ -20430,6 +20451,67 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Ok'];
+        };
+      };
+      /** @description Unauthorized. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "unauthorized",
+           *         "message": "Unauthorized.",
+           *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+      /** @description Not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "not-found",
+           *         "message": "Not found.",
+           *         "status": 404
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  rotateIngestKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description ID of the API key. */
+        keyId: string;
+        /** @description ID of the website. */
+        websiteId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The replacement key. Copy the token now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreatedSecret'];
         };
       };
       /** @description Unauthorized. */

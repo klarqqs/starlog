@@ -78,6 +78,13 @@ describe('canViewWebsite', () => {
     expect(getEntity).not.toHaveBeenCalled();
   });
 
+  test('allows a read-only operator to view any website', async () => {
+    await expect(
+      canViewWebsite({ user: { ...normalUser, role: 'operator', isOperator: true } }, 'website-1'),
+    ).resolves.toBe(true);
+    expect(getEntity).not.toHaveBeenCalled();
+  });
+
   test('allows a matching single share token id', async () => {
     await expect(
       canViewWebsite({ shareToken: { websiteId: 'website-1' } as any }, 'website-1'),
@@ -179,9 +186,7 @@ describe('canViewBatchWebsites', () => {
   });
 
   test('excludes team websites when the user is not a team member', async () => {
-    websiteFindManyMock.mockResolvedValue([
-      { id: 'team', userId: null, teamId: 'team-1' },
-    ] as any);
+    websiteFindManyMock.mockResolvedValue([{ id: 'team', userId: null, teamId: 'team-1' }] as any);
     teamUserFindManyMock.mockResolvedValue([] as any);
 
     await expect(canViewBatchWebsites({ user: normalUser }, ['team'])).resolves.toEqual([]);
@@ -191,6 +196,12 @@ describe('canViewBatchWebsites', () => {
 describe('canViewAllWebsites', () => {
   test('allows admins', async () => {
     await expect(canViewAllWebsites({ user: adminUser })).resolves.toBe(true);
+  });
+
+  test('allows a read-only operator', async () => {
+    await expect(
+      canViewAllWebsites({ user: { ...normalUser, role: 'operator', isOperator: true } }),
+    ).resolves.toBe(true);
   });
 
   test('denies non-admins', async () => {

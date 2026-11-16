@@ -33,6 +33,7 @@ vi.mock('@/queries/prisma', () => ({
 
 vi.mock('@/queries/prisma/website', () => ({
   getAllUserWebsitesIncludingTeamAccess: vi.fn(),
+  getEveryWebsite: vi.fn(),
   getUserWebsites: vi.fn(),
 }));
 

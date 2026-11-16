@@ -7,8 +7,19 @@ import { TIME_FORMATS } from '@/lib/constants';
 import { getDayOfWeekAsDate } from '@/lib/date';
 import { formatLongNumber } from '@/lib/format';
 
-export function WeeklyTraffic({ websiteId }: { websiteId: string }) {
-  const { data, isLoading, error } = useWeeklyTrafficQuery(websiteId);
+export function WeeklyTraffic({
+  websiteId,
+  data: provided,
+}: {
+  websiteId?: string;
+  data?: number[][];
+}) {
+  const {
+    data: loaded,
+    isLoading,
+    error,
+  } = useWeeklyTrafficQuery(provided ? undefined : websiteId);
+  const data = provided ?? loaded;
   const { dateLocale, timeFormat } = useLocale();
   const { labels, t } = useMessages();
   const { weekStartsOn } = dateLocale.options;
@@ -38,7 +49,11 @@ export function WeeklyTraffic({ websiteId }: { websiteId: string }) {
     : [];
 
   return (
-    <LoadingPanel data={data} isLoading={isLoading} error={error}>
+    <LoadingPanel
+      data={data}
+      isLoading={!provided && isLoading}
+      error={provided ? undefined : error}
+    >
       <Grid columns="repeat(8, 1fr)" gap>
         {data && (
           <>

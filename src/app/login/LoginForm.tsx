@@ -19,7 +19,6 @@ import { useMessages, useUpdateQuery } from '@/components/hooks';
 import { Logo } from '@/components/svg';
 import { signWallet, type WalletId } from '@/components/wallet-client';
 import { removeClientAuthToken, setClientAuthToken } from '@/lib/client';
-import { consumeReturnUrl } from '@/lib/return-url';
 import { setUser } from '@/store/app';
 
 export function LoginForm({ operator = false }: { operator?: boolean }) {
@@ -48,7 +47,7 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
             });
             setClientAuthToken(response.token);
             setUser(response.user);
-            router.push('/');
+            router.push('/overview');
           },
         },
       );
@@ -70,13 +69,7 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
         }
         setClientAuthToken(response.token);
         setUser(response.user);
-        router.push(
-          role === 'operator'
-            ? '/admin/projects'
-            : operator
-              ? '/admin/websites'
-              : (consumeReturnUrl() ?? '/'),
-        );
+        router.push(role === 'admin' ? '/admin/projects' : '/overview');
       },
     });
   };
@@ -99,7 +92,7 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
       }
       setClientAuthToken(response.token);
       setUser(response.user);
-      router.push(role === 'operator' ? '/admin/projects' : operator ? '/admin/websites' : '/');
+      router.push(role === 'admin' ? '/admin/projects' : '/overview');
     } catch (e) {
       setNote(e instanceof Error ? e.message : 'Wallet sign-in failed.');
     }

@@ -31,6 +31,7 @@ function row(overrides: Partial<Observation>): Observation {
     temporality: 'delta',
     metricName: '',
     cursor: null,
+    tenantId: null,
     ...overrides,
   };
 }

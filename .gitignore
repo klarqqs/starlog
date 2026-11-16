@@ -75,3 +75,4 @@ public/smoke-harness.html
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl.bak
+.vercel

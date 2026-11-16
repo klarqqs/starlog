@@ -59,6 +59,7 @@ export async function POST(request: Request) {
   }
 
   const headers = new Headers(request.headers);
+  headers.set('x-stellog-collect', '1');
   const cache = headers.get('x-stellog-cache');
   if (cache && !headers.get('x-umami-cache')) headers.set('x-umami-cache', cache);
   const { POST: send } = await import('@/app/api/send/route');

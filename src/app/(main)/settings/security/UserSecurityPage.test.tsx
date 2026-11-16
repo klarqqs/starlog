@@ -16,23 +16,27 @@ vi.mock('@/components/hooks', async () => {
       labels: {
         security: 'Security',
         password: 'Password',
-        changePassword: 'Change password',
+        currentPassword: 'Current password',
+        newPassword: 'New password',
+        confirmPassword: 'Confirm password',
+        save: 'Save',
+        required: 'Required',
         twoFactorAuth: 'Two-factor authentication',
         twoFactorActive: 'Active',
         twoFactorStatusNotConfigured: 'Not configured',
         twoFactorEnable: 'Enable',
       },
+      getErrorMessage: (error?: { message?: string }) => error?.message,
       messages: {
         twoFactorUserDescription: 'Protect your account with two-factor authentication.',
+        minPasswordLength: 'At least {n} characters.',
+        noMatchPassword: 'Passwords do not match.',
       },
     }),
     useTwoFactorStatusQuery: () => mockUseTwoFactorStatusQuery(),
+    useUpdateQuery: () => ({ mutateAsync: vi.fn(), error: null, isPending: false }),
   };
 });
-
-vi.mock('./PasswordChangeButton', () => ({
-  PasswordChangeButton: () => <button data-test="password-change-button">Change password</button>,
-}));
 
 test('renders password change panel and 2fa panel when cloudMode is disabled', () => {
   mockUseConfig.mockReturnValue({ cloudMode: false });
@@ -43,9 +47,8 @@ test('renders password change panel and 2fa panel when cloudMode is disabled', (
 
   render(<UserSecurityPage />);
 
-  expect(screen.getByText('Security')).toBeInTheDocument();
   expect(screen.getByText('Password')).toBeInTheDocument();
-  expect(screen.getByTestId('password-change-button')).toBeInTheDocument();
+  expect(screen.getByLabelText('Current password')).toBeInTheDocument();
   expect(screen.getByText('Two-factor authentication')).toBeInTheDocument();
 });
 
@@ -58,6 +61,6 @@ test('hides password panel when cloudMode is enabled', () => {
 
   render(<UserSecurityPage />);
 
-  expect(screen.queryByTestId('password-change-button')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument();
   expect(screen.getByText('Two-factor authentication')).toBeInTheDocument();
 });

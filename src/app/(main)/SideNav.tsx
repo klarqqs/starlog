@@ -15,59 +15,17 @@ import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
 import { OverlayScrollArea } from '@/components/common/OverlayScrollArea';
 import styles from '@/components/common/OverlayScrollArea.module.css';
-import { useGlobalState, useMessages, useNavigation } from '@/components/hooks';
-import {
-  Globe,
-  Grid2x2,
-  LayoutDashboard,
-  LinkIcon,
-  PanelLeft,
-  PanelsLeftBottom,
-} from '@/components/icons';
+import { useGlobalState, useLoginQuery, useMainNavItems, useNavigation } from '@/components/hooks';
+import { PanelLeft } from '@/components/icons';
 import { UserButton } from '@/components/input/UserButton';
 import { Logo } from '@/components/svg';
 
 export function SideNav(props: any) {
-  const { t, labels } = useMessages();
-  const { pathname, renderUrl, websiteId, teamId } = useNavigation();
+  const { pathname, renderUrl, websiteId } = useNavigation();
+  const { user } = useLoginQuery();
+  const readOnlyOperator = !!user?.isOperator && !user?.isAdmin;
   const [isCollapsed] = useGlobalState('sidenav-collapsed', false);
-
-  const links = [
-    ...(!teamId
-      ? [
-          {
-            id: 'dashboard',
-            label: t(labels.dashboard),
-            path: '/dashboard',
-            icon: <PanelsLeftBottom />,
-          },
-        ]
-      : []),
-    {
-      id: 'boards',
-      label: t(labels.boards),
-      path: '/boards',
-      icon: <LayoutDashboard />,
-    },
-    {
-      id: 'websites',
-      label: t(labels.websites),
-      path: '/websites',
-      icon: <Globe />,
-    },
-    {
-      id: 'links',
-      label: t(labels.links),
-      path: '/links',
-      icon: <LinkIcon />,
-    },
-    {
-      id: 'pixels',
-      label: t(labels.pixels),
-      path: '/pixels',
-      icon: <Grid2x2 />,
-    },
-  ];
+  const links = useMainNavItems();
 
   return (
     <Column
@@ -99,7 +57,7 @@ export function SideNav(props: any) {
         >
           {!isCollapsed && (
             <IconLabel icon={<Logo />}>
-              <Text weight="bold">Stellog</Text>
+              <Text weight="bold">{readOnlyOperator ? 'Stellog (Operator)' : 'Stellog'}</Text>
             </IconLabel>
           )}
           <PanelButton />
@@ -114,12 +72,17 @@ export function SideNav(props: any) {
           <WebsiteNav websiteId={websiteId} isCollapsed={isCollapsed} />
         ) : pathname.includes('/settings') ? (
           <SettingsNav isCollapsed={isCollapsed} />
-        ) : pathname.includes('/admin') ? (
+        ) : pathname.includes('/admin') && !readOnlyOperator ? (
           <AdminNav />
         ) : (
           <Column gap="2">
             {links.map(({ id, path, label, icon }) => {
-              const isSelected = pathname.startsWith(renderUrl(path, false));
+              const href = renderUrl(path, false);
+              const pathOnly = href.split('?')[0];
+              const isSelected =
+                id === 'settings'
+                  ? pathname.includes('/settings')
+                  : pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
               const content = (
                 <Row
                   tabIndex={0}
@@ -139,7 +102,7 @@ export function SideNav(props: any) {
                 </Row>
               );
               return (
-                <Link key={id} href={renderUrl(path, false)} role="button">
+                <Link key={id} href={href} role="button">
                   {isCollapsed ? (
                     <TooltipTrigger delay={0}>
                       {content}

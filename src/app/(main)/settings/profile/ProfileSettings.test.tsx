@@ -33,8 +33,21 @@ test('renders user profile details without password field', () => {
   render(<ProfileSettings />);
 
   expect(screen.getByText('Username')).toBeInTheDocument();
-  expect(screen.getByText('admin')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('admin')).toBeInTheDocument();
   expect(screen.getByText('Role')).toBeInTheDocument();
-  expect(screen.getByText('Administrator')).toBeInTheDocument();
+  expect(screen.getByDisplayValue('Administrator')).toBeInTheDocument();
   expect(screen.queryByText('Password')).not.toBeInTheDocument();
+});
+
+test('shows Operator for the read-only operator role', () => {
+  mockUseLoginQuery.mockReturnValue({
+    user: {
+      username: 'demo-operator',
+      role: 'operator',
+    },
+  });
+
+  render(<ProfileSettings />);
+
+  expect(screen.getByDisplayValue('Operator')).toBeInTheDocument();
 });

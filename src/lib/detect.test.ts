@@ -1,3 +1,4 @@
+import maxmind from 'maxmind';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { getLocation, hasBlockedIp } from './detect';
 import { getIpAddress } from './ip';
@@ -74,6 +75,15 @@ test('getLocation: treats localhost check errors as non-local', async () => {
     region: 'US-CA',
     city: 'Los Angeles',
   });
+});
+
+test('getLocation: returns null when the city database is missing', async () => {
+  delete globalThis.maxmind;
+  isLocalhost.default.mockResolvedValue(false);
+  vi.spyOn(maxmind, 'open').mockRejectedValueOnce(new Error('missing database'));
+
+  await expect(getLocation('203.0.113.10', new Headers(), true)).resolves.toBeNull();
+  await expect(getLocation('203.0.113.10', new Headers(), true)).resolves.toBeNull();
 });
 
 test('hasBlockedIp: returns false for malformed client ip with cidr block', () => {

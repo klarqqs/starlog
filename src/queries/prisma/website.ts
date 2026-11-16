@@ -157,6 +157,24 @@ export async function getAllUserWebsitesIncludingTeamAccess(
   );
 }
 
+/** Every property, for a read-only operator reviewing the demo. */
+export async function getEveryWebsite(filters?: QueryFilters) {
+  return getWebsites(
+    {
+      where: {},
+      include: {
+        user: {
+          select: {
+            username: true,
+            id: true,
+          },
+        },
+      },
+    },
+    sanitizeSortFilters(filters, WEBSITE_SORT_FIELDS, { orderBy: 'name' }),
+  );
+}
+
 export async function getUserWebsites(userId: string, filters?: QueryFilters) {
   return getWebsites(
     {

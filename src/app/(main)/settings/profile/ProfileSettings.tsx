@@ -1,4 +1,4 @@
-import { Column, Label } from '@umami/react-zen';
+import { Column, Label, TextField } from '@umami/react-zen';
 import { useLoginQuery, useMessages } from '@/components/hooks';
 import { ROLES } from '@/lib/constants';
 
@@ -22,19 +22,22 @@ export function ProfileSettings() {
     if (value === ROLES.viewOnly) {
       return t(labels.viewOnly);
     }
+    if (value === ROLES.operator) {
+      return 'Operator';
+    }
 
     return t(labels.unknown);
   };
 
   return (
-    <Column gap="6">
-      <Column>
+    <Column gap="6" width="100%">
+      <Column gap="2" width="100%">
         <Label>{t(labels.username)}</Label>
-        {username}
+        <TextField value={username} isReadOnly aria-label={t(labels.username)} />
       </Column>
-      <Column>
+      <Column gap="2" width="100%">
         <Label>{t(labels.role)}</Label>
-        {renderRole(role)}
+        <TextField value={renderRole(role)} isReadOnly aria-label={t(labels.role)} />
       </Column>
     </Column>
   );

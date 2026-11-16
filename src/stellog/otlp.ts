@@ -27,6 +27,8 @@ export type Observation = {
   /** Empty for spans. Set for OTLP metrics so cumulative exports can be differenced. */
   metricName: string;
   cursor: CumulativePoint | null;
+  /** Website id from resource tenant.id, when the payload sent one. Not stored. */
+  tenantId: string | null;
 };
 
 export type Extracted = {
@@ -110,6 +112,7 @@ function spanObservations(
   const observations: Observation[] = [];
   let skipped = 0;
   const serviceName = clip(stringAttr(resource, 'service.name') ?? '', MAX_SERVICE);
+  const tenantId = tenantOf(resource);
 
   for (const span of spans) {
     if (!isRecord(span)) {
@@ -146,6 +149,7 @@ function spanObservations(
       temporality: 'delta',
       metricName: '',
       cursor: null,
+      tenantId,
     });
   }
 
@@ -160,6 +164,7 @@ function metricObservations(
   const observations: Observation[] = [];
   let skipped = 0;
   const serviceName = clip(stringAttr(resource, 'service.name') ?? '', MAX_SERVICE);
+  const tenantId = tenantOf(resource);
 
   for (const metric of metrics) {
     if (!isRecord(metric)) {
@@ -188,7 +193,7 @@ function metricObservations(
           !metric.exponentialHistogram,
         );
         if (!observation) skipped += 1;
-        else observations.push(observation);
+        else observations.push({ ...observation, tenantId });
       }
       continue;
     }
@@ -198,7 +203,7 @@ function metricObservations(
       for (const point of arrayOf(sum.dataPoints) ?? []) {
         const observation = counterPoint(point, serviceName, name, temporality, now);
         if (!observation) skipped += 1;
-        else observations.push(observation);
+        else observations.push({ ...observation, tenantId });
       }
       continue;
     }
@@ -261,6 +266,7 @@ function histogramPoint(
     temporality,
     metricName,
     cursor: { count, sum: latencySumMs, hist },
+    tenantId: null,
   };
 }
 
@@ -294,6 +300,7 @@ function counterPoint(
     temporality,
     metricName,
     cursor: { count, sum: 0, hist },
+    tenantId: null,
   };
 }
 
@@ -311,6 +318,13 @@ export function deltaOf(
     latencyMs: null,
     hist: delta.hist,
   };
+}
+
+function tenantOf(resource: Attrs): string | null {
+  const tenant = resource.get('tenant.id');
+  if (tenant === undefined) return null;
+  const value = String(tenant).trim().toLowerCase();
+  return value || null;
 }
 
 function routeOf(attrs: Attrs): string | null {

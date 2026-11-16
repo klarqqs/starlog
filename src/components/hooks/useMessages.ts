@@ -16,6 +16,10 @@ export function useMessages() {
       return error;
     }
 
+    if (error.message === 'Failed to fetch') {
+      return 'Could not reach Stellog. Confirm it is running, then try again.';
+    }
+
     const code = (error as ApiError)?.code;
 
     return code ? getMessage(code) : error?.message || 'Unknown error';

@@ -2,57 +2,22 @@ import { Column, Grid, Row, Text } from '@umami/react-zen';
 import { WebsiteNav } from '@/app/(main)/websites/[websiteId]/WebsiteNav';
 import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
-import { useMessages, useNavigation } from '@/components/hooks';
-import { Globe, Grid2x2, LayoutDashboard, LinkIcon, PanelsLeftBottom } from '@/components/icons';
+import { useLoginQuery, useMainNavItems, useNavigation } from '@/components/hooks';
 import { MobileMenuButton } from '@/components/input/MobileMenuButton';
 import { UserButton } from '@/components/input/UserButton';
 import { Logo } from '@/components/svg';
+import { isReadOnlyOperator } from '@/stellog/project-nav';
 import { AdminNav } from './admin/AdminNav';
 import { SettingsNav } from './settings/SettingsNav';
 
 export function MobileNav() {
-  const { t, labels } = useMessages();
-  const { pathname, websiteId, teamId, renderUrl } = useNavigation();
-  const isAdmin = pathname.includes('/admin');
+  const { pathname, websiteId, renderUrl } = useNavigation();
+  const { user } = useLoginQuery();
+  const isAdmin = pathname.includes('/admin') && !isReadOnlyOperator(user);
   const isSettings = pathname.includes('/settings');
   const isMain = !websiteId && !isAdmin && !isSettings;
-
-  const links = [
-    ...(!teamId
-      ? [
-          {
-            id: 'dashboard',
-            label: t(labels.dashboard),
-            path: '/dashboard',
-            icon: <PanelsLeftBottom />,
-          },
-        ]
-      : []),
-    {
-      id: 'boards',
-      label: t(labels.boards),
-      path: '/boards',
-      icon: <LayoutDashboard />,
-    },
-    {
-      id: 'websites',
-      label: t(labels.websites),
-      path: '/websites',
-      icon: <Globe />,
-    },
-    {
-      id: 'links',
-      label: t(labels.links),
-      path: '/links',
-      icon: <LinkIcon />,
-    },
-    {
-      id: 'pixels',
-      label: t(labels.pixels),
-      path: '/pixels',
-      icon: <Grid2x2 />,
-    },
-  ];
+  const links = useMainNavItems();
+  const readOnlyOperator = isReadOnlyOperator(user);
 
   return (
     <Grid columns="auto 1fr" flexGrow={1} backgroundColor="surface-sunken" borderRadius>
@@ -82,7 +47,7 @@ export function MobileNav() {
       </MobileMenuButton>
       <Row alignItems="center" justifyContent="center" flexGrow={1}>
         <IconLabel icon={<Logo />} style={{ width: 'auto' }}>
-          <Text weight="bold">Stellog</Text>
+          <Text weight="bold">{readOnlyOperator ? 'Stellog (Operator)' : 'Stellog'}</Text>
         </IconLabel>
       </Row>
     </Grid>

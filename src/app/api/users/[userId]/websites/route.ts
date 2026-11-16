@@ -2,7 +2,11 @@ import { z } from 'zod';
 import { getQueryFilters, parseRequest } from '@/lib/request';
 import { json, unauthorized } from '@/lib/response';
 import { pagingParams, searchParams, sortingParams } from '@/lib/schema';
-import { getAllUserWebsitesIncludingTeamAccess, getUserWebsites } from '@/queries/prisma/website';
+import {
+  getAllUserWebsitesIncludingTeamAccess,
+  getEveryWebsite,
+  getUserWebsites,
+} from '@/queries/prisma/website';
 
 export async function GET(request: Request, { params }: { params: Promise<{ userId: string }> }) {
   const schema = z.object({
@@ -25,6 +29,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ user
   }
 
   const filters = await getQueryFilters(query);
+
+  if (auth.user.role === 'operator') {
+    return json(await getEveryWebsite(filters));
+  }
 
   if (query.includeTeams) {
     return json(await getAllUserWebsitesIncludingTeamAccess(userId, filters));

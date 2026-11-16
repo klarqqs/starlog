@@ -17,7 +17,7 @@ const ingest = defineOperation({
     operationId: 'ingestOtlpLogs',
     summary: 'Ingest OTLP logs JSON',
     description:
-      'Accepts an OTLP JSON log payload, keeps derived metrics, and discards the rest. Bearer token is a website ingest key. Protobuf is rejected.',
+      'Accepts an OTLP JSON or protobuf log payload, including gzip, and discards the log bodies. Bearer token is a team ingest key.',
     tags: ['Collection'],
     requestBody: {
       required: true,

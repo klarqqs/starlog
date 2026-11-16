@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { parseRequest } from '@/lib/request';
-import { json, unauthorized } from '@/lib/response';
-import { canUpdateWebsite } from '@/permissions';
+import { json, notFound, unauthorized } from '@/lib/response';
+import { canUpdateWebsite, canViewWebsite } from '@/permissions';
 import { createIngestKey, listIngestKeys } from '@/stellog/ingest-key';
 
 export async function GET(
@@ -12,7 +12,11 @@ export async function GET(
   if (error) return error();
 
   const { websiteId } = await params;
-  if (!(await canUpdateWebsite(auth, websiteId))) return unauthorized();
+  const canReadKeys =
+    auth.user?.role === 'operator' || auth.user?.isOperator === true
+      ? await canViewWebsite(auth, websiteId)
+      : await canUpdateWebsite(auth, websiteId);
+  if (!canReadKeys) return unauthorized();
 
   return Response.json(await listIngestKeys(websiteId));
 }
@@ -31,5 +35,7 @@ export async function POST(
   if (!(await canUpdateWebsite(auth, websiteId))) return unauthorized();
 
   const created = await createIngestKey(websiteId, body.name);
-  return json(created);
+  if (!created) return notFound();
+  const { teamId: _teamId, ...secret } = created;
+  return json(secret);
 }

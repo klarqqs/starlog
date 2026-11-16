@@ -6,9 +6,9 @@ import { Panel } from '@/components/common/Panel';
 
 export function TeamsSettingsPage() {
   return (
-    <Column gap="6">
+    <Column gap="6" width="100%">
       <TeamsHeader />
-      <Panel>
+      <Panel width="100%">
         <TeamsDataTable />
       </Panel>
     </Column>

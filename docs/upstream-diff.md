@@ -133,8 +133,8 @@ The ranking query, operator keys, removal, and approval live in new files. An op
 
 `prisma/schema.prisma`
 
-- `Website` gained relations to the Stellog metric tables: `ingestKeys`, `apiMetricRaw`, `apiMetricHours`, `apiMetricDays`, `apiMetricCursors`.
-- New models: `IngestKey`, `ApiMetricRaw`, `ApiMetricHour`, `ApiMetricDay`, `ApiMetricCursor`.
+- `Website` gained relations to the Stellog metric tables: `apiMetricRaw`, `apiMetricHours`, `apiMetricDays`, `apiMetricCursors`.
+- New models: `IngestKey`, `ApiMetricRaw`, `ApiMetricHour`, `ApiMetricDay`, `ApiMetricCursor`. Migration 31 moves `IngestKey` onto `Team`.
 
 No Umami route, tracker, query, or auth file was edited for the collector. New code lives in `src/stellog/` and in new routes:
 
@@ -146,12 +146,31 @@ No Umami route, tracker, query, or auth file was edited for the collector. New c
 
 The website key routes call Umami's existing `canUpdateWebsite`. They do not change that function.
 
-## Local website domain
+## Team key, retention, and the Stellog collect path
+
+`prisma/schema.prisma`
+
+- `IngestKey.websiteId` became `teamId`, plus `rotatedFromId`. Migration `31_team_ingest_key` copies an existing key onto the website's team, or creates a team when the website has none. Migration 29 is unchanged.
+
+`src/app/api/send/route.ts`
+
+- A request marked `x-stellog-collect` truncates the IP before geolocation, stores no city or region, and uses a daily session salt.
 
 `src/lib/constants.ts`
 
 - `DOMAIN_REGEX` accepts an IPv4 address with an optional port, so a local site can be registered as `127.0.0.1:3000` and match that page's origin. Hostnames and `localhost` are unchanged.
 
+`src/lib/detect.ts`
+
+- If the MaxMind city database is missing, `getLocation` returns null instead of throwing. Collection still records the visit. This is required for `SKIP_BUILD_GEO`, which is how the image is built so the GeoLite2 file is not redistributed.
+
+`src/lib/collection-session.ts`
+
+- `resolveCollectionSession` accepts `saltRotation` so that path can force `day` without changing the Umami default.
+
+`docker-compose.yml`
+
+- `SALT_ROTATION` defaults to `day`. The image build passes `SKIP_BUILD_GEO`.
 
 ## Read-only demo operator
 
@@ -174,3 +193,42 @@ The website key routes call Umami's existing `canUpdateWebsite`. They do not cha
 `src/lib/config.ts`
 
 - `demoMode` is true when `STELLOG_DEMO_MODE=1`. The signed-in shell shows "Demo data: synthetic".
+
+## Stellar navigation
+
+`src/app/(main)/SideNav.tsx` and `src/app/(main)/MobileNav.tsx`
+
+- The main list is Overview, Websites, APIs, Setup, and Settings. Dashboard, Boards, Links, and Pixels stay in the codebase and are no longer linked.
+
+`src/components/hooks/useWebsiteNavItems.tsx`
+
+- Replay, heatmaps, revenue, search console, and ads are not linked. Events stay.
+
+`src/app/(main)/admin/AdminNav.tsx`
+
+- An administrator sees Projects, Enrollment, Operator keys, Operators, and Security. A read-only operator sees Overview, Websites, APIs, Setup, Settings, and Projects. Those views list every property. Opening a property uses the website reports, including the sections that are not part of the ranking.
+
+`src/app/login/LoginForm.tsx`
+
+- A project account or a read-only operator opens `/overview`. An admin opens `/admin/projects`.
+
+`src/app/(main)/overview/OverviewPage.tsx`, `src/app/(main)/websites/WebsitesPage.tsx`, and `src/app/(main)/apis/ApisPage.tsx`
+
+- Pageviews, visitors, API requests, error rate, and p95 use the website dashboard `MetricsBar` and `MetricCard`. Overview, Websites, and APIs share the websites table. An empty list uses the standard empty state and an Add website button.
+
+`src/app/(main)/websites/[websiteId]/settings/WebsiteTrackingCode.tsx` and `WebsiteIngestKeys.tsx`
+
+- The tracking snippet and API ingest key use the same heading, text, and copy field as the other website settings. A failed sign-in that cannot reach the server says Stellog is not reachable.
+
+Overview is the date-range totals. Websites is the site list. APIs shows request, error rate, and p95 only when an API property exists. Setup shows the snippet or the ingest key for each property.
+
+Profile, Password, Team members, and Wallets use the settings page width. Each panel is as tall as its content. Password is the change form on the page. The project ranking uses the same table, date filter, and change label as the other views.
+
+`src/app/(main)/overview/OverviewPage.tsx` and `src/app/(main)/reports/[section]/ProjectReportPage.tsx`
+
+- Overview shows the website dashboard for every property the account can see: visitors, visits, views, bounce rate, and visit duration. The next row is four cards: pageviews, API requests, error rate, and p95. The chart, pages, sources, environment, location, map, and traffic grid follow. Each property dashboard uses the same two rows. Websites uses the same page width and header spacing as the other lists. Projects uses that same width.
+- The project sidebar stays Overview, Websites, APIs, Setup, and Settings. A read-only operator sees Projects directly under Overview, and the word Operator next to Stellog. The ranking shows the project name without a property count, with every metric on one line. Profile shows Operator for that role.
+
+`src/components/hooks/useWebsiteNavItems.tsx` and `src/app/(main)/websites/[websiteId]/ledger/LedgerPage.tsx`
+
+- A property has a Stellar section named Ledger, and the same table is on the property overview under the metric cards. It lists wallet, trustline, and payment reports, with the transaction hash linked to Stellar Expert. Replay, heatmaps, revenue, search console, and ads stay unlinked.

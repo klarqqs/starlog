@@ -21,6 +21,7 @@ const LAYOUTS = {
 export function GridRow(props: {
   layout?: 'one' | 'two' | 'three' | 'one-two' | 'two-one' | 'compare';
   className?: string;
+  minHeight?: string;
   children?: any;
 }) {
   const { layout = 'two', children, ...otherProps } = props;

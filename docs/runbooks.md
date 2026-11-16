@@ -1,5 +1,7 @@
 # Runbooks
 
+The metric prune is not inside the Compose app container. The runtime image does not include the TypeScript sources. On the host, `infra/systemd/stellog-prune.timer` runs `scripts/prune-metrics.ts` every hour. `DRY_RUN=1 ./node_modules/.bin/tsx scripts/prune-metrics.ts` prints the three cutoffs and does not delete rows.
+
 These procedures match this repository. The database is Postgres 15. The app container is the `umami` service in `docker-compose.yml`, and the image is built from this repo's `Dockerfile`.
 
 `GET /api/heartbeat` returns `{ "ok": true }` when the Node process is up. It does not check Postgres. The database check is separate.

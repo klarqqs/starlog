@@ -1,4 +1,4 @@
-import { Column, Label, Text, TextField } from '@umami/react-zen';
+import { Column, Heading, Text, TextField } from '@umami/react-zen';
 import { useConfig, useMessages } from '@/components/hooks';
 import { TRACKER_INTEGRITY, trackerSrc, trackingSnippet } from '@/stellog/tracker-pin';
 
@@ -6,10 +6,12 @@ export function WebsiteTrackingCode({
   websiteId,
   hostUrl,
   showHeader = true,
+  showDescription = true,
 }: {
   websiteId: string;
   hostUrl?: string;
   showHeader?: boolean;
+  showDescription?: boolean;
 }) {
   const { t, messages, labels } = useMessages();
   const config = useConfig();
@@ -19,8 +21,8 @@ export function WebsiteTrackingCode({
 
   return (
     <Column gap>
-      {showHeader && <Label>{t(labels.trackingCode)}</Label>}
-      <Text color="muted">{t(messages.trackingCode)}</Text>
+      {showHeader && <Heading>{t(labels.trackingCode)}</Heading>}
+      {showDescription && <Text color="muted">{t(messages.trackingCode)}</Text>}
       <TextField
         value={code}
         isReadOnly

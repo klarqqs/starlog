@@ -71,7 +71,12 @@ export async function readOperatorProjects(
   );
 }
 
-async function webStatsFor(start: Date, end: Date): Promise<WebStat[]> {
+export async function webStatsFor(
+  start: Date,
+  end: Date,
+  websiteIds?: string[],
+): Promise<WebStat[]> {
+  const filter = websiteIds ? 'and website_id = any({{websiteIds}}::uuid[])' : '';
   const rows = await prisma.rawQuery(
     `
     select website_id as "websiteId",
@@ -79,9 +84,10 @@ async function webStatsFor(start: Date, end: Date): Promise<WebStat[]> {
       count(distinct session_id) filter (where event_type = 1)::int as visitors
     from website_event
     where created_at >= {{start}} and created_at <= {{end}}
+    ${filter}
     group by website_id
     `,
-    { start, end },
+    { start, end, websiteIds },
     'operatorWebStats',
   );
   return rows.map((row: WebStat) => ({
@@ -91,8 +97,14 @@ async function webStatsFor(start: Date, end: Date): Promise<WebStat[]> {
   }));
 }
 
-async function apiStatsFor(start: Date, end: Date, grain: 'hour' | 'day'): Promise<ApiStat[]> {
+export async function apiStatsFor(
+  start: Date,
+  end: Date,
+  grain: 'hour' | 'day',
+  websiteIds?: string[],
+): Promise<ApiStat[]> {
   const table = grain === 'hour' ? 'api_metric_hour' : 'api_metric_day';
+  const filter = websiteIds ? 'and website_id = any({{websiteIds}}::uuid[])' : '';
   // A counter records requests and no latency. Its histogram must not move a percentile.
   const columns = HIST_COLUMNS.map(
     column =>
@@ -107,9 +119,10 @@ async function apiStatsFor(start: Date, end: Date, grain: 'hour' | 'day'): Promi
       ${columns}
     from ${table}
     where bucket_start >= {{start}} and bucket_start <= {{end}}
+    ${filter}
     group by website_id
     `,
-    { start, end },
+    { start, end, websiteIds },
     'operatorApiStats',
   );
   return rows.map((row: Record<string, number | string>) => ({

@@ -1,9 +1,9 @@
 'use client';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { getClientAuthToken } from '@/lib/client';
 import { LAST_TEAM_CONFIG } from '@/lib/constants';
 import { getItem } from '@/lib/storage';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function RootPage() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function RootPage() {
     } else if (lastTeam) {
       router.replace(`/teams/${lastTeam}/websites`);
     } else {
-      router.replace(`/websites`);
+      router.replace('/overview');
     }
   }, [router]);
 

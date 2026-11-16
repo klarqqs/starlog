@@ -72,10 +72,14 @@ const databaseUrl = process.env.DATABASE_URL;
     expect(rollupB.days).toEqual([]);
 
     expect(await revokeIngestKey(websiteB, keyA.id)).toBe(0);
-    expect(await findActiveIngestKey(keyA.token)).toEqual({ websiteId: websiteA });
+    expect(await findActiveIngestKey(keyA.token)).toMatchObject({
+      websites: [{ id: websiteA, name: 'metrics-a' }],
+    });
     expect(await revokeIngestKey(websiteA, keyA.id)).toBe(1);
     expect(await findActiveIngestKey(keyA.token)).toBeNull();
-    expect(await findActiveIngestKey(keyB.token)).toEqual({ websiteId: websiteB });
+    expect((await findActiveIngestKey(keyB.token))?.websites.map(site => site.id)).toEqual([
+      websiteB,
+    ]);
   });
 
   test('a cumulative counter is stored as the increase, and fresh rows survive pruning', async () => {
@@ -98,6 +102,79 @@ const databaseUrl = process.env.DATABASE_URL;
     expect(pruned.raw).toBe(0);
     expect(await listRawForWebsite(websiteId)).toHaveLength(2);
   });
+
+  test('hour rows expire after 90 days and day rows stay for 24 months', async () => {
+    const websiteId = await makeWebsite('metrics-retention');
+    websites.push(websiteId);
+    const old = new Date(now.getTime() - 100 * 24 * 60 * 60 * 1000);
+    const recent = new Date(now.getTime() - 60 * 60 * 1000);
+    await prisma.client.apiMetricHour.create({
+      data: { websiteId, bucketStart: old, serviceName: 'api', route: '/old', statusCode: 200 },
+    });
+    await prisma.client.apiMetricDay.create({
+      data: { websiteId, bucketStart: old, serviceName: 'api', route: '/old', statusCode: 200 },
+    });
+    await prisma.client.apiMetricRaw.create({
+      data: {
+        id: uuid(),
+        websiteId,
+        serviceName: 'api',
+        route: '/old',
+        statusCode: 200,
+        requestCount: 1,
+        observedAt: new Date(now.getTime() - 49 * 60 * 60 * 1000),
+      },
+    });
+    await prisma.client.apiMetricRaw.create({
+      data: {
+        id: uuid(),
+        websiteId,
+        serviceName: 'api',
+        route: '/new',
+        statusCode: 200,
+        requestCount: 1,
+        observedAt: recent,
+      },
+    });
+
+    const pruned = await pruneApiMetrics(now);
+    expect(pruned.hours).toBe(1);
+    expect(pruned.days).toBe(0);
+    expect(pruned.raw).toBe(1);
+    expect(await rollupForWebsite(websiteId)).toMatchObject({
+      hours: [],
+      days: [{ route: '/old' }],
+    });
+  });
+
+  test('routes past the team cap are stored as other', async () => {
+    const previous = process.env.STELLOG_ROUTE_CAP;
+    process.env.STELLOG_ROUTE_CAP = '2';
+    try {
+      const websiteId = await makeWebsite('metrics-cap');
+      websites.push(websiteId);
+      const key = await createIngestKey(websiteId, 'cap');
+      if (!key) throw new Error('key');
+      for (const route of ['/one', '/two', '/three']) {
+        const result = await ingestOtlp(
+          {
+            authorization: `Bearer ${key.token}`,
+            signal: 'traces',
+            contentType: 'application/json',
+            bodyText: traceBody(undefined, 'metrics-cap').replace('/accounts/99', route),
+            now,
+          },
+          { findKey: findActiveIngestKey, insert: insertObservations },
+        );
+        expect(result.status).toBe(200);
+      }
+      const rows = await listRawForWebsite(websiteId);
+      expect(rows.map(row => row.route).sort()).toEqual(['/one', '/two', 'other']);
+    } finally {
+      if (previous === undefined) delete process.env.STELLOG_ROUTE_CAP;
+      else process.env.STELLOG_ROUTE_CAP = previous;
+    }
+  });
 });
 
 async function makeWebsite(name: string) {
@@ -106,12 +183,15 @@ async function makeWebsite(name: string) {
   return id;
 }
 
-function traceBody(tenantId?: string) {
+function traceBody(tenantId?: string, serviceName = 'metrics-a') {
   return JSON.stringify({
     resourceSpans: [
       {
         resource: {
-          attributes: tenantId ? [{ key: 'tenant.id', value: { stringValue: tenantId } }] : [],
+          attributes: [
+            { key: 'service.name', value: { stringValue: serviceName } },
+            ...(tenantId ? [{ key: 'tenant.id', value: { stringValue: tenantId } }] : []),
+          ],
         },
         scopeSpans: [
           {
@@ -141,6 +221,9 @@ function sendCumulative(token: string, count: number) {
       bodyText: JSON.stringify({
         resourceMetrics: [
           {
+            resource: {
+              attributes: [{ key: 'service.name', value: { stringValue: 'metrics-cumulative' } }],
+            },
             scopeMetrics: [
               {
                 metrics: [

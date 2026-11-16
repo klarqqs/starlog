@@ -2,8 +2,15 @@ import { extractSignal, type Observation } from './otlp';
 
 export type IngestSignal = 'metrics' | 'traces' | 'logs';
 
+export type IngestWebsite = { id: string; name: string };
+
+export type IngestKeyScope = {
+  teamId: string;
+  websites: IngestWebsite[];
+};
+
 export type IngestDeps = {
-  findKey: (token: string) => Promise<{ websiteId: string } | null>;
+  findKey: (token: string) => Promise<IngestKeyScope | null>;
   insert: (websiteId: string, rows: Observation[]) => Promise<void>;
 };
 
@@ -17,9 +24,44 @@ export function bearerToken(authorization: string | null): string | null {
 }
 
 /**
- * Authenticate with the tenant ingest key, derive metrics, and drop the rest.
- * The website id written is always the key's website. A payload that names a
- * different tenant.id is rejected and nothing is stored.
+ * tenant.id selects a website id in the team. Without it, service.name must
+ * match exactly one website name in the team. Anything else is rejected.
+ */
+export function placeObservations(
+  websites: IngestWebsite[],
+  rows: Observation[],
+): { ok: true; byWebsite: Map<string, Observation[]> } | { ok: false } {
+  const byId = new Map(websites.map(website => [website.id.toLowerCase(), website.id]));
+  const byName = new Map<string, string[]>();
+  for (const website of websites) {
+    const name = website.name.trim().toLowerCase();
+    const ids = byName.get(name) ?? [];
+    ids.push(website.id);
+    byName.set(name, ids);
+  }
+
+  const byWebsite = new Map<string, Observation[]>();
+  for (const row of rows) {
+    let websiteId: string | undefined;
+    if (row.tenantId) {
+      websiteId = byId.get(row.tenantId.toLowerCase());
+      if (!websiteId) return { ok: false };
+    } else {
+      const matches = byName.get(row.serviceName.trim().toLowerCase()) ?? [];
+      if (matches.length !== 1) return { ok: false };
+      websiteId = matches[0];
+    }
+    const group = byWebsite.get(websiteId) ?? [];
+    group.push(row);
+    byWebsite.set(websiteId, group);
+  }
+
+  return { ok: true, byWebsite };
+}
+
+/**
+ * Authenticate with the team ingest key. A key writes only to websites of its
+ * team. An unknown or foreign selector stores nothing.
  */
 export async function ingestOtlp(
   input: {
@@ -55,9 +97,9 @@ export async function ingestOtlp(
   const extracted = extractSignal(input.signal, parsed, input.now ?? new Date());
   if ('error' in extracted) return { status: 400, body: { message: extracted.error } };
 
-  const websiteId = key.websiteId.toLowerCase();
-  if (extracted.tenantIds.some(tenantId => tenantId !== websiteId)) {
-    return { status: 403, body: { message: 'tenant.id does not match this ingest key.' } };
+  const allowed = new Set(key.websites.map(website => website.id.toLowerCase()));
+  if (extracted.tenantIds.some(tenantId => !allowed.has(tenantId))) {
+    return { status: 403, body: { message: 'tenant.id is not a website of this team.' } };
   }
 
   if (extracted.observations.length > MAX_OBSERVATIONS) {
@@ -65,7 +107,16 @@ export async function ingestOtlp(
   }
 
   if (extracted.observations.length > 0) {
-    await deps.insert(websiteId, extracted.observations);
+    const placed = placeObservations(key.websites, extracted.observations);
+    if (!placed.ok) {
+      return {
+        status: 403,
+        body: { message: 'The payload does not select a website of this team.' },
+      };
+    }
+    for (const [websiteId, rows] of placed.byWebsite) {
+      await deps.insert(websiteId, rows);
+    }
   }
 
   return { status: 200, body: {} };

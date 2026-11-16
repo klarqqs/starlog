@@ -5,6 +5,7 @@ import { CACHE_TOKEN_TYPE, COLLECTION_TYPE, EVENT_TYPE, FIELD_LENGTH } from '@/l
 import { hash, secret } from '@/lib/crypto';
 import { getClientInfo, hasBlockedIp } from '@/lib/detect';
 import { truncateString } from '@/lib/format';
+import { getIpAddress } from '@/lib/ip';
 import { createToken, parseToken } from '@/lib/jwt';
 import { fetchWebsite } from '@/lib/load';
 import { parseRequest } from '@/lib/request';
@@ -18,6 +19,7 @@ import {
   tryClaimAnonymousSession,
   updateSession,
 } from '@/queries/sql';
+import { truncateIp } from '@/stellog/privacy';
 import { collectionSchema } from './request-schema';
 
 export async function POST(request: Request) {
@@ -87,11 +89,14 @@ export async function POST(request: Request) {
     // Carried forward in the cache token so repeat identify calls skip identity writes
     let sessionLinkId = cache?.sessionLinkId;
 
-    // Client info
-    const { ip, userAgent, device, browser, os, country, region, city } = await getClientInfo(
-      request,
-      payload,
-    );
+    // Client info. The Stellog collect path truncates the IP before lookup and stores no city or region.
+    const stellogCollect = request.headers.get('x-stellog-collect') === '1';
+    const clientIp = payload?.ip || getIpAddress(request.headers);
+    const lookupPayload = stellogCollect ? { ...payload, ip: truncateIp(clientIp) } : payload;
+    const client = await getClientInfo(request, lookupPayload);
+    const { ip, userAgent, device, browser, os, country } = client;
+    const region = stellogCollect ? undefined : client.region;
+    const city = stellogCollect ? undefined : client.city;
 
     // Bot check
     if (!process.env.DISABLE_BOT_CHECK && isbot(userAgent)) {
@@ -113,6 +118,7 @@ export async function POST(request: Request) {
       userAgent,
       distinctId,
       salt,
+      saltRotation: stellogCollect ? 'day' : undefined,
       createdAt,
       cache,
       historical: timestamp !== undefined,

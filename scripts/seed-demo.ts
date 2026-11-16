@@ -13,9 +13,10 @@ import { hasDefaultPassword, hashPassword } from '../src/lib/password';
 import prisma from '../src/lib/prisma';
 import { generateIngestToken } from '../src/stellog/ingest-key';
 import { createOperatorKey } from '../src/stellog/operator-key';
+import { DEMO_PROJECTS, propertyCreatedAt } from './demo-projects';
 
 const DAYS = 90;
-const PROJECTS = 25;
+const PROJECTS = DEMO_PROJECTS.length;
 const base = (process.env.DEMO_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
 const reset = process.argv.includes('--reset');
 const credentialsFile = '.env.demo';
@@ -26,34 +27,7 @@ const OTHER_USERNAME = 'demo-other@stellog.demo';
 const HOLDER_USERNAME = 'demo-holder';
 const OPERATOR_USERNAME = 'demo-operator';
 
-/** Real Stellar products, marked Demo so the numbers stay obviously synthetic. */
-const projectNames = [
-  'Demo Lobstr',
-  'Demo Vibrant',
-  'Demo StellarExpert',
-  'Demo Freighter',
-  'Demo MoneyGram',
-  'Demo Beans',
-  'Demo StellarX',
-  'Demo Anclap',
-  'Demo Solar',
-  'Demo Lumenswap',
-  'Demo xBull',
-  'Demo ClickPesa',
-  'Demo Settle',
-  'Demo Cowrie',
-  'Demo StellarTerm',
-  'Demo AQUA',
-  'Demo Leaf',
-  'Demo Blend',
-  'Demo Reflector',
-  'Demo Kale',
-  'Demo Meridian',
-  'Demo Soroban',
-  'Demo USDC',
-  'Demo Scopuly',
-  'Demo Stellarchain',
-];
+/** Real Stellar products. The traffic is synthetic; the names and domains are the public ones. */
 
 type Kind = 'web' | 'api' | 'both';
 type Profile = 'steady' | 'growing' | 'declining' | 'errors' | 'spiky';
@@ -61,19 +35,21 @@ type Profile = 'steady' | 'growing' | 'declining' | 'errors' | 'spiky';
 type ProjectPlan = {
   index: number;
   name: string;
+  domain: string;
   kind: Kind;
   profile: Profile;
   owner: 'tenant' | 'other' | 'holder';
 };
 
-const plans: ProjectPlan[] = Array.from({ length: PROJECTS }, (_, index) => {
+const plans: ProjectPlan[] = DEMO_PROJECTS.map((project, index) => {
   const kinds: Kind[] = ['both', 'web', 'api'];
   const profiles: Profile[] = ['steady', 'growing', 'declining', 'errors', 'spiky'];
   const kind: Kind = index === 0 ? 'both' : index === 1 ? 'web' : kinds[index % 3];
   const owner = index < 2 ? 'tenant' : index === 2 ? 'other' : 'holder';
   return {
     index,
-    name: projectNames[index],
+    name: project.name,
+    domain: project.domain,
     kind,
     profile: profiles[index % profiles.length],
     owner,
@@ -263,15 +239,20 @@ async function main() {
     const teamId = randomUUID();
     const ownerId = owners[plan.owner];
     await prisma.client.team.create({
-      data: { id: teamId, name: plan.name, enrollmentStatus: 'active' },
+      data: {
+        id: teamId,
+        name: plan.name,
+        enrollmentStatus: 'active',
+        createdAt: propertyCreatedAt(plan.index, 'team'),
+      },
     });
     await prisma.client.teamUser.create({
       data: { id: randomUUID(), teamId, userId: ownerId, role: 'team-owner' },
     });
 
-    const makeSite = async (suffix: string, domain: string) => {
+    const makeSite = async (kind: 'site' | 'api', domain: string) => {
       const id = randomUUID();
-      const name = `${plan.name} ${suffix}`.slice(0, 100);
+      const name = (kind === 'api' ? `${plan.name} API` : plan.name).slice(0, 100);
       await prisma.client.website.create({
         data: {
           id,
@@ -281,26 +262,24 @@ async function main() {
           teamId,
           createdBy: ownerId,
           enrollmentStatus: 'active',
+          createdAt: propertyCreatedAt(plan.index, kind),
         },
       });
       return { id, name };
     };
 
     if (plan.kind !== 'api') {
-      const web = await makeSite('site', `demo-${String(plan.index + 1).padStart(2, '0')}.example`);
+      const web = await makeSite('site', plan.domain);
       await insertWeb(plan, web.id);
     }
     if (plan.kind !== 'web') {
-      const api = await makeSite(
-        'api',
-        `api.demo-${String(plan.index + 1).padStart(2, '0')}.example`,
-      );
+      const api = await makeSite('api', `api.${plan.domain}`);
       const token = generateIngestToken();
       await prisma.client.ingestKey.create({
         data: {
           id: randomUUID(),
           teamId,
-          name: 'Demo ingest',
+          name: 'Production',
           keyHash: token.keyHash,
           keyPrefix: token.keyPrefix,
         },
@@ -413,7 +392,7 @@ async function main() {
 }
 
 async function insertWeb(plan: ProjectPlan, websiteId: string) {
-  const domain = `demo-${String(plan.index + 1).padStart(2, '0')}.example`;
+  const domain = plan.domain;
   const countries = ['US', 'DE', 'NG', 'BR', 'SG', 'JP', 'GB', 'KR'];
   const browsers = ['chrome', 'firefox', 'safari', 'edge'];
   const systems = ['Windows', 'Mac OS', 'Android', 'iOS'];
@@ -454,7 +433,7 @@ async function insertWeb(plan: ProjectPlan, websiteId: string) {
           createdAt: at,
           urlPath: paths[(visitor + view) % paths.length],
           referrerDomain: referrer || null,
-          pageTitle: 'Demo',
+          pageTitle: plan.name,
           eventType: 1,
           hostname: domain,
         });

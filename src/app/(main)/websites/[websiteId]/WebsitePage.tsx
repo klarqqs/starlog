@@ -8,10 +8,12 @@ import { UnitFilter } from '@/components/input/UnitFilter';
 import type { AnnotationRange } from '@/lib/annotations';
 import { AnnotationsButton } from './annotations/AnnotationsButton';
 import { AnnotationsModal } from './annotations/AnnotationsModal';
+import { LedgerReports } from './ledger/LedgerPage';
 import { WebsiteChart } from './WebsiteChart';
 import { WebsiteControls } from './WebsiteControls';
 import { WebsiteMetricsBar } from './WebsiteMetricsBar';
 import { WebsitePanels } from './WebsitePanels';
+import { WebsiteUsageBar } from './WebsiteUsageBar';
 
 export function WebsitePage({ websiteId }: { websiteId: string }) {
   const [annotationRange, setAnnotationRange] = useState<AnnotationRange | null>(null);
@@ -20,6 +22,8 @@ export function WebsitePage({ websiteId }: { websiteId: string }) {
     <Column gap>
       <WebsiteControls websiteId={websiteId} allowBounceFilter={true} />
       <WebsiteMetricsBar websiteId={websiteId} showChange={true} />
+      <WebsiteUsageBar websiteId={websiteId} />
+      <LedgerReports websiteId={websiteId} />
       <Panel minHeight="520px">
         <Row justifyContent="end">
           <UnitFilter />

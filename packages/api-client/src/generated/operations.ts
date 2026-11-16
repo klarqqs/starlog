@@ -3234,6 +3234,14 @@ export const operations = {
     queryParams: [],
     hasBody: false,
   },
+  rotateIngestKey: {
+    operationId: 'rotateIngestKey',
+    method: 'post',
+    path: '/api/websites/{websiteId}/ingest-keys/{keyId}/rotate',
+    pathParams: ['websiteId', 'keyId'],
+    queryParams: [],
+    hasBody: false,
+  },
   saveWebsiteReplay: {
     operationId: 'saveWebsiteReplay',
     method: 'post',
@@ -3518,7 +3526,7 @@ export abstract class GeneratedUmamiClient {
 
   /**
    * Create an API ingest key
-   * Returns the stk_ token once. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs. The collector accepts OTLP JSON.
+   * Creates a team ingest key and returns the stk_ token once. The key writes only to websites of this team. Send it as Authorization: Bearer on POST /v1/metrics, /v1/traces, and /v1/logs.
    * `POST /api/websites/{websiteId}/ingest-keys`
    */
   createIngestKey(
@@ -5282,7 +5290,7 @@ export abstract class GeneratedUmamiClient {
 
   /**
    * Ingest OTLP logs JSON
-   * Accepts an OTLP JSON log payload, keeps derived metrics, and discards the rest. Bearer token is a website ingest key. Protobuf is rejected.
+   * Accepts an OTLP JSON or protobuf log payload, including gzip, and discards the log bodies. Bearer token is a team ingest key.
    * `POST /v1/logs`
    */
   ingestOtlpLogs(
@@ -5294,7 +5302,7 @@ export abstract class GeneratedUmamiClient {
 
   /**
    * Ingest OTLP metrics JSON
-   * Bearer token is a website ingest key (stk_). Protobuf is rejected. A tenant.id that does not match the key stores nothing.
+   * Bearer token is a team ingest key (stk_). JSON and protobuf are accepted, and gzip is accepted. tenant.id or service.name must select a website of that team.
    * `POST /v1/metrics`
    */
   ingestOtlpMetrics(
@@ -5306,7 +5314,7 @@ export abstract class GeneratedUmamiClient {
 
   /**
    * Ingest OTLP traces JSON
-   * Derives route, status, and latency from server spans, then discards the spans. Bearer token is a website ingest key. Protobuf is rejected.
+   * Derives route, status, and latency from server spans, then discards the spans. Bearer token is a team ingest key. JSON, protobuf, and gzip are accepted.
    * `POST /v1/traces`
    */
   ingestOtlpTraces(
@@ -5354,7 +5362,7 @@ export abstract class GeneratedUmamiClient {
 
   /**
    * List API ingest keys
-   * Keys for this website. The secret is not returned. A website id is not an ingest credential.
+   * Keys for this website’s team. The secret is not returned. A website id is not an ingest credential. tenant.id or service.name selects a website in the team.
    * `GET /api/websites/{websiteId}/ingest-keys`
    */
   listIngestKeys(
@@ -5482,6 +5490,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'revokeIngestKey'>> {
     return this.execute('revokeIngestKey', input, options);
+  }
+
+  /**
+   * Rotate an API ingest key
+   * Revokes the current key and returns a new stk_ token once. The new row records rotatedFromId.
+   * `POST /api/websites/{websiteId}/ingest-keys/{keyId}/rotate`
+   */
+  rotateIngestKey(
+    input: OperationInput<'rotateIngestKey'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'rotateIngestKey'>> {
+    return this.execute('rotateIngestKey', input, options);
   }
 
   /**

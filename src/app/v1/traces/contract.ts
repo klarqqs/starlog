@@ -17,7 +17,7 @@ const ingest = defineOperation({
     operationId: 'ingestOtlpTraces',
     summary: 'Ingest OTLP traces JSON',
     description:
-      'Derives route, status, and latency from server spans, then discards the spans. Bearer token is a website ingest key. Protobuf is rejected.',
+      'Derives route, status, and latency from server spans, then discards the spans. Bearer token is a team ingest key. JSON, protobuf, and gzip are accepted.',
     tags: ['Collection'],
     requestBody: {
       required: true,

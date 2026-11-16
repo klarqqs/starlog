@@ -109,13 +109,18 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
     }
   }
 
-  // Database lookup
+  // Database lookup. A missing city database is a normal handover build
+  // (SKIP_BUILD_GEO); collection continues with no city, region, or country.
   if (!globalThis[MAXMIND]) {
     const dir = path.join(process.cwd(), 'geo');
 
-    globalThis[MAXMIND] = await maxmind.open(
-      process.env.GEOLITE_DB_PATH || path.resolve(dir, 'GeoLite2-City.mmdb'),
-    );
+    try {
+      globalThis[MAXMIND] = await maxmind.open(
+        process.env.GEOLITE_DB_PATH || path.resolve(dir, 'GeoLite2-City.mmdb'),
+      );
+    } catch {
+      globalThis[MAXMIND] = { get: () => null };
+    }
   }
 
   const result = globalThis[MAXMIND]?.get(cleanIp);
@@ -131,6 +136,8 @@ export async function getLocation(ip: string = '', headers: Headers, skipHeaders
       city,
     };
   }
+
+  return null;
 }
 
 export async function getClientInfo(request: Request, payload: Record<string, any>) {

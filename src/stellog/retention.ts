@@ -1,5 +1,8 @@
 const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 const MIN_AGGREGATE_MONTHS = 24;
+/** Choice, not a figure from the RFP. Hour rows are the short aggregate. */
+const DEFAULT_HOUR_RETENTION_DAYS = 90;
 
 export function rawRetentionHours(env: Record<string, string | undefined> = process.env): number {
   const raw = env.STELLOG_RAW_RETENTION_HOURS ?? '48';
@@ -8,6 +11,15 @@ export function rawRetentionHours(env: Record<string, string | undefined> = proc
     throw new Error('STELLOG_RAW_RETENTION_HOURS must be a number of at least 1.');
   }
   return hours;
+}
+
+export function hourRetentionDays(env: Record<string, string | undefined> = process.env): number {
+  const raw = env.STELLOG_HOUR_RETENTION_DAYS ?? String(DEFAULT_HOUR_RETENTION_DAYS);
+  const days = Number(raw);
+  if (!Number.isFinite(days) || days < 1) {
+    throw new Error('STELLOG_HOUR_RETENTION_DAYS must be a number of at least 1.');
+  }
+  return Math.floor(days);
 }
 
 export function aggregateRetentionMonths(
@@ -21,6 +33,10 @@ export function aggregateRetentionMonths(
 
 export function rawCutoff(now: Date, env: Record<string, string | undefined> = process.env): Date {
   return new Date(now.getTime() - rawRetentionHours(env) * HOUR_MS);
+}
+
+export function hourCutoff(now: Date, env: Record<string, string | undefined> = process.env): Date {
+  return new Date(now.getTime() - hourRetentionDays(env) * DAY_MS);
 }
 
 /** Calendar months, never fewer than 24. */
