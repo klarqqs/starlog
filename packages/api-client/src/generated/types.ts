@@ -738,6 +738,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/health': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check that the app can reach Postgres
+     * @description Returns 200 when a database query succeeds and 503 when it does not.
+     */
+    get: operations['getHealth'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/heartbeat': {
     parameters: {
       query?: never;
@@ -3504,6 +3524,10 @@ export interface components {
     EnrollmentModeSettingOutput: {
       /** @enum {string} */
       mode: 'open' | 'approval-required';
+    };
+    Health: {
+      /** @description Whether the operation succeeded. */
+      ok: boolean;
     };
     LoginRequest: {
       /** @description Umami password. */
@@ -7907,6 +7931,44 @@ export interface operations {
            *         "code": "unauthorized",
            *         "message": "Unauthorized.",
            *         "status": 401
+           *       }
+           *     }
+           */
+          'application/json': components['schemas']['ApiError'];
+        };
+      };
+    };
+  };
+  getHealth: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The database answered. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Health'];
+        };
+      };
+      /** @description Service unavailable. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": {
+           *         "code": "service-unavailable",
+           *         "message": "Service unavailable.",
+           *         "status": 503
            *       }
            *     }
            */

@@ -885,6 +885,14 @@ export const operations = {
     ],
     hasBody: false,
   },
+  getHealth: {
+    operationId: 'getHealth',
+    method: 'get',
+    path: '/api/health',
+    pathParams: [],
+    queryParams: [],
+    hasBody: false,
+  },
   getLink: {
     operationId: 'getLink',
     method: 'get',
@@ -4106,6 +4114,18 @@ export abstract class GeneratedUmamiClient {
     options?: RequestOptions,
   ): Promise<OperationOutput<'getEventDataValues'>> {
     return this.execute('getEventDataValues', input, options);
+  }
+
+  /**
+   * Check that the app can reach Postgres
+   * Returns 200 when a database query succeeds and 503 when it does not.
+   * `GET /api/health`
+   */
+  getHealth(
+    input?: OperationInput<'getHealth'>,
+    options?: RequestOptions,
+  ): Promise<OperationOutput<'getHealth'>> {
+    return this.execute('getHealth', input, options);
   }
 
   /**
