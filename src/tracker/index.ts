@@ -315,14 +315,23 @@ type MetricEntry = PerformanceEntry & {
   const autoPageview = config('auto-pageview') !== _false;
 
   const domains = domain.split(',').map(n => n.trim());
-  const host =
-    hostUrl ||
-    '__COLLECT_API_HOST__' ||
-    (currentScript ? currentScript.src.split('/').slice(0, -1).join('/') : '');
+  // An empty collect host means "the script's origin". Using the script directory
+  // would turn /s/1.js plus /s/e into /s/s/e.
+  const collectHost = '__COLLECT_API_HOST__';
+  const scriptOrigin = currentScript ? originOf(currentScript.src) : '';
+  const scriptDirectory = currentScript ? currentScript.src.split('/').slice(0, -1).join('/') : '';
+  const host = hostUrl || collectHost || scriptOrigin || scriptDirectory;
 
   if (!currentScript && !host) return;
 
   const endpoint = `${host.replace(/\/$/, '')}__COLLECT_API_ENDPOINT__`;
+
+  function originOf(src: string) {
+    const scheme = src.indexOf('://');
+    if (scheme < 0) return '';
+    const pathAt = src.indexOf('/', scheme + 3);
+    return pathAt < 0 ? src : src.slice(0, pathAt);
+  }
   const screen = `${width}x${height}`;
   const eventRegex = /data-umami-event-([\w-_]+)/;
   const eventNameAttribute = `${_data}umami-event`;

@@ -67,6 +67,7 @@ New routes gained hand-written OpenAPI contracts. `/s/e` stays outside that walk
 `src/tracker/index.ts`
 
 - The pinned build requests a nonce and sends `x-stellog-cache`. The legacy build leaves those compile-time tokens unset, so it still posts once to its collect endpoint with `x-umami-cache`.
+- When no collect host is configured, the tracker uses the script's origin. The script directory would make `/s/1.js` post to `/s/s/e`.
 
 `rollup.tracker.config.js`
 

@@ -130,6 +130,25 @@ test('configures tracker from umamiConfig only, with no data-* attributes', asyn
   });
 });
 
+test('posts to the site origin when the script lives under /s/', async () => {
+  const script = document.createElement('script');
+  script.src = 'https://analytics.example.com/s/1.js';
+  script.dataset.websiteId = 'website-id';
+
+  Object.defineProperties(document, {
+    currentScript: { configurable: true, value: script },
+    readyState: { configurable: true, value: 'complete' },
+  });
+
+  const fetchMock = vi.fn().mockResolvedValue({ json: vi.fn().mockResolvedValue({}) });
+  vi.stubGlobal('fetch', fetchMock);
+
+  await import('./index');
+
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  expect(fetchMock.mock.calls[0][0]).toBe('https://analytics.example.com/api/send');
+});
+
 test('data-* attribute takes precedence over umamiConfig', async () => {
   const script = document.createElement('script');
   script.src = 'https://analytics.example.com/script.js';
