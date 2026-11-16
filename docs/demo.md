@@ -8,13 +8,13 @@ Sign-in for a project account is `/login`. Sign-in for the operator is `/operato
 
 ## 1. Tenant web view
 
-Sign in as `demo-tenant`. Open **Demo Wallet 01 site**. Set the date range to **Last 30 days**.
+Sign in at `/login` as `demo-tenant@stellog.demo`. Open **Websites**, then **Demo Lobstr site**. Set the date range to **Last 30 days**.
 
 You should see pageviews, visitors, countries, browsers, and referrers such as `stellar.org` and `google.com`. The banner reads "Demo data: synthetic".
 
 ## 2. Tenant API view
 
-Open **Demo Wallet 01 api**. Open the API page. Last 30 days.
+Open **Demo Lobstr api**. Open the API page. Last 30 days.
 
 You should see request volume, a status split, p50 and p95, and routes. The stored routes include `/payments/{id}`, `/orders/{uuid}`, `/accounts/{account}`, `/contracts/{contract}`, `/tx/{hash}`, and `/health`. A numeric id, a UUID, a Stellar G-address, a Stellar C-address, a hex hash, and a trailing slash were sent and normalized.
 
@@ -22,7 +22,7 @@ You should see request volume, a status split, p50 and p95, and routes. The stor
 
 Sign out. Sign in as `demo-operator` at `/operator/login`. You land on `/admin/projects`.
 
-Set **Last 30 days**. The table lists 25 projects whose names start with `Demo`, with a rank, error rate, p95, and a trend against the previous 30 days. Sort by API requests, then by error rate. Filter the name to `Wallet`.
+Set **Last 30 days**. The table lists 25 projects named for Stellar products (`Demo Lobstr`, `Demo Freighter`, `Demo MoneyGram`, and the rest), with a rank, error rate, p95, and a trend against the previous 30 days. Sort by API requests, then by error rate. Filter the name to `Lobstr`.
 
 Select up to four projects. A fifth checkbox does not add a column. The side-by-side panel shows the same error rate, p95, and trends.
 
@@ -48,7 +48,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
 
 ## 5. Pinned tracker
 
-Sign in again as `demo-tenant`. Open **Demo Wallet 01 site**, then settings. The snippet loads `/s/1.js` and includes `integrity` and `crossorigin="anonymous"`. The hash matches:
+Sign in again as `demo-tenant@stellog.demo`. Open **Demo Lobstr site**, then settings. The snippet loads `/s/1.js` and includes `integrity` and `crossorigin="anonymous"`. The hash matches:
 
 ```sh
 openssl dgst -sha384 -binary public/s/1.js | openssl base64 -A
@@ -56,7 +56,7 @@ openssl dgst -sha384 -binary public/s/1.js | openssl base64 -A
 
 ## 6. Isolation
 
-Sign in as `demo-other`. Copy the website id from the **Demo Wallet 01 site** URL while you were `demo-tenant`. As `demo-other`:
+Sign in as `demo-other@stellog.demo`. Copy the website id from the **Demo Lobstr site** URL while you were the tenant. As the other account:
 
 ```sh
 curl -sS -o /dev/null -w '%{http_code}\n' \
@@ -64,7 +64,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   "$DEMO_BASE_URL/api/websites/$WALLET_WEBSITE_ID"
 ```
 
-`$OTHER_TOKEN` is the bearer token from that login. The status is 401. `demo-other` owns **Demo Explorer 03** and does not receive Wallet 01's numbers.
+`$OTHER_TOKEN` is the bearer token from that login. The status is 401. That account owns **Demo StellarExpert** and does not receive Lobstr's numbers.
 
 ## Status
 

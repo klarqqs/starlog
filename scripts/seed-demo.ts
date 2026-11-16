@@ -21,7 +21,39 @@ const reset = process.argv.includes('--reset');
 const credentialsFile = '.env.demo';
 const BOUNDS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
 const ROUTE_WEIGHTS = [0.28, 0.18, 0.16, 0.14, 0.14, 0.1];
-const nouns = ['Wallet', 'Anchor', 'Explorer', 'Pay', 'Index'];
+const TENANT_USERNAME = 'demo-tenant@stellog.demo';
+const OTHER_USERNAME = 'demo-other@stellog.demo';
+const HOLDER_USERNAME = 'demo-holder';
+const OPERATOR_USERNAME = 'demo-operator';
+
+/** Real Stellar products, marked Demo so the numbers stay obviously synthetic. */
+const projectNames = [
+  'Demo Lobstr',
+  'Demo Vibrant',
+  'Demo StellarExpert',
+  'Demo Freighter',
+  'Demo MoneyGram',
+  'Demo Beans',
+  'Demo StellarX',
+  'Demo Anclap',
+  'Demo Solar',
+  'Demo Lumenswap',
+  'Demo xBull',
+  'Demo ClickPesa',
+  'Demo Settle',
+  'Demo Cowrie',
+  'Demo StellarTerm',
+  'Demo AQUA',
+  'Demo Leaf',
+  'Demo Blend',
+  'Demo Reflector',
+  'Demo Kale',
+  'Demo Meridian',
+  'Demo Soroban',
+  'Demo USDC',
+  'Demo Scopuly',
+  'Demo Stellarchain',
+];
 
 type Kind = 'web' | 'api' | 'both';
 type Profile = 'steady' | 'growing' | 'declining' | 'errors' | 'spiky';
@@ -41,7 +73,7 @@ const plans: ProjectPlan[] = Array.from({ length: PROJECTS }, (_, index) => {
   const owner = index < 2 ? 'tenant' : index === 2 ? 'other' : 'holder';
   return {
     index,
-    name: `Demo ${nouns[index % nouns.length]} ${String(index + 1).padStart(2, '0')}`,
+    name: projectNames[index],
     kind,
     profile: profiles[index % profiles.length],
     owner,
@@ -120,7 +152,7 @@ async function resetDemo() {
     `DELETE FROM team_user WHERE team_id IN (SELECT team_id FROM team WHERE name LIKE 'Demo %')`,
     `DELETE FROM website WHERE team_id IN (SELECT team_id FROM team WHERE name LIKE 'Demo %')`,
     `DELETE FROM team WHERE name LIKE 'Demo %'`,
-    `DELETE FROM "user" WHERE username IN ('demo-tenant', 'demo-other', 'demo-holder', 'demo-operator')`,
+    `DELETE FROM "user" WHERE username IN ('demo-tenant', 'demo-other', 'demo-holder', 'demo-operator', '${TENANT_USERNAME}', '${OTHER_USERNAME}')`,
   ];
   for (const statement of statements) {
     await prisma.client.$executeRawUnsafe(statement);
@@ -194,10 +226,10 @@ async function main() {
   const otherPassword = password();
   const holderPassword = password();
   const operatorPassword = password();
-  const tenantId = await ensureUser('demo-tenant', 'user', tenantPassword);
-  const otherId = await ensureUser('demo-other', 'user', otherPassword);
-  const holderId = await ensureUser('demo-holder', 'user', holderPassword);
-  const operatorId = await ensureUser('demo-operator', 'operator', operatorPassword);
+  const tenantId = await ensureUser(TENANT_USERNAME, 'user', tenantPassword);
+  const otherId = await ensureUser(OTHER_USERNAME, 'user', otherPassword);
+  const holderId = await ensureUser(HOLDER_USERNAME, 'user', holderPassword);
+  const operatorId = await ensureUser(OPERATOR_USERNAME, 'operator', operatorPassword);
 
   const admin = await prisma.client.user.findUnique({ where: { username: 'admin' } });
   let adminPassword = '';
@@ -358,9 +390,9 @@ async function main() {
   const operatorKey = await createOperatorKey(operatorId, 'Demo metrics');
   const lines = [
     `DEMO_BASE_URL=${base}`,
-    'DEMO_TENANT_USERNAME=demo-tenant',
+    `DEMO_TENANT_USERNAME=${TENANT_USERNAME}`,
     `DEMO_TENANT_PASSWORD=${tenantPassword}`,
-    'DEMO_OTHER_USERNAME=demo-other',
+    `DEMO_OTHER_USERNAME=${OTHER_USERNAME}`,
     `DEMO_OTHER_PASSWORD=${otherPassword}`,
     'DEMO_OPERATOR_USERNAME=demo-operator',
     `DEMO_OPERATOR_PASSWORD=${operatorPassword}`,
