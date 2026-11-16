@@ -2,12 +2,14 @@ import { Column, Row, Tooltip, TooltipTrigger } from '@umami/react-zen';
 import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
 import { NavMenu } from '@/components/common/NavMenu';
-import { useMessages, useNavigation } from '@/components/hooks';
+import { useLoginQuery, useMessages, useNavigation } from '@/components/hooks';
 import { ArrowLeft, ChartColumn, Globe, ShieldCheck, User, Users } from '@/components/icons';
 
 export function AdminNav({ onItemClick }: { onItemClick?: () => void }) {
   const { t, labels } = useMessages();
   const { pathname, renderUrl } = useNavigation();
+  const { user } = useLoginQuery();
+  const readOnly = !!user?.isOperator && !user?.isAdmin;
 
   const items = [
     {
@@ -47,7 +49,14 @@ export function AdminNav({ onItemClick }: { onItemClick?: () => void }) {
     },
   ];
 
-  const selectedKey = items
+  const visible = readOnly
+    ? items.map(group => ({
+        ...group,
+        items: group.items.filter(item => item.id === 'projects'),
+      }))
+    : items;
+
+  const selectedKey = visible
     .flatMap(e => e.items)
     ?.find(({ path }) => path && pathname.startsWith(path))?.id;
 
@@ -68,7 +77,7 @@ export function AdminNav({ onItemClick }: { onItemClick?: () => void }) {
         </TooltipTrigger>
       </Link>
       <NavMenu
-        items={items}
+        items={visible}
         selectedKey={selectedKey}
         allowMinimize={false}
         onItemClick={onItemClick}

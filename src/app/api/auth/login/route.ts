@@ -77,6 +77,7 @@ export async function POST(request: Request) {
       role,
       createdAt,
       isAdmin: role === ROLES.admin,
+      isOperator: role === ROLES.operator,
       passwordChangeRequired,
       teams,
     },

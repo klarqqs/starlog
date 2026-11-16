@@ -4,8 +4,9 @@ import { Button, Column, Grid, ListItem, Row, Select, Text, TextField } from '@u
 import { type ReactNode, useState } from 'react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
-import { useApi, useDateRange, useNavigation } from '@/components/hooks';
+import { useApi, useDateRange, useLoginQuery, useNavigation } from '@/components/hooks';
 import { DateFilter } from '@/components/input/DateFilter';
+import { limitSelection } from '@/stellog/operator-report';
 
 type Project = {
   id: string;
@@ -19,6 +20,12 @@ type Project = {
   requests: number;
   errors: number;
   errorRate: number;
+  pageviewsGrowth: number | null;
+  visitorsGrowth: number | null;
+  requestsGrowth: number | null;
+  pageviewsPrevious: number;
+  visitorsPrevious: number;
+  requestsPrevious: number;
   p50: number | null;
   p95: number | null;
   p50Capped: boolean;
@@ -37,12 +44,18 @@ const SORTS = [
   ['pageviews', 'Pageviews'],
   ['visitors', 'Visitors'],
   ['errors', 'API errors'],
+  ['errorRate', 'Error rate'],
   ['p95', 'p95 latency'],
+  ['pageviewsGrowth', 'Pageview trend'],
+  ['visitorsGrowth', 'Visitor trend'],
+  ['requestsGrowth', 'API request trend'],
   ['name', 'Name'],
 ] as const;
 
 export function OperatorProjectsPage() {
   const { get, post, put, del, useQuery } = useApi();
+  const { user } = useLoginQuery();
+  const canManage = !!user?.isAdmin;
   const { dateRange } = useDateRange();
   const { router, query, updateParams } = useNavigation();
   const [selected, setSelected] = useState<string[]>([]);
@@ -71,6 +84,7 @@ export function OperatorProjectsPage() {
   const keysQuery = useQuery({
     queryKey: ['operator-keys'],
     queryFn: () => get('/admin/operator-keys') as Promise<{ keys: KeyRow[] }>,
+    enabled: canManage,
   });
 
   const projects = projectsQuery.data?.projects ?? [];
@@ -83,11 +97,7 @@ export function OperatorProjectsPage() {
   };
 
   const toggle = (id: string) => {
-    setSelected(current => {
-      if (current.includes(id)) return current.filter(item => item !== id);
-      if (current.length >= 4) return current;
-      return [...current, id];
-    });
+    setSelected(current => limitSelection(current, id));
   };
 
   const reload = () => projectsQuery.refetch();
@@ -145,17 +155,25 @@ export function OperatorProjectsPage() {
           </Row>
           <Row gap="3" alignItems="center">
             <Text>Enrollment</Text>
-            <Select
-              aria-label="Enrollment mode"
-              value={projectsQuery.data?.enrollmentMode || 'open'}
-              onChange={async value => {
-                await put('/admin/enrollment', { mode: value });
-                reload();
-              }}
-            >
-              <ListItem id="open">Open</ListItem>
-              <ListItem id="approval-required">Approval required</ListItem>
-            </Select>
+            {canManage ? (
+              <Select
+                aria-label="Enrollment mode"
+                value={projectsQuery.data?.enrollmentMode || 'open'}
+                onChange={async value => {
+                  await put('/admin/enrollment', { mode: value });
+                  reload();
+                }}
+              >
+                <ListItem id="open">Open</ListItem>
+                <ListItem id="approval-required">Approval required</ListItem>
+              </Select>
+            ) : (
+              <Text>
+                {projectsQuery.data?.enrollmentMode === 'approval-required'
+                  ? 'Approval required'
+                  : 'Open'}
+              </Text>
+            )}
           </Row>
           {projectsQuery.isLoading && <Text>Loading projects.</Text>}
           {projectsQuery.error && <Text>Projects could not be loaded.</Text>}
@@ -164,23 +182,28 @@ export function OperatorProjectsPage() {
               <thead>
                 <tr>
                   <Th>{''}</Th>
+                  <Th align="right">Rank</Th>
                   <Th>Project</Th>
                   <Th align="right">Pageviews</Th>
                   <Th align="right">Visitors</Th>
                   <Th align="right">API requests</Th>
                   <Th align="right">Errors</Th>
+                  <Th align="right">Error rate</Th>
                   <Th align="right">p50</Th>
                   <Th align="right">p95</Th>
-                  <Th>{''}</Th>
+                  <Th align="right">Pageviews trend</Th>
+                  <Th align="right">Visitors trend</Th>
+                  <Th align="right">API trend</Th>
+                  {canManage && <Th>{''}</Th>}
                 </tr>
               </thead>
               <tbody>
                 {projects.length === 0 && (
                   <tr>
-                    <Td colSpan={9}>No projects in this range.</Td>
+                    <Td colSpan={canManage ? 14 : 13}>No projects in this range.</Td>
                   </tr>
                 )}
-                {projects.map(project => (
+                {projects.map((project, index) => (
                   <tr key={project.id}>
                     <Td>
                       <input
@@ -190,6 +213,7 @@ export function OperatorProjectsPage() {
                         onChange={() => toggle(project.id)}
                       />
                     </Td>
+                    <Td align="right">{index + 1}</Td>
                     <Td>
                       {project.name}
                       <Text color="muted">
@@ -204,23 +228,50 @@ export function OperatorProjectsPage() {
                     <Td align="right">{project.visitors.toLocaleString()}</Td>
                     <Td align="right">{project.requests.toLocaleString()}</Td>
                     <Td align="right">{project.errors.toLocaleString()}</Td>
+                    <Td align="right">{formatRate(project.errorRate)}</Td>
                     <Td align="right">{formatLatency(project.p50, project.p50Capped)}</Td>
                     <Td align="right">{formatLatency(project.p95, project.p95Capped)}</Td>
-                    <Td>
-                      <Row gap="2">
-                        {project.status === 'pending' && (
+                    <Td align="right">
+                      {formatGrowth(
+                        project.pageviewsGrowth,
+                        project.pageviews,
+                        project.pageviewsPrevious,
+                      )}
+                    </Td>
+                    <Td align="right">
+                      {formatGrowth(
+                        project.visitorsGrowth,
+                        project.visitors,
+                        project.visitorsPrevious,
+                      )}
+                    </Td>
+                    <Td align="right">
+                      {formatGrowth(
+                        project.requestsGrowth,
+                        project.requests,
+                        project.requestsPrevious,
+                      )}
+                    </Td>
+                    {canManage && (
+                      <Td>
+                        <Row gap="2">
+                          {project.status === 'pending' && (
+                            <Button
+                              variant="quiet"
+                              onPress={() => act(post, project, 'approve', reload)}
+                            >
+                              Approve
+                            </Button>
+                          )}
                           <Button
                             variant="quiet"
-                            onPress={() => act(post, project, 'approve', reload)}
+                            onPress={() => act(del, project, '', reload, true)}
                           >
-                            Approve
+                            Remove
                           </Button>
-                        )}
-                        <Button variant="quiet" onPress={() => act(del, project, '', reload, true)}>
-                          Remove
-                        </Button>
-                      </Row>
-                    </Td>
+                        </Row>
+                      </Td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -238,66 +289,100 @@ export function OperatorProjectsPage() {
                 <Metric label="Visitors" value={project.visitors.toLocaleString()} />
                 <Metric label="API requests" value={project.requests.toLocaleString()} />
                 <Metric label="API errors" value={project.errors.toLocaleString()} />
+                <Metric label="Error rate" value={formatRate(project.errorRate)} />
                 <Metric label="p50" value={formatLatency(project.p50, project.p50Capped)} />
                 <Metric label="p95" value={formatLatency(project.p95, project.p95Capped)} />
+                <Metric
+                  label="Pageviews trend"
+                  value={formatGrowth(
+                    project.pageviewsGrowth,
+                    project.pageviews,
+                    project.pageviewsPrevious,
+                  )}
+                />
+                <Metric
+                  label="Visitors trend"
+                  value={formatGrowth(
+                    project.visitorsGrowth,
+                    project.visitors,
+                    project.visitorsPrevious,
+                  )}
+                />
+                <Metric
+                  label="API trend"
+                  value={formatGrowth(
+                    project.requestsGrowth,
+                    project.requests,
+                    project.requestsPrevious,
+                  )}
+                />
               </Column>
             ))}
           </Grid>
         </Panel>
       )}
-      <Panel title="Operator keys">
-        <Column gap="3">
-          <Text>
-            A key can read project metrics. It cannot change enrollment or remove a project.
-          </Text>
-          <Row gap="2">
-            <TextField
-              aria-label="Key name"
-              value={keyName}
-              placeholder="Key name"
-              onChange={setKeyName}
-            />
-            <Button
-              variant="primary"
-              isDisabled={!keyName.trim()}
-              onPress={async () => {
-                const created = (await post('/admin/operator-keys', { name: keyName.trim() })) as {
-                  token: string;
-                };
-                setCreatedToken(created.token);
-                setKeyName('');
-                keysQuery.refetch();
-              }}
-            >
-              Create key
-            </Button>
-          </Row>
-          {createdToken && (
-            <Column gap="1">
-              <Text>Copy this key now. It is stored only as a hash.</Text>
-              <TextField aria-label="New operator key" value={createdToken} isReadOnly allowCopy />
-            </Column>
-          )}
-          {keysQuery.data?.keys.map(key => (
-            <Row key={key.id} justifyContent="space-between" alignItems="center">
-              <Text>
-                {key.name} · {key.keyPrefix} · {key.revokedAt ? 'revoked' : 'active'}
-              </Text>
-              {!key.revokedAt && (
-                <Button
-                  variant="quiet"
-                  onPress={async () => {
-                    await del(`/admin/operator-keys/${key.id}`);
-                    keysQuery.refetch();
-                  }}
-                >
-                  Revoke
-                </Button>
-              )}
+      {canManage && (
+        <Panel title="Operator keys">
+          <Column gap="3">
+            <Text>
+              A key can read project metrics. It cannot change enrollment or remove a project.
+            </Text>
+            <Row gap="2">
+              <TextField
+                aria-label="Key name"
+                value={keyName}
+                placeholder="Key name"
+                onChange={setKeyName}
+              />
+              <Button
+                variant="primary"
+                isDisabled={!keyName.trim()}
+                onPress={async () => {
+                  const created = (await post('/admin/operator-keys', {
+                    name: keyName.trim(),
+                  })) as {
+                    token: string;
+                  };
+                  setCreatedToken(created.token);
+                  setKeyName('');
+                  keysQuery.refetch();
+                }}
+              >
+                Create key
+              </Button>
             </Row>
-          ))}
-        </Column>
-      </Panel>
+            {createdToken && (
+              <Column gap="1">
+                <Text>Copy this key now. It is stored only as a hash.</Text>
+                <TextField
+                  aria-label="New operator key"
+                  value={createdToken}
+                  isReadOnly
+                  allowCopy
+                />
+              </Column>
+            )}
+            {keysQuery.data?.keys.map(key => (
+              <Row key={key.id} justifyContent="space-between" alignItems="center">
+                <Text>
+                  {key.name} · {key.keyPrefix} · {key.revokedAt ? 'revoked' : 'active'}
+                </Text>
+                {!key.revokedAt && (
+                  <Button
+                    variant="quiet"
+                    onPress={async () => {
+                      await del(`/admin/operator-keys/${key.id}`);
+                      keysQuery.refetch();
+                    }}
+                  >
+                    Revoke
+                  </Button>
+                )}
+              </Row>
+            ))}
+          </Column>
+        </Panel>
+      )}
     </Column>
   );
 }
@@ -323,6 +408,17 @@ function Metric({ label, value }: { label: string; value: string }) {
       <Text>{value}</Text>
     </Row>
   );
+}
+
+function formatRate(rate: number) {
+  return `${Math.round(rate * 1000) / 10}%`;
+}
+
+function formatGrowth(value: number | null, current: number, previous: number) {
+  if (previous === 0 && current > 0) return 'new';
+  if (value === null) return '—';
+  const pct = Math.round(value * 100);
+  return `${pct > 0 ? '+' : ''}${pct}%`;
 }
 
 function formatLatency(ms: number | null, capped: boolean) {

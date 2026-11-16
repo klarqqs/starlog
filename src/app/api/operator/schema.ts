@@ -21,6 +21,12 @@ export const operatorProjectSchema = z
     requests: z.number().int(),
     errors: z.number().int(),
     errorRate: z.number(),
+    pageviewsPrevious: z.number().int(),
+    visitorsPrevious: z.number().int(),
+    requestsPrevious: z.number().int(),
+    pageviewsGrowth: z.number().nullable(),
+    visitorsGrowth: z.number().nullable(),
+    requestsGrowth: z.number().nullable(),
     ...latency,
   })
   .meta({ id: 'OperatorProject' });
@@ -31,7 +37,20 @@ export const operatorMetricsQuerySchema = z.object({
   unit: z.enum(['minute', 'hour', 'day', 'week', 'month', 'year']).optional(),
   q: z.string().max(100).optional(),
   status: z.enum(['active', 'pending', 'all']).optional(),
-  sort: z.enum(['name', 'pageviews', 'visitors', 'requests', 'errors', 'p95']).optional(),
+  sort: z
+    .enum([
+      'name',
+      'pageviews',
+      'visitors',
+      'requests',
+      'errors',
+      'errorRate',
+      'p95',
+      'pageviewsGrowth',
+      'visitorsGrowth',
+      'requestsGrowth',
+    ])
+    .optional(),
   order: z.enum(['asc', 'desc']).optional(),
 });
 

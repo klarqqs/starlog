@@ -99,6 +99,14 @@ export function UserButton({ showText = true, onClose }: UserButtonProps) {
         path: '/admin',
         icon: <LockKeyhole />,
       },
+    !cloudMode &&
+      user.isOperator &&
+      !user.isAdmin && {
+        id: 'projects',
+        label: 'Projects',
+        path: '/admin/projects',
+        icon: <LockKeyhole />,
+      },
     {
       id: 'separator',
       separator: true,

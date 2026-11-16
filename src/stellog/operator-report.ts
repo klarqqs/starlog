@@ -17,7 +17,17 @@ const HIST_KEYS: HistKey[] = [
 
 export type ProjectType = 'team' | 'website';
 export type EnrollmentStatus = 'active' | 'pending';
-export type OperatorSort = 'name' | 'pageviews' | 'visitors' | 'requests' | 'errors' | 'p95';
+export type OperatorSort =
+  | 'name'
+  | 'pageviews'
+  | 'visitors'
+  | 'requests'
+  | 'errors'
+  | 'errorRate'
+  | 'p95'
+  | 'pageviewsGrowth'
+  | 'visitorsGrowth'
+  | 'requestsGrowth';
 
 export type OperatorWebsite = {
   id: string;
@@ -58,6 +68,12 @@ export type OperatorProject = {
   requests: number;
   errors: number;
   errorRate: number;
+  pageviewsPrevious: number;
+  visitorsPrevious: number;
+  requestsPrevious: number;
+  pageviewsGrowth: number | null;
+  visitorsGrowth: number | null;
+  requestsGrowth: number | null;
   p50: number | null;
   p95: number | null;
   p50Capped: boolean;
@@ -85,6 +101,19 @@ export function statusForEnrollment(
   return mode === 'approval-required' ? 'pending' : 'active';
 }
 
+/** Add or remove one id, and never keep more than `max` selected. */
+export function limitSelection(selected: string[], id: string, max = 4): string[] {
+  if (selected.includes(id)) return selected.filter(item => item !== id);
+  if (selected.length >= max) return selected;
+  return [...selected, id];
+}
+
+/** Fractional change versus the previous period. Null when the previous period was empty and this one is not. */
+export function growthRate(current: number, previous: number): number | null {
+  if (previous === 0) return current === 0 ? 0 : null;
+  return (current - previous) / previous;
+}
+
 export function rankProjects(
   teams: OperatorTeam[],
   websites: OperatorWebsite[],
@@ -95,6 +124,7 @@ export function rankProjects(
     status?: EnrollmentStatus | 'all';
     sort?: OperatorSort;
     order?: 'asc' | 'desc';
+    previous?: { web: WebStat[]; api: ApiStat[] };
   } = {},
 ): OperatorProject[] {
   const knownWebsites = new Set(websites.map(website => website.id));
@@ -132,13 +162,20 @@ export function rankProjects(
     if (api.latencyCount > 0) bucket.hist = addHist(bucket.hist, histOf(api));
   }
 
+  const previousTotals = collectCounts(
+    teams,
+    websites,
+    options.previous?.web ?? [],
+    options.previous?.api ?? [],
+  );
+
   const query = options.q?.trim().toLowerCase() ?? '';
   const status = options.status ?? 'active';
   const sort = options.sort ?? 'requests';
   const order = options.order ?? 'desc';
 
   return [...projects.values()]
-    .map(finish)
+    .map(project => withGrowth(finish(project), previousTotals.get(project.id)))
     .filter(project => (status === 'all' ? true : project.status === status))
     .filter(project => (query ? project.name.toLowerCase().includes(query) : true))
     .sort((left, right) => compareProjects(left, right, sort, order));
@@ -175,6 +212,12 @@ function emptyProject(
     requests: 0,
     errors: 0,
     errorRate: 0,
+    pageviewsPrevious: 0,
+    visitorsPrevious: 0,
+    requestsPrevious: 0,
+    pageviewsGrowth: 0,
+    visitorsGrowth: 0,
+    requestsGrowth: 0,
     p50: null,
     p95: null,
     p50Capped: false,
@@ -203,6 +246,50 @@ function histOf(row: ApiStat): Hist {
   return hist;
 }
 
+function collectCounts(
+  teams: OperatorTeam[],
+  websites: OperatorWebsite[],
+  webStats: WebStat[],
+  apiStats: ApiStat[],
+) {
+  const totals = new Map<string, { pageviews: number; visitors: number; requests: number }>();
+  for (const team of teams) {
+    totals.set(projectId('team', team.id), { pageviews: 0, visitors: 0, requests: 0 });
+  }
+  const webById = new Map(webStats.map(row => [row.websiteId, row]));
+  const apiById = new Map(apiStats.map(row => [row.websiteId, row]));
+  for (const website of websites) {
+    if (website.status === 'pending') continue;
+    const id = website.teamId
+      ? projectId('team', website.teamId)
+      : projectId('website', website.id);
+    const bucket = totals.get(id) ?? { pageviews: 0, visitors: 0, requests: 0 };
+    const web = webById.get(website.id);
+    const api = apiById.get(website.id);
+    bucket.pageviews += web?.pageviews ?? 0;
+    bucket.visitors += web?.visitors ?? 0;
+    bucket.requests += api?.requests ?? 0;
+    totals.set(id, bucket);
+  }
+  return totals;
+}
+
+function withGrowth(
+  project: OperatorProject,
+  previous: { pageviews: number; visitors: number; requests: number } | undefined,
+): OperatorProject {
+  const prior = previous ?? { pageviews: 0, visitors: 0, requests: 0 };
+  return {
+    ...project,
+    pageviewsPrevious: prior.pageviews,
+    visitorsPrevious: prior.visitors,
+    requestsPrevious: prior.requests,
+    pageviewsGrowth: growthRate(project.pageviews, prior.pageviews),
+    visitorsGrowth: growthRate(project.visitors, prior.visitors),
+    requestsGrowth: growthRate(project.requests, prior.requests),
+  };
+}
+
 function finite(value: number | null) {
   return value === null || !Number.isFinite(value) ? null : value;
 }
@@ -228,6 +315,12 @@ function sortValue(project: OperatorProject, sort: OperatorSort, order: 'asc' | 
   if (sort === 'p95') {
     if (project.p95 === null) return order === 'asc' ? Number.POSITIVE_INFINITY : -1;
     return project.p95;
+  }
+  if (sort === 'pageviewsGrowth' || sort === 'visitorsGrowth' || sort === 'requestsGrowth') {
+    const value = project[sort];
+    if (value === null)
+      return order === 'asc' ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+    return value;
   }
   return project[sort];
 }

@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { checkAuth } from '@/lib/auth';
 import { findActiveOperatorKey } from '@/stellog/operator-key';
-import { authorizeOperatorRead, requireOperatorAdmin } from './operator-auth';
+import {
+  authorizeOperatorRead,
+  canManageOperatorProjects,
+  canReadOperatorProjects,
+  requireOperatorAdmin,
+} from './operator-auth';
 
 vi.mock('@/lib/auth', () => ({
   getBearerToken: (request: Request) => request.headers.get('authorization')?.split(' ')[1],
@@ -50,5 +55,15 @@ describe('operator authorization', () => {
 
     await expect(authorizeOperatorRead(request)).resolves.toBeNull();
     await expect(requireOperatorAdmin(request)).resolves.toBeNull();
+  });
+
+  test('the demo operator can read projects and cannot manage them', () => {
+    const operator = { role: 'operator', isAdmin: false };
+    const admin = { role: 'admin', isAdmin: true };
+    expect(canReadOperatorProjects(operator)).toBe(true);
+    expect(canManageOperatorProjects(operator)).toBe(false);
+    expect(canReadOperatorProjects(admin)).toBe(true);
+    expect(canManageOperatorProjects(admin)).toBe(true);
+    expect(canReadOperatorProjects({ role: 'user', isAdmin: false })).toBe(false);
   });
 });

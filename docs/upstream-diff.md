@@ -152,3 +152,21 @@ The website key routes call Umami's existing `canUpdateWebsite`. They do not cha
 
 - `DOMAIN_REGEX` accepts an IPv4 address with an optional port, so a local site can be registered as `127.0.0.1:3000` and match that page's origin. Hostnames and `localhost` are unchanged.
 
+
+## Read-only demo operator
+
+`src/lib/constants.ts`
+
+- Added the `operator` role. It has no Umami permissions. It is not an admin.
+
+`src/lib/auth.ts`
+
+- A session whose role is `operator` is marked `isOperator`. `isAdmin` stays limited to `admin`.
+
+`src/app/login/LoginForm.tsx`
+
+- The operator entrance accepts `admin` and `operator`. An `operator` is sent to `/admin/projects`. A project account is still rejected there.
+
+`src/app/(main)/admin/AdminLayout.tsx`
+
+- An `operator` can open `/admin/projects` only. Other admin pages stay closed. An admin is unchanged.

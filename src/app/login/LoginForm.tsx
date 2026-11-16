@@ -1,5 +1,18 @@
 'use client';
-import { Button, Column, Form, FormButtons, FormField, FormSubmitButton, Heading, Icon, PasswordField, Row, Text, TextField } from '@umami/react-zen';
+import {
+  Button,
+  Column,
+  Form,
+  FormButtons,
+  FormField,
+  FormSubmitButton,
+  Heading,
+  Icon,
+  PasswordField,
+  Row,
+  Text,
+  TextField,
+} from '@umami/react-zen';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
@@ -18,7 +31,8 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
   const [note, setNote] = useState('');
 
   useEffect(() => {
-    if (!operator) setRegister(new URLSearchParams(window.location.search).get('mode') === 'register');
+    if (!operator)
+      setRegister(new URLSearchParams(window.location.search).get('mode') === 'register');
   }, [operator]);
 
   const handleSubmit = async (data: any) => {
@@ -28,7 +42,10 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
         { username: data.username, password: data.password },
         {
           onSuccess: async () => {
-            const response = await mutateAsync({ username: data.username, password: data.password });
+            const response = await mutateAsync({
+              username: data.username,
+              password: data.password,
+            });
             setClientAuthToken(response.token);
             setUser(response.user);
             router.push('/');
@@ -45,14 +62,21 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
           router.push('/login/two-factor');
           return;
         }
-        if (operator && response.user?.role !== 'admin') {
+        const role = response.user?.role;
+        if (operator && role !== 'admin' && role !== 'operator') {
           removeClientAuthToken();
           setNote('This entrance is for SCF operators. Project accounts use the project sign-in.');
           return;
         }
         setClientAuthToken(response.token);
         setUser(response.user);
-        router.push(operator ? '/admin/websites' : (consumeReturnUrl() ?? '/'));
+        router.push(
+          role === 'operator'
+            ? '/admin/projects'
+            : operator
+              ? '/admin/websites'
+              : (consumeReturnUrl() ?? '/'),
+        );
       },
     });
   };
@@ -68,13 +92,14 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
       });
       const response = await res.json();
       if (!res.ok) throw new Error(response?.error?.message || 'Wallet sign-in failed.');
-      if (operator && response.user?.role !== 'admin') {
+      const role = response.user?.role;
+      if (operator && role !== 'admin' && role !== 'operator') {
         setNote('This entrance is for SCF operators. Project accounts use the project sign-in.');
         return;
       }
       setClientAuthToken(response.token);
       setUser(response.user);
-      router.push(operator ? '/admin/websites' : '/');
+      router.push(role === 'operator' ? '/admin/projects' : operator ? '/admin/websites' : '/');
     } catch (e) {
       setNote(e instanceof Error ? e.message : 'Wallet sign-in failed.');
     }
@@ -99,10 +124,17 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
           rules={{
             required: 'Enter your email.',
             validate: (value: string) =>
-              operator || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || 'Enter a valid email address.',
+              operator ||
+              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+              'Enter a valid email address.',
           }}
         >
-          <TextField type={operator ? 'text' : 'email'} autoComplete="email" autoFocus placeholder="you@example.com" />
+          <TextField
+            type={operator ? 'text' : 'email'}
+            autoComplete="email"
+            autoFocus
+            placeholder="you@example.com"
+          />
         </FormField>
 
         <FormField
@@ -114,7 +146,12 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
           <PasswordField autoComplete={register ? 'new-password' : 'current-password'} />
         </FormField>
         <FormButtons>
-          <FormSubmitButton data-test="button-submit" variant="primary" style={{ flex: 1 }} isDisabled={false}>
+          <FormSubmitButton
+            data-test="button-submit"
+            variant="primary"
+            style={{ flex: 1 }}
+            isDisabled={false}
+          >
             {register ? 'Create account' : operator ? 'Sign in as operator' : t(labels.login)}
           </FormSubmitButton>
         </FormButtons>

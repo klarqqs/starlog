@@ -23,6 +23,7 @@ const loginUserSchema = z
     role: z.string(),
     createdAt: z.iso.datetime().nullable(),
     isAdmin: z.boolean(),
+    isOperator: z.boolean(),
     teams: z.array(loginTeamSchema),
   })
   .meta({ id: 'LoginUser' });

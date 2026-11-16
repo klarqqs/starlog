@@ -9,7 +9,20 @@ export const operatorMetricsQuery = z.object({
     .optional(),
   q: z.string().max(100).optional(),
   status: z.enum(['active', 'pending', 'all']).optional(),
-  sort: z.enum(['name', 'pageviews', 'visitors', 'requests', 'errors', 'p95']).optional(),
+  sort: z
+    .enum([
+      'name',
+      'pageviews',
+      'visitors',
+      'requests',
+      'errors',
+      'errorRate',
+      'p95',
+      'pageviewsGrowth',
+      'visitorsGrowth',
+      'requestsGrowth',
+    ])
+    .optional(),
   order: z.enum(['asc', 'desc']).optional(),
 });
 

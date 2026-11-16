@@ -34,7 +34,11 @@ export async function readOperatorProjects(
     order?: 'asc' | 'desc';
   } = {},
 ) {
-  const [teams, websites, webStats, apiStats] = await Promise.all([
+  const length = end.getTime() - start.getTime();
+  const previousEnd = new Date(start.getTime() - 1);
+  const previousStart = new Date(previousEnd.getTime() - length);
+  const grain = metricGrain(start, end, options.unit);
+  const [teams, websites, webStats, apiStats, previousWeb, previousApi] = await Promise.all([
     prisma.client.team.findMany({
       where: { deletedAt: null },
       select: { id: true, name: true, enrollmentStatus: true },
@@ -44,7 +48,9 @@ export async function readOperatorProjects(
       select: { id: true, name: true, teamId: true, enrollmentStatus: true },
     }),
     webStatsFor(start, end),
-    apiStatsFor(start, end, metricGrain(start, end, options.unit)),
+    apiStatsFor(start, end, grain),
+    webStatsFor(previousStart, previousEnd),
+    apiStatsFor(previousStart, previousEnd, grain),
   ]);
 
   return rankProjects(
@@ -61,7 +67,7 @@ export async function readOperatorProjects(
     })),
     webStats,
     apiStats,
-    options,
+    { ...options, previous: { web: previousWeb, api: previousApi } },
   );
 }
 

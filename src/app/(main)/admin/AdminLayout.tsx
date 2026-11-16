@@ -1,12 +1,15 @@
 'use client';
 import type { ReactNode } from 'react';
 import { PageBody } from '@/components/common/PageBody';
-import { useLoginQuery } from '@/components/hooks';
+import { useLoginQuery, useNavigation } from '@/components/hooks';
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const { user } = useLoginQuery();
+  const { pathname } = useNavigation();
+  const isOperator = !!user?.isOperator && !user?.isAdmin;
+  const allowed = !!user?.isAdmin || (isOperator && pathname.startsWith('/admin/projects'));
 
-  if (!user.isAdmin || process.env.cloudMode) {
+  if (!allowed || process.env.cloudMode) {
     return null;
   }
 

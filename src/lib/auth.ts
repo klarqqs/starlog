@@ -63,6 +63,7 @@ export async function checkApiKeyAuth(request: Request, token: string) {
 
   delete user.password;
   user.isAdmin = user.role === ROLES.admin;
+  user.isOperator = user.role === ROLES.operator;
 
   return {
     token,
@@ -161,6 +162,7 @@ export async function checkAuth(request: Request) {
   if (user) {
     delete user.password;
     user.isAdmin = user.role === ROLES.admin;
+    user.isOperator = user.role === ROLES.operator;
   }
 
   return {

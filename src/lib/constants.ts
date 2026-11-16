@@ -179,6 +179,7 @@ export const DATA_TYPES = {
 
 export const ROLES = {
   admin: 'admin',
+  operator: 'operator',
   user: 'user',
   viewOnly: 'view-only',
   teamOwner: 'team-owner',
@@ -208,6 +209,7 @@ export const PERMISSIONS = {
 
 export const ROLE_PERMISSIONS = {
   [ROLES.admin]: [PERMISSIONS.all],
+  [ROLES.operator]: [],
   [ROLES.user]: [
     PERMISSIONS.websiteCreate,
     PERMISSIONS.websiteUpdate,

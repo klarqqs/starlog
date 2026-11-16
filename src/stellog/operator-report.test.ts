@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { emptyHist, histForLatency } from './histogram';
 import {
   type ApiStat,
+  growthRate,
+  limitSelection,
   type OperatorTeam,
   type OperatorWebsite,
   parseProjectId,
@@ -99,6 +101,50 @@ describe('rankProjects', () => {
     expect(ranked).toEqual([
       expect.objectContaining({ id: projectId('website', siteA), type: 'website', pageviews: 1 }),
     ]);
+  });
+});
+
+describe('growth and comparison', () => {
+  test('growth is the change against the previous period', () => {
+    const ranked = rankProjects(
+      teams,
+      websites,
+      [{ websiteId: siteA, pageviews: 30, visitors: 12 }],
+      [api(siteA, 20, 40, 5)],
+      {
+        status: 'all',
+        previous: {
+          web: [{ websiteId: siteA, pageviews: 10, visitors: 10 }],
+          api: [api(siteA, 10, 40)],
+        },
+      },
+    );
+    const alpha = ranked.find(project => project.id === projectId('team', teamA));
+    expect(alpha).toMatchObject({
+      errorRate: 0.25,
+      pageviewsGrowth: 2,
+      visitorsGrowth: 0.2,
+      requestsGrowth: 1,
+    });
+    expect(growthRate(0, 0)).toBe(0);
+    expect(growthRate(4, 0)).toBeNull();
+  });
+
+  test('sorts by error rate', () => {
+    const ranked = rankProjects(
+      teams,
+      websites,
+      [],
+      [api(siteA, 10, 40, 1), api(siteB, 10, 40, 8)],
+      { status: 'all', sort: 'errorRate', order: 'desc' },
+    );
+    expect(ranked.map(project => project.name)).toEqual(['Beta', 'Alpha']);
+  });
+
+  test('a comparison keeps at most four projects', () => {
+    expect(limitSelection(['a', 'b', 'c', 'd'], 'e')).toEqual(['a', 'b', 'c', 'd']);
+    expect(limitSelection(['a', 'b', 'c', 'd'], 'b')).toEqual(['a', 'c', 'd']);
+    expect(limitSelection(['a'], 'b')).toEqual(['a', 'b']);
   });
 });
 

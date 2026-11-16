@@ -3547,6 +3547,7 @@ export interface components {
       id: string;
       /** @description Whether the user has administrator privileges. */
       isAdmin: boolean;
+      isOperator: boolean;
       /** @description Permission role assigned to the user. */
       role: string;
       /** @description Teams associated with the user. */
@@ -3583,15 +3584,21 @@ export interface components {
       p95Capped: boolean;
       /** @description Pageview counts for the selected period. */
       pageviews: number;
+      pageviewsGrowth: number | null;
+      pageviewsPrevious: number;
       pendingProperties: number;
       properties: number;
       requests: number;
+      requestsGrowth: number | null;
+      requestsPrevious: number;
       /** @enum {string} */
       status: 'active' | 'pending';
       /** @enum {string} */
       type: 'team' | 'website';
       /** @description Unique visitor counts for the selected period. */
       visitors: number;
+      visitorsGrowth: number | null;
+      visitorsPrevious: number;
       websiteIds: string[];
     };
     ReplayConfig: {
@@ -5111,7 +5118,17 @@ export interface operations {
         order?: 'asc' | 'desc';
         q?: string;
         /** @description Order products by revenue, units or orders. */
-        sort?: 'name' | 'pageviews' | 'visitors' | 'requests' | 'errors' | 'p95';
+        sort?:
+          | 'name'
+          | 'pageviews'
+          | 'visitors'
+          | 'requests'
+          | 'errors'
+          | 'errorRate'
+          | 'p95'
+          | 'pageviewsGrowth'
+          | 'visitorsGrowth'
+          | 'requestsGrowth';
         /** @description Start of the date range as a Unix timestamp in milliseconds. */
         startAt: number;
         status?: 'active' | 'pending' | 'all';
@@ -9630,7 +9647,17 @@ export interface operations {
         order?: 'asc' | 'desc';
         q?: string;
         /** @description Order products by revenue, units or orders. */
-        sort?: 'name' | 'pageviews' | 'visitors' | 'requests' | 'errors' | 'p95';
+        sort?:
+          | 'name'
+          | 'pageviews'
+          | 'visitors'
+          | 'requests'
+          | 'errors'
+          | 'errorRate'
+          | 'p95'
+          | 'pageviewsGrowth'
+          | 'visitorsGrowth'
+          | 'requestsGrowth';
         /** @description Start of the date range as a Unix timestamp in milliseconds. */
         startAt: number;
         status?: 'active' | 'pending' | 'all';

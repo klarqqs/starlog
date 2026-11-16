@@ -20,6 +20,8 @@ export interface Auth {
     username: string;
     role: string;
     isAdmin: boolean;
+    /** Read-only operator. Can open project ranking and cannot change it. */
+    isOperator?: boolean;
   };
   apiKey?: {
     id: string;
