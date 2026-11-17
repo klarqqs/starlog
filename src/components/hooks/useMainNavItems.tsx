@@ -21,7 +21,8 @@ const icons = {
 /** The five tabs a Stellar project uses. A read-only operator also gets Projects. */
 export function useMainNavItems() {
   const { user } = useLoginQuery();
-  const items = isReadOnlyOperator(user) ? operatorViewNav() : PROJECT_NAV;
+  const showProjects = isReadOnlyOperator(user) || !!user?.isAdmin || user?.role === 'admin';
+  const items = showProjects ? operatorViewNav() : PROJECT_NAV;
 
   return items.map(item => ({
     ...item,

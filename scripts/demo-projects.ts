@@ -25,6 +25,7 @@ export const DEMO_PROJECTS = [
   { name: 'ProofBridge', domain: 'pfbridge.xyz' },
   { name: 'Pipeline', domain: 'pipeline.one' },
   { name: 'XCCY', domain: 'xccy.finance' },
+  { name: 'Obba', domain: 'obba.dayfi.co' },
 ] as const;
 
 /** Spread property creation across the past year so the list is not all the same moment. */

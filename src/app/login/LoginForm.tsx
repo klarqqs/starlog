@@ -28,6 +28,14 @@ const walletButtonStyle = {
 import { removeClientAuthToken, setClientAuthToken } from '@/lib/client';
 import { setUser } from '@/store/app';
 
+function landingPath(role?: string) {
+  const path = role === 'admin' || role === 'operator' ? '/admin/projects' : '/overview';
+  try {
+    localStorage.setItem('stellog.landing', path);
+  } catch {}
+  return path;
+}
+
 export function LoginForm({ operator = false }: { operator?: boolean }) {
   const { t, labels, getErrorMessage } = useMessages();
   const router = useRouter();
@@ -76,7 +84,7 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
         }
         setClientAuthToken(response.token);
         setUser(response.user);
-        router.push(role === 'admin' ? '/admin/projects' : '/overview');
+        router.push(landingPath(role));
       },
     });
   };
@@ -99,7 +107,7 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
       }
       setClientAuthToken(response.token);
       setUser(response.user);
-      router.push(role === 'admin' ? '/admin/projects' : '/overview');
+      router.push(landingPath(role));
     } catch (e) {
       setNote(e instanceof Error ? e.message : 'Wallet sign-in failed.');
     }

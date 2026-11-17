@@ -29,6 +29,25 @@ test('sends a signed-in user back to their last team', () => {
   ).toEqual(['/teams/team-1/websites']);
 });
 
+test('sends an operator or admin to /admin/projects when stored in stellog.landing', () => {
+  expect(
+    run(false, {
+      'umami.auth': JSON.stringify('token'),
+      'stellog.landing': '/admin/projects',
+    }),
+  ).toEqual(['/admin/projects']);
+});
+
+test('sends an operator or admin to /admin/projects even when a last-team is stored', () => {
+  expect(
+    run(false, {
+      'umami.auth': JSON.stringify('token'),
+      'umami.last-team': JSON.stringify('team-1'),
+      'stellog.landing': '/admin/projects',
+    }),
+  ).toEqual(['/admin/projects']);
+});
+
 test('keeps the app redirect in cloud mode when there is no local token', () => {
   expect(run(true, {})).toEqual(['/overview']);
 });
