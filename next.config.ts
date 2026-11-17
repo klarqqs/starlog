@@ -216,6 +216,7 @@ export default withNextIntl({
   devIndicators: {
     position: 'bottom-right',
   },
+  allowedDevOrigins: ['127.0.0.1'],
   env: {
     apiUrl,
     basePath,

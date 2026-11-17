@@ -5,17 +5,20 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Privacy · Stellog</title>
   <meta name="description" content="What Stellog collects and what it does not.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try{var t=localStorage.getItem('stellog.theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
   <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-<header><div class="wrap"><a class="logo" href="/">Stel<i>log</i></a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
-<main class="wrap doc"><div class="eyebrow">Privacy</div><h1 style="font-size:44px">What Stellog collects</h1>
+<header><div class="wrap"><a class="logo" href="/"><img src="/logo.svg" alt="Stellog"></a><nav><a href="/#product">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><div class="theme" role="group" aria-label="Theme"><button type="button" data-theme-value="light">Light</button><button type="button" data-theme-value="dark" aria-pressed="true">Dark</button></div><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
+<main class="wrap doc"><div class="eyebrow">Privacy</div><h1>What Stellog collects</h1>
 <h2>Web analytics</h2><p>The tracker is Umami’s. It does not use cookies. Page views and the reports in the dashboard are stored for the website you added.</p>
 <h2>Accounts</h2><ul><li>Username and a bcrypt password hash. A password reset link is stored as a hash, lasts 1 hour, and works once.</li><li>If you link a wallet, we store its public address only. Signing in with a wallet never sends a transaction and never touches funds.</li></ul>
 <h2>Still to come</h2><p>A full GDPR write-up is not published yet.</p></main>
-<footer><div class="wrap"><div><a class="logo" href="/">Stel<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
+<footer><div class="wrap"><div><a class="logo" href="/"><img src="/logo.svg" alt="Stellog"></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
 <div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">Dashboard</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
 <div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>
 <div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF operator sign in</a></div></div></footer>
+<script src="/theme.js"></script>
 </body>
 </html>

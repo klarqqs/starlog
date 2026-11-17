@@ -12,7 +12,7 @@ pnpm install
 pnpm dev
 ```
 
-Open http://127.0.0.1:3000. The landing page is `/home`. Sign in at `/login`. SCF operators use `/operator/login`.
+Open http://127.0.0.1:3000. Sign in at `/login`. SCF operators use `/operator/login`.
 
 The seeded admin is `admin` / `umami`. The first sign-in asks for a new password.
 

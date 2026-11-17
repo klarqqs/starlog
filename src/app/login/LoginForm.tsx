@@ -7,7 +7,6 @@ import {
   FormField,
   FormSubmitButton,
   Heading,
-  Icon,
   PasswordField,
   Row,
   Text,
@@ -16,8 +15,16 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
-import { Logo } from '@/components/svg';
 import { signWallet, type WalletId } from '@/components/wallet-client';
+import { AuthBar, authLinkStyle } from './AuthBar';
+
+const walletButtonStyle = {
+  flex: '1 1 0',
+  fontWeight: 700,
+  background: '#fff',
+  color: '#161616',
+  borderColor: '#fff',
+};
 import { removeClientAuthToken, setClientAuthToken } from '@/lib/client';
 import { setUser } from '@/store/app';
 
@@ -98,24 +105,41 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
     }
   };
 
+  const corner = operator ? (
+    <a href="/login" style={authLinkStyle}>
+      Project sign in
+    </a>
+  ) : register ? (
+    <a href="/login" style={authLinkStyle}>
+      Sign in
+    </a>
+  ) : (
+    <a href="/login?mode=register" style={authLinkStyle}>
+      Sign up
+    </a>
+  );
+
   return (
-    <Column justifyContent="center" alignItems="center" gap="6">
-      <Icon size="lg">
-        <Logo />
-      </Icon>
-      <Heading>{operator ? 'SCF operator' : register ? 'Create account' : 'Stellog'}</Heading>
+    <>
+      <AuthBar action={corner} />
+      <Column justifyContent="center" alignItems="center" gap="6" width="360px">
+      <Heading>{operator ? 'SCF operator' : register ? 'Sign up' : 'Log in'}</Heading>
       <Form
         onSubmit={handleSubmit}
-        error={getErrorMessage(register ? registerQuery.error : error) || note}
+        error={
+          operator && (error as { code?: string } | null)?.code === 'incorrect-username-password'
+            ? 'Incorrect username or password.'
+            : getErrorMessage(register ? registerQuery.error : error) || note
+        }
         defaultValues={{ username: '', password: '' }}
-        style={{ minWidth: 300 }}
+        style={{ width: '100%' }}
       >
         <FormField
-          label="Email"
+          label={operator ? 'Username' : 'Email address'}
           data-test="input-username"
           name="username"
           rules={{
-            required: 'Enter your email.',
+            required: operator ? 'Enter your username.' : 'Enter your email.',
             validate: (value: string) =>
               operator ||
               /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
@@ -124,9 +148,9 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
         >
           <TextField
             type={operator ? 'text' : 'email'}
-            autoComplete="email"
+            autoComplete={operator ? 'username' : 'email'}
             autoFocus
-            placeholder="you@example.com"
+            placeholder={operator ? undefined : 'you@example.com'}
           />
         </FormField>
 
@@ -149,33 +173,59 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
           </FormSubmitButton>
         </FormButtons>
       </Form>
-      {!register && (
-        <Column gap="3" alignItems="center">
-          <a href="/login/forgot">Forgot your password?</a>
-          <Text>Or sign in with a wallet you already linked</Text>
-          <Row gap="2">
-            <Button variant="outline" onPress={() => handleWallet('freighter')}>
-              Freighter
-            </Button>
-            <Button variant="outline" onPress={() => handleWallet('xbull')}>
-              xBull
-            </Button>
-          </Row>
-        </Column>
-      )}
-      <Text>
+      <Column gap="3" alignItems="center" width="100%">
         {operator ? (
-          <a href="/login">Project sign in</a>
+          <a href="/login" style={authLinkStyle}>
+            Project sign in
+          </a>
         ) : register ? (
-          <a href="/login">Already have an account? Sign in</a>
+          <Text>
+            Already have an account?{' '}
+            <a href="/login" style={authLinkStyle}>
+              Sign in
+            </a>
+          </Text>
         ) : (
+          <Text>
+            Don&apos;t have an account?{' '}
+            <a href="/login?mode=register" style={authLinkStyle}>
+              Sign up
+            </a>
+          </Text>
+        )}
+        {!register && (
+          <a href="/login/forgot" style={authLinkStyle}>
+            Forgot password?
+          </a>
+        )}
+        {!register && (
           <>
-            <a href="/login?mode=register">Create an account</a>
-            {' · '}
-            <a href="/operator/login">SCF operator sign in</a>
+            <Text>Or sign in with a wallet you already linked</Text>
+            <Row gap="2" width="100%">
+              <Button
+                variant="outline"
+                style={walletButtonStyle}
+                onPress={() => handleWallet('freighter')}
+              >
+                Freighter
+              </Button>
+              <Button
+                variant="outline"
+                style={walletButtonStyle}
+                onPress={() => handleWallet('xbull')}
+              >
+                xBull
+              </Button>
+            </Row>
           </>
         )}
-      </Text>
+        {!operator && !register && (
+          <a href="/operator/login" style={authLinkStyle}>
+            SCF operator sign in
+          </a>
+        )}
+      </Column>
     </Column>
+    </>
   );
 }

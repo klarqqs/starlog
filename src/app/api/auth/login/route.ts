@@ -7,13 +7,27 @@ import { checkPassword, hasDefaultPassword } from '@/lib/password';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
 import { parseRequest } from '@/lib/request';
-import { json, serviceUnavailable, unauthorized } from '@/lib/response';
+import { json, serverError, serviceUnavailable, unauthorized } from '@/lib/response';
 import { getTwoFactorConfigurationError, isTwoFactorConfigured } from '@/lib/two-factor/crypto';
 import { getTwoFactorRequiredReason } from '@/lib/two-factor/policy';
 import { getAllUserTeams, getUserByUsername } from '@/queries/prisma';
 import { loginRequestSchema } from './schema';
 
 export async function POST(request: Request) {
+  try {
+    return await login(request);
+  } catch (err) {
+    const code = err && typeof err === 'object' && 'code' in err ? String(err.code) : '';
+
+    if (code === 'P1001') {
+      return serviceUnavailable({ message: 'The database is not running.' });
+    }
+
+    return serverError(err);
+  }
+}
+
+async function login(request: Request) {
   const { body, error } = await parseRequest(request, loginRequestSchema, { skipAuth: true });
 
   if (error) {
