@@ -35,7 +35,8 @@ export async function collectSummaryFacts(
     };
   }
   const overview = await readMyOverview(userId, start, end, undefined, operator);
-  const sites = scope === 'apis' ? overview.sites.filter(site => site.hasApi) : overview.sites;
+  const sites =
+    scope === 'apis' ? overview.sites.filter(site => site.kind === 'api') : overview.sites;
   return {
     scope,
     period: periodLabel(start, end),
@@ -44,11 +45,11 @@ export async function collectSummaryFacts(
   };
 }
 
-export async function requestSummary(facts: SummaryInput): Promise<AiSummary> {
+export async function requestSummary(facts: SummaryInput, apiKey?: string): Promise<AiSummary> {
   const brief = buildSummaryBrief(facts);
-  const key = process.env.XAI_API_KEY?.trim();
-  if (!key) throw new Error('AI summary is not configured.');
-  const model = process.env.XAI_MODEL?.trim() || 'grok-4';
+  const key = apiKey?.trim();
+  if (!key) throw new Error('Add an xAI API key to write a summary.');
+  const model = process.env.XAI_MODEL?.trim() || 'grok-3-mini';
   const response = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -74,6 +75,9 @@ export async function requestSummary(facts: SummaryInput): Promise<AiSummary> {
     }),
     signal: AbortSignal.timeout(25_000),
   });
+  if (response.status === 401 || response.status === 403) {
+    throw new Error('That API key was not accepted.');
+  }
   if (!response.ok) {
     throw new Error('The summary service did not answer.');
   }

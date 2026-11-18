@@ -29,6 +29,7 @@ export const createWebsiteRequestSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
     domain: z.string().trim().regex(DOMAIN_REGEX).max(500),
+    kind: z.enum(['site', 'api']).optional(),
     shareId: z.string().max(50).nullable().optional(),
     teamId: z.uuid().nullable().optional(),
     id: z.uuid().nullable().optional(),

@@ -92,15 +92,16 @@ export function DateFilter({
     onChange(value.toString());
   };
 
-  const renderValue = ({ defaultChildren }) => {
+  const selectedValue = value?.endsWith(':all') ? 'all' : value;
+  const selectedLabel = options.find(option => option.value === selectedValue)?.label;
+
+  const renderValue = () => {
     return (value?.startsWith('range') || renderDate) && startDate && endDate ? (
       <DateDisplay startDate={startDate} endDate={endDate} />
     ) : (
-      defaultChildren
+      selectedLabel
     );
   };
-
-  const selectedValue = value.endsWith(':all') ? 'all' : value;
 
   const [side, align] = String(placement).split(' ');
 

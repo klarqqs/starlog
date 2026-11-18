@@ -25,11 +25,12 @@ const walletButtonStyle = {
   color: '#161616',
   borderColor: '#fff',
 };
+
 import { removeClientAuthToken, setClientAuthToken } from '@/lib/client';
 import { setUser } from '@/store/app';
 
 function landingPath(role?: string) {
-  const path = role === 'admin' || role === 'operator' ? '/admin/projects' : '/overview';
+  const path = role === 'admin' || role === 'operator' ? '/admin/overview' : '/overview';
   try {
     localStorage.setItem('stellog.landing', path);
   } catch {}
@@ -131,109 +132,119 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
     <>
       <AuthBar action={corner} />
       <Column justifyContent="center" alignItems="center" gap="6" width="360px">
-      <Heading>{operator ? 'SCF operator' : register ? 'Sign up' : 'Log in'}</Heading>
-      <Form
-        onSubmit={handleSubmit}
-        error={
-          operator && (error as { code?: string } | null)?.code === 'incorrect-username-password'
-            ? 'Incorrect username or password.'
-            : getErrorMessage(register ? registerQuery.error : error) || note
-        }
-        defaultValues={{ username: '', password: '' }}
-        style={{ width: '100%' }}
-      >
-        <FormField
-          label={operator ? 'Username' : 'Email address'}
-          data-test="input-username"
-          name="username"
-          rules={{
-            required: operator ? 'Enter your username.' : 'Enter your email.',
-            validate: (value: string) =>
-              operator ||
-              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-              'Enter a valid email address.',
-          }}
+        <Heading>{operator ? 'SCF operator' : register ? 'Sign up' : 'Log in'}</Heading>
+        <Form
+          onSubmit={handleSubmit}
+          error={
+            operator && (error as { code?: string } | null)?.code === 'incorrect-username-password'
+              ? 'Incorrect username or password.'
+              : getErrorMessage(register ? registerQuery.error : error) || note
+          }
+          defaultValues={{ username: '', password: '' }}
+          style={{ width: '100%' }}
         >
-          <TextField
-            type={operator ? 'text' : 'email'}
-            autoComplete={operator ? 'username' : 'email'}
-            autoFocus
-            placeholder={operator ? undefined : 'you@example.com'}
-          />
-        </FormField>
-
-        <FormField
-          label={t(labels.password)}
-          data-test="input-password"
-          name="password"
-          rules={{ required: t(labels.required) }}
-        >
-          <PasswordField autoComplete={register ? 'new-password' : 'current-password'} />
-        </FormField>
-        <FormButtons>
-          <FormSubmitButton
-            data-test="button-submit"
-            variant="primary"
-            style={{ flex: 1 }}
-            isDisabled={false}
+          <FormField
+            label={operator ? 'Username' : 'Email address'}
+            data-test="input-username"
+            name="username"
+            rules={{
+              required: operator ? 'Enter your username.' : 'Enter your email.',
+              validate: (value: string) =>
+                operator ||
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+                'Enter a valid email address.',
+            }}
           >
-            {register ? 'Create account' : operator ? 'Sign in as operator' : t(labels.login)}
-          </FormSubmitButton>
-        </FormButtons>
-      </Form>
-      <Column gap="3" alignItems="center" width="100%">
-        {operator ? (
-          <a href="/login" style={authLinkStyle}>
-            Project sign in
-          </a>
-        ) : register ? (
-          <Text>
-            Already have an account?{' '}
+            <TextField
+              type={operator ? 'text' : 'email'}
+              autoComplete={operator ? 'username' : 'email'}
+              autoFocus
+              placeholder={operator ? undefined : 'you@example.com'}
+            />
+          </FormField>
+
+          <FormField
+            label={t(labels.password)}
+            data-test="input-password"
+            name="password"
+            rules={{ required: t(labels.required) }}
+          >
+            <PasswordField autoComplete={register ? 'new-password' : 'current-password'} />
+          </FormField>
+          <FormButtons>
+            <FormSubmitButton
+              data-test="button-submit"
+              variant="primary"
+              style={{ flex: 1 }}
+              isDisabled={false}
+            >
+              {register ? 'Create account' : operator ? 'Sign in as operator' : t(labels.login)}
+            </FormSubmitButton>
+          </FormButtons>
+        </Form>
+        <Column gap="3" alignItems="center" width="100%">
+          {operator ? (
             <a href="/login" style={authLinkStyle}>
-              Sign in
+              Project sign in
             </a>
-          </Text>
-        ) : (
-          <Text>
-            Don&apos;t have an account?{' '}
-            <a href="/login?mode=register" style={authLinkStyle}>
-              Sign up
+          ) : register ? (
+            <Text>
+              Already have an account?{' '}
+              <a href="/login" style={authLinkStyle}>
+                Sign in
+              </a>
+            </Text>
+          ) : (
+            <Text>
+              Don&apos;t have an account?{' '}
+              <a href="/login?mode=register" style={authLinkStyle}>
+                Sign up
+              </a>
+            </Text>
+          )}
+          {!register && (
+            <a href="/login/forgot" style={authLinkStyle}>
+              Forgot password?
             </a>
-          </Text>
-        )}
-        {!register && (
-          <a href="/login/forgot" style={authLinkStyle}>
-            Forgot password?
-          </a>
-        )}
-        {!register && (
-          <>
-            <Text>Or sign in with a wallet you already linked</Text>
-            <Row gap="2" width="100%">
-              <Button
-                variant="outline"
-                style={walletButtonStyle}
-                onPress={() => handleWallet('freighter')}
-              >
-                Freighter
-              </Button>
-              <Button
-                variant="outline"
-                style={walletButtonStyle}
-                onPress={() => handleWallet('xbull')}
-              >
-                xBull
-              </Button>
-            </Row>
-          </>
-        )}
-        {!operator && !register && (
-          <a href="/operator/login" style={authLinkStyle}>
-            SCF operator sign in
-          </a>
-        )}
+          )}
+          {!register && (
+            <>
+              <div
+                aria-hidden
+                style={{
+                  width: '100%',
+                  borderTop: '1px solid currentColor',
+                  opacity: 0.28,
+                  marginTop: 12,
+                  marginBottom: 12,
+                }}
+              />
+              <Text>Or sign in with a wallet you already linked</Text>
+              <Row gap="2" width="100%">
+                <Button
+                  variant="outline"
+                  style={walletButtonStyle}
+                  onPress={() => handleWallet('freighter')}
+                >
+                  Freighter
+                </Button>
+                <Button
+                  variant="outline"
+                  style={walletButtonStyle}
+                  onPress={() => handleWallet('xbull')}
+                >
+                  xBull
+                </Button>
+              </Row>
+            </>
+          )}
+          {!operator && !register && (
+            <a href="/operator/login" style={authLinkStyle}>
+              SCF operator sign in
+            </a>
+          )}
+        </Column>
       </Column>
-    </Column>
     </>
   );
 }

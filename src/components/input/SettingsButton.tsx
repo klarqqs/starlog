@@ -68,7 +68,7 @@ export function SettingsButton() {
             )}
             {!cloudMode && user.isOperator && !user.isAdmin && (
               <MenuItem
-                id="/admin/projects"
+                id="/admin/overview"
                 icon={<LockKeyhole />}
                 label="Projects"
                 onAction={handleAction}

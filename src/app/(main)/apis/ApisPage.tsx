@@ -19,7 +19,7 @@ export function ApisPage() {
   const { user } = useLoginQuery();
   const { teamId } = useNavigation();
   const { data, isLoading, error, value, setValue } = useMyOverviewQuery();
-  const sites = data?.sites.filter(site => site.hasApi) ?? [];
+  const sites = data?.sites.filter(site => site.kind === 'api') ?? [];
   const canAdd = !!user && user.role !== ROLES.viewOnly && !isReadOnlyOperator(user);
   const hasApis = sites.length > 0;
 
@@ -45,6 +45,7 @@ export function ApisPage() {
         <Panel>
           <WebsitesDataTable
             teamId={teamId}
+            kind="api"
             showActions={canAdd}
             includeIds={data ? sites.map(site => site.websiteId) : []}
             renderEmpty={() => <EmptyAction canAdd={canAdd} teamId={teamId} />}
@@ -71,6 +72,8 @@ function apiTotals(sites: MySite[]): OperatorProject {
     status: 'active',
     properties: sites.length,
     pendingProperties: 0,
+    sites: 0,
+    apis: sites.length,
     websiteIds: sites.map(site => site.websiteId),
     domain: null,
     pageviews: add(site => site.pageviews),

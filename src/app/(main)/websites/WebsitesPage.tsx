@@ -34,6 +34,7 @@ export function WebsitesPage() {
         <Panel>
           <WebsitesDataTable
             teamId={teamId}
+            kind="site"
             showActions={showActions}
             renderEmpty={() => <EmptyAction canAdd={canAdd} teamId={teamId} />}
           />

@@ -11,9 +11,10 @@ const schema = z.object({
   websiteId: z.uuid().optional(),
   startAt: z.number().int(),
   endAt: z.number().int(),
+  apiKey: z.string().trim().min(20).max(200),
 });
 
-/** A signed-in summary of the open Stellog view. The model key stays on the server. */
+/** A signed-in summary. The xAI key comes from the browser and is not stored. */
 export async function POST(request: Request) {
   const { auth, body, error } = await parseRequest(request, schema);
   if (error) return error();
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       new Date(body.endAt),
       body.websiteId,
     );
-    return json(await requestSummary(facts));
+    return json(await requestSummary(facts, body.apiKey));
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'The summary could not be written.';
     return serverError(message);

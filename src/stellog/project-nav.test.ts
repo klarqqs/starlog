@@ -3,38 +3,44 @@ import {
   HIDDEN_WEBSITE_NAV,
   isReadOnlyOperator,
   operatorNav,
-  operatorViewNav,
   PROJECT_NAV,
   PROJECT_REPORT_NAV,
   PROJECT_REPORT_SECTIONS,
 } from './project-nav';
 
-test('a Stellar project does not list Umami product tabs', () => {
+test('a Stellar account starts from its projects', () => {
   const ids = PROJECT_NAV.map(item => item.id);
-  expect(ids).toEqual(['overview', 'websites', 'apis', 'setup', 'settings']);
+  expect(ids).toEqual(['overview', 'projects', 'realtime', 'events', 'compare', 'settings']);
   expect(ids).not.toContain('dashboard');
   expect(ids).not.toContain('boards');
   expect(ids).not.toContain('links');
   expect(ids).not.toContain('pixels');
+  expect(ids).not.toContain('websites');
+  expect(ids).not.toContain('apis');
 });
 
-test('a read-only operator sees the project views and the ranking', () => {
-  expect(operatorNav(false).map(item => item.id)).toEqual(['projects']);
-  expect(operatorViewNav().map(item => item.id)).toEqual([
+test('the operator shell keeps the account reports next to the SCF controls', () => {
+  expect(operatorNav(false).map(item => item.id)).toEqual([
     'overview',
     'projects',
-    'websites',
-    'apis',
-    'setup',
+    'realtime',
+    'events',
+    'compare',
     'settings',
   ]);
   expect(operatorNav(true).map(item => item.id)).toEqual([
+    'overview',
     'projects',
+    'realtime',
+    'events',
+    'compare',
     'enrollment',
     'operator-keys',
     'operators',
     'security',
+    'settings',
   ]);
+  expect(PROJECT_NAV.map(item => item.id)).toContain('projects');
   expect(isReadOnlyOperator({ role: 'operator', isOperator: true })).toBe(true);
   expect(isReadOnlyOperator({ role: 'admin', isAdmin: true, isOperator: false })).toBe(false);
 });

@@ -5,9 +5,20 @@ export const operatorMetricsQuery = z.object({
   startAt: z.coerce.number().int(),
   endAt: z.coerce.number().int(),
   unit: z
-    .union([z.enum(['minute', 'hour', 'day', 'week', 'month', 'year']), z.literal('')])
-    .optional(),
-  q: z.string().max(100).optional(),
+    .string()
+    .optional()
+    .transform(value =>
+      value && ['minute', 'hour', 'day', 'week', 'month', 'year'].includes(value)
+        ? value
+        : undefined,
+    ),
+  q: z
+    .string()
+    .optional()
+    .transform(value => {
+      const text = value?.trim().slice(0, 100);
+      return text || undefined;
+    }),
   status: z.enum(['active', 'pending', 'all']).optional(),
   sort: z
     .enum([

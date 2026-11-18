@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const team = await createTeam(
+  const [team] = await createTeam(
     {
       id: teamId,
       name,

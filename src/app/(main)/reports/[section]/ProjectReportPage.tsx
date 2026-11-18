@@ -1,7 +1,7 @@
 'use client';
 
 import { Column, DataColumn, DataTable, Heading, Text } from '@umami/react-zen';
-import { Empty } from '@/components/common/Empty';
+import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import Link from '@/components/common/Link';
 import { LoadingPanel } from '@/components/common/LoadingPanel';
 import { PageBody } from '@/components/common/PageBody';
@@ -85,7 +85,7 @@ function Sessions({ rows }: { rows: ReportRow[] }) {
   if (rows.length === 0)
     return (
       <Panel>
-        <Empty />
+        <EmptyCard title="No data" description="Nothing in this range." />
       </Panel>
     );
   return (
@@ -120,7 +120,7 @@ function Compare({ rows }: { rows: ReportRow[] }) {
   if (rows.length === 0)
     return (
       <Panel>
-        <Empty />
+        <EmptyCard title="No data" description="Nothing in this range." />
       </Panel>
     );
   return (
@@ -184,7 +184,7 @@ function Utm({ rows }: { rows: ReportRow[] }) {
   if (rows.length === 0)
     return (
       <Panel>
-        <Empty />
+        <EmptyCard title="No data" description="Nothing in this range." />
       </Panel>
     );
   return (
@@ -262,7 +262,7 @@ function Performance({ stats }: { stats?: Record<string, number | null> }) {
       </MetricsBar>
       {samples === 0 && (
         <Panel>
-          <Empty />
+          <EmptyCard title="No data" description="Nothing in this range." />
         </Panel>
       )}
     </Column>
@@ -273,7 +273,7 @@ function Errors({ rows }: { rows: ReportRow[] }) {
   if (rows.length === 0)
     return (
       <Panel>
-        <Empty />
+        <EmptyCard title="No data" description="Nothing in this range." />
       </Panel>
     );
   return (
@@ -300,7 +300,7 @@ function Saved({ rows }: { rows: ReportRow[] }) {
   if (rows.length === 0)
     return (
       <Panel>
-        <Empty />
+        <EmptyCard title="No data" description="Nothing in this range." />
       </Panel>
     );
   return (

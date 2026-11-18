@@ -15,6 +15,7 @@ import {
 } from '@/components/hooks';
 import { PasswordChangeRequiredModal } from '@/components/modals/PasswordChangeRequiredModal';
 import { TwoFactorSetupModal } from '@/components/modals/TwoFactorSetupModal';
+import { removeClientAuthToken } from '@/lib/client';
 import { LAST_TEAM_CONFIG } from '@/lib/constants';
 import { removeItem, setItem } from '@/lib/storage';
 import { UpdateNotice } from './UpdateNotice';
@@ -60,6 +61,10 @@ export function App({ children }) {
   }
 
   if (error) {
+    removeClientAuthToken();
+    try {
+      localStorage.removeItem('stellog.landing');
+    } catch {}
     window.location.href = config.cloudMode
       ? `${process.env.cloudUrl}/login`
       : `${process.env.basePath || ''}/login`;

@@ -7,7 +7,15 @@ import { DialogButton } from '@/components/input/DialogButton';
 import { WebsiteTrackingCode } from './[websiteId]/settings/WebsiteTrackingCode';
 import { WebsiteAddForm } from './WebsiteAddForm';
 
-export function WebsiteAddButton({ teamId, onSave }: { teamId?: string; onSave?: () => void }) {
+export function WebsiteAddButton({
+  teamId,
+  kind = 'site',
+  onSave,
+}: {
+  teamId?: string;
+  kind?: 'site' | 'api';
+  onSave?: () => void;
+}) {
   const { t, labels, messages } = useMessages();
   const { toast } = useToast();
   const { touch } = useModified();
@@ -15,12 +23,14 @@ export function WebsiteAddButton({ teamId, onSave }: { teamId?: string; onSave?:
   const [isOpen, setIsOpen] = useState(false);
   const [createdWebsite, setCreatedWebsite] = useState<{ id: string } | null>(null);
 
+  const label = kind === 'api' ? 'Add API' : 'Add site';
+
   const handleSave = async (website: { id: string }) => {
     toast(t(messages.saved));
     touch('websites');
     onSave?.();
 
-    if (cloudMode) {
+    if (cloudMode && kind === 'site') {
       setCreatedWebsite(website);
     } else {
       setIsOpen(false);
@@ -38,10 +48,10 @@ export function WebsiteAddButton({ teamId, onSave }: { teamId?: string; onSave?:
   return (
     <>
       <Button onPress={() => handleOpenChange(true)} variant="primary">
-        <IconLabel icon={<Plus />} label={t(labels.addWebsite)} />
+        <IconLabel icon={<Plus />} label={label} />
       </Button>
       <DialogButton
-        title={createdWebsite ? t(labels.trackingCode) : t(labels.addWebsite)}
+        title={createdWebsite ? t(labels.trackingCode) : label}
         width={createdWebsite ? '720px' : '400px'}
         isOpen={isOpen}
         onOpenChange={handleOpenChange}
@@ -55,9 +65,10 @@ export function WebsiteAddButton({ teamId, onSave }: { teamId?: string; onSave?:
           ) : (
             <WebsiteAddForm
               teamId={teamId}
+              kind={kind}
               onSave={handleSave}
               onClose={close}
-              closeOnSave={!cloudMode}
+              closeOnSave={!cloudMode || kind === 'api'}
             />
           )
         }

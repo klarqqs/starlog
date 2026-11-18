@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     return error();
   }
 
-  const { id, name, domain, shareId, teamId } = body;
+  const { id, name, domain, shareId, teamId, kind } = body;
 
   if (process.env.CLOUD_MODE) {
     const account = teamId ? await fetchTeam(teamId) : await fetchAccount(auth.user.id);
@@ -80,6 +80,7 @@ export async function POST(request: Request) {
     name,
     domain,
     teamId,
+    kind: kind === 'api' ? 'api' : 'site',
   };
 
   if (!teamId) {

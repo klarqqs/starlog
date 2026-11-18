@@ -1,3 +1,4 @@
+import { removeClientAuthToken } from '@/lib/client';
 import { setUser, useApp } from '@/store/app';
 import { useApi } from '../useApi';
 
@@ -10,11 +11,19 @@ export function useLoginQuery() {
   const query = useQuery({
     queryKey: ['login'],
     queryFn: async () => {
-      const data = await post('/auth/verify');
+      try {
+        const data = await post('/auth/verify');
 
-      setUser(data);
+        setUser(data);
 
-      return data;
+        return data;
+      } catch (err) {
+        removeClientAuthToken();
+        try {
+          localStorage.removeItem('stellog.landing');
+        } catch {}
+        throw err;
+      }
     },
     enabled: !user,
   });

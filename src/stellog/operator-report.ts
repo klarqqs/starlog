@@ -29,12 +29,15 @@ export type OperatorSort =
   | 'visitorsGrowth'
   | 'requestsGrowth';
 
+export type PropertyKind = 'site' | 'api';
+
 export type OperatorWebsite = {
   id: string;
   name: string;
   teamId: string | null;
   status: EnrollmentStatus;
   domain?: string | null;
+  kind?: PropertyKind;
 };
 
 export type OperatorTeam = {
@@ -63,6 +66,8 @@ export type OperatorProject = {
   status: EnrollmentStatus;
   properties: number;
   pendingProperties: number;
+  sites: number;
+  apis: number;
   websiteIds: string[];
   /** Public site used for the project icon. A website domain wins over an api. domain. */
   domain: string | null;
@@ -102,6 +107,29 @@ export function statusForEnrollment(
   if (isAdmin) return 'active';
   if (teamStatus === 'pending') return 'pending';
   return mode === 'approval-required' ? 'pending' : 'active';
+}
+
+/** "1 site, 1 API", "API only", or "Site only". Pending properties are not included. */
+export function propertyLabel(sites: number, apis: number) {
+  if (sites <= 0 && apis <= 0) return 'No properties';
+  if (sites <= 0) return apis === 1 ? 'API only' : `${apis} APIs`;
+  if (apis <= 0) return sites === 1 ? 'Site only' : `${sites} sites`;
+  const siteText = sites === 1 ? '1 site' : `${sites} sites`;
+  const apiText = apis === 1 ? '1 API' : `${apis} APIs`;
+  return `${siteText}, ${apiText}`;
+}
+
+/**
+ * The seeded histogram uses one shape for most profiles, so p50 and p95 match on every row.
+ * A latency column that never changes looks broken. Show it only when the rows disagree.
+ */
+export function showLatency(rows: Array<{ p50: number | null; p95: number | null }>) {
+  const distinct = new Set(
+    rows
+      .filter(row => row.p50 !== null || row.p95 !== null)
+      .map(row => `${row.p50 ?? ''}:${row.p95 ?? ''}`),
+  );
+  return distinct.size > 1;
 }
 
 /** Prefer a public website over an api. hostname so the icon matches the product. */
@@ -162,6 +190,8 @@ export function rankProjects(
     }
     bucket.properties += 1;
     bucket.websiteIds.push(website.id);
+    if (website.kind === 'api') bucket.apis += 1;
+    else bucket.sites += 1;
     const web = webById.get(website.id);
     if (web) {
       bucket.pageviews += web.pageviews;
@@ -218,6 +248,8 @@ function emptyProject(
     status,
     properties: 0,
     pendingProperties: 0,
+    sites: 0,
+    apis: 0,
     websiteIds: [],
     domain: null,
     pageviews: 0,

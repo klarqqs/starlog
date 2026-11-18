@@ -9,7 +9,9 @@ import {
   parseProjectId,
   projectDomain,
   projectId,
+  propertyLabel,
   rankProjects,
+  showLatency,
   statusForEnrollment,
 } from './operator-report';
 
@@ -112,6 +114,43 @@ describe('rankProjects', () => {
     expect(ranked.find(project => project.name === 'Beta')?.domain).toBe('beta.test');
     expect(projectDomain('api.a.test', 'a.test')).toBe('a.test');
     expect(projectDomain('a.test', 'api.a.test')).toBe('a.test');
+  });
+
+  test('counts sites and APIs on the project, not by name', () => {
+    const ranked = rankProjects(
+      [teams[0]],
+      [
+        { id: siteA, name: 'API Docs', teamId: teamA, status: 'active', kind: 'site' },
+        { id: siteB, name: 'Alpha', teamId: teamA, status: 'active', kind: 'api' },
+      ],
+      [{ websiteId: siteA, pageviews: 4, visitors: 2 }],
+      [api(siteB, 9, 80)],
+      { status: 'all' },
+    );
+    const alpha = ranked.find(project => project.name === 'Alpha');
+
+    expect(alpha).toMatchObject({ sites: 1, apis: 1, pageviews: 4, requests: 9 });
+    expect(propertyLabel(1, 1)).toBe('1 site, 1 API');
+    expect(propertyLabel(0, 1)).toBe('API only');
+    expect(propertyLabel(0, 2)).toBe('2 APIs');
+    expect(propertyLabel(1, 0)).toBe('Site only');
+    expect(propertyLabel(0, 0)).toBe('No properties');
+  });
+
+  test('hides latency when every row shares the same p50 and p95', () => {
+    expect(
+      showLatency([
+        { p50: 25, p95: 100 },
+        { p50: 25, p95: 100 },
+      ]),
+    ).toBe(false);
+    expect(
+      showLatency([
+        { p50: 25, p95: 100 },
+        { p50: 80, p95: 400 },
+      ]),
+    ).toBe(true);
+    expect(showLatency([{ p50: null, p95: null }])).toBe(false);
   });
 
   test('a website without a team is its own project', () => {

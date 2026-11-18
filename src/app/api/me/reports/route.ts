@@ -21,7 +21,8 @@ export async function GET(request: Request) {
   const windowError = metricsWindow(query.startAt, query.endAt);
   if (windowError) return badRequest({ message: windowError });
 
-  const websites = await websitesForUser(auth.user.id, auth.user.role === 'operator');
+  const isOpOrAdmin = auth.user.role === 'operator' || auth.user.role === 'admin' || !!auth.user.isAdmin;
+  const websites = await websitesForUser(auth.user.id, isOpOrAdmin);
   return json(
     await readProjectReport(
       query.section,

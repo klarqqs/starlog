@@ -5,7 +5,7 @@ Work through this list when the install moves to another operator. The running d
 ## Checklist
 
 - [ ] The receiving operator has a GitHub account with admin on the repository they will own.
-- [ ] Transfer `github.com/klarqqs/starlog` (or push a mirror) and confirm Actions ran on the new default branch. CI is `.github/workflows/ci.yml`.
+- [ ] Transfer `github.com/klarqqs/stellog` (or push a mirror) and confirm Actions ran on the new default branch. CI is `.github/workflows/ci.yml`.
 - [ ] Remove the previous owner's deploy keys, Action secrets, and package permissions after the new CI is green.
 - [ ] Generate a new `APP_SECRET` and `TWO_FACTOR_ENCRYPTION_KEY` with `openssl rand -hex 32`. Setting a new `APP_SECRET` signs every session out. Setting a new two-factor key makes existing two-factor secrets unreadable.
 - [ ] Put those values in the new host's environment. Do not commit `.env`.
@@ -21,7 +21,7 @@ Work through this list when the install moves to another operator. The running d
 
 ## Repository transfer
 
-The git remote used for this work is `https://github.com/klarqqs/starlog.git`. A public repository `github.com/klarqqs/stellog` also exists; it is not automatically the same commit as this checkout. Before transfer, agree which remote is canonical and push the commit you intend to hand over. This checkout also has uncommitted work until someone commits it.
+The public repository is `https://github.com/klarqqs/stellog.git`. This checkout may still have `origin` pointed at `https://github.com/klarqqs/starlog.git`. Before transfer, push the commit you intend to hand over to `stellog`. This checkout also has uncommitted work until someone commits it.
 
 GitHub's transfer keeps issues and stars and changes the owner. After it finishes, update the local remote, and rotate `APP_SECRET` so a token minted on the old operator's watch cannot be replayed as a session. Ingest keys and operator keys are hashes in the database; they move with the dump and do not depend on `APP_SECRET`. Revoke any operator key you do not want the new operator to inherit.
 

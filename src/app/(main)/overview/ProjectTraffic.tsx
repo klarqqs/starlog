@@ -2,6 +2,7 @@
 
 import { Column, Grid, Heading, Row, Tab, TabList, TabPanel, Tabs } from '@umami/react-zen';
 import type { ReactNode } from 'react';
+import { LedgerReports } from '@/app/(main)/websites/[websiteId]/ledger/LedgerPage';
 import type { ChartAnnotation } from '@/components/charts/ChartAnnotationMarkers';
 import { GridRow } from '@/components/common/GridRow';
 import { LoadingPanel } from '@/components/common/LoadingPanel';
@@ -45,6 +46,7 @@ export function ProjectTraffic({ afterMetrics }: { afterMetrics?: ReactNode }) {
             ))}
           </MetricsBar>
           {afterMetrics}
+          <LedgerReports startAt={range.startDate.getTime()} endAt={range.endDate.getTime()} />
           <Panel minHeight="520px">
             <Row justifyContent="end">
               <UnitFilter />
@@ -257,16 +259,6 @@ function TrafficPanels({ data }: { data: Traffic }) {
               />
             </TabPanel>
           </Tabs>
-        </Panel>
-      </GridRow>
-      <GridRow layout="two-one" minHeight="570px">
-        <Panel paddingX="0" paddingY="0" style={{ gridColumn: isMobile ? 'span 1' : 'span 2' }}>
-          <WorldMap data={data.location.country} />
-        </Panel>
-        <Panel>
-          <Heading size="2xl">{t(labels.traffic)}</Heading>
-          <Row border="bottom" marginBottom="4" />
-          <WeeklyTraffic data={data.weekly} />
         </Panel>
       </GridRow>
     </Grid>

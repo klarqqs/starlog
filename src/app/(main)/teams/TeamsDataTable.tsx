@@ -1,4 +1,5 @@
 import { DataGrid } from '@/components/common/DataGrid';
+import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import Link from '@/components/common/Link';
 import { useLoginQuery, useNavigation, useUserTeamsQuery } from '@/components/hooks';
 import { TeamsTable } from './TeamsTable';
@@ -18,7 +19,12 @@ export function TeamsDataTable() {
   };
 
   return (
-    <DataGrid query={query}>
+    <DataGrid
+      query={query}
+      renderEmpty={() => (
+        <EmptyCard title="No teams" description="Create a project to start a team." />
+      )}
+    >
       {({ data }) => {
         return <TeamsTable data={data} renderLink={renderLink} />;
       }}

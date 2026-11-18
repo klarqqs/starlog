@@ -104,7 +104,7 @@ export function UserButton({ showText = true, onClose }: UserButtonProps) {
       !user.isAdmin && {
         id: 'projects',
         label: 'Projects',
-        path: '/admin/projects',
+        path: '/admin/overview',
         icon: <LockKeyhole />,
       },
     {

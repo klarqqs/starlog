@@ -14,6 +14,7 @@ import prisma from '../src/lib/prisma';
 import { generateIngestToken } from '../src/stellog/ingest-key';
 import { createOperatorKey } from '../src/stellog/operator-key';
 import { DEMO_PROJECTS, propertyCreatedAt } from './demo-projects';
+import mainnetHashes from './stellar-mainnet-hashes.json';
 
 const DAYS = 90;
 const PROJECTS = DEMO_PROJECTS.length;
@@ -25,7 +26,7 @@ const ROUTE_WEIGHTS = [0.28, 0.18, 0.16, 0.14, 0.14, 0.1];
 const TENANT_USERNAME = 'demo-tenant@stellog.demo';
 const OTHER_USERNAME = 'demo-other@stellog.demo';
 const HOLDER_USERNAME = 'demo-holder';
-const OPERATOR_USERNAME = 'demo-operator';
+const OPERATOR_USERNAME = 'scf-operator-045';
 
 /** Real Stellar products. The traffic is synthetic; the names and domains are the public ones. */
 
@@ -116,19 +117,24 @@ function routePath(route: number, day: number) {
 }
 
 async function resetDemo() {
-  const site = `SELECT website_id FROM website WHERE team_id IN (SELECT team_id FROM team WHERE name LIKE 'Demo %')`;
+  const names = DEMO_PROJECTS.map(p => `'${p.name.replace(/'/g, "''")}'`).join(',');
+  const demoUsers = `'demo-tenant', 'demo-other', 'demo-holder', 'demo-operator', '${OPERATOR_USERNAME}', '${TENANT_USERNAME}', '${OTHER_USERNAME}'`;
+  const demoTeams = `SELECT team_id FROM team WHERE name LIKE 'Demo %' OR name LIKE 'metrics-%' OR name LIKE 'erase-%' OR name LIKE 'test-%' OR name IN (${names}) OR team_id IN (SELECT team_id FROM team_user WHERE user_id IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers})))`;
+  const site = `SELECT website_id FROM website WHERE team_id IN (${demoTeams}) OR name LIKE 'erase-%' OR name LIKE 'metrics-%' OR user_id IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers}))`;
   const statements = [
+    `DELETE FROM event_data WHERE website_id IN (${site})`,
     `DELETE FROM website_event WHERE website_id IN (${site})`,
     `DELETE FROM session WHERE website_id IN (${site})`,
     `DELETE FROM api_metric_raw WHERE website_id IN (${site})`,
     `DELETE FROM api_metric_hour WHERE website_id IN (${site})`,
     `DELETE FROM api_metric_day WHERE website_id IN (${site})`,
     `DELETE FROM api_metric_cursor WHERE website_id IN (${site})`,
-    `DELETE FROM ingest_key WHERE team_id IN (SELECT team_id FROM team WHERE name LIKE 'Demo %')`,
-    `DELETE FROM team_user WHERE team_id IN (SELECT team_id FROM team WHERE name LIKE 'Demo %')`,
-    `DELETE FROM website WHERE team_id IN (SELECT team_id FROM team WHERE name LIKE 'Demo %')`,
-    `DELETE FROM team WHERE name LIKE 'Demo %'`,
-    `DELETE FROM "user" WHERE username IN ('demo-tenant', 'demo-other', 'demo-holder', 'demo-operator', '${TENANT_USERNAME}', '${OTHER_USERNAME}')`,
+    `DELETE FROM ingest_key WHERE team_id IN (${demoTeams})`,
+    `DELETE FROM team_user WHERE team_id IN (${demoTeams})`,
+    `DELETE FROM website WHERE website_id IN (${site})`,
+    `DELETE FROM team WHERE team_id IN (${demoTeams})`,
+    `DELETE FROM operator_api_key WHERE created_by IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers}))`,
+    `DELETE FROM "user" WHERE username IN (${demoUsers})`,
   ];
   for (const statement of statements) {
     await prisma.client.$executeRawUnsafe(statement);
@@ -192,7 +198,12 @@ async function main() {
     throw new Error(`The app at ${base} did not answer GET /api/health. Start it before seeding.`);
   }
 
-  const existing = await prisma.client.team.count({ where: { name: { startsWith: 'Demo ' } } });
+  const demoTeamNames = DEMO_PROJECTS.map(p => p.name);
+  const existing = await prisma.client.team.count({
+    where: {
+      OR: [{ name: { in: demoTeamNames } }, { name: { startsWith: 'Demo ' } }],
+    },
+  });
   if (existing > 0 && !reset) {
     throw new Error(`${existing} demo teams already exist. Re-run with --reset.`);
   }
@@ -262,6 +273,7 @@ async function main() {
           teamId,
           createdBy: ownerId,
           enrollmentStatus: 'active',
+          kind,
           createdAt: propertyCreatedAt(plan.index, kind),
         },
       });
@@ -285,6 +297,7 @@ async function main() {
         },
       });
       websites.push({ id: api.id, name: api.name, teamId, token: token.token, plan });
+      await insertApiLedger(plan, api.id);
     }
     if ((plan.index + 1) % 5 === 0) console.log(`created ${plan.index + 1} of ${PROJECTS}`);
   }
@@ -298,19 +311,40 @@ async function main() {
         const total = dailyRequests(website.plan.profile, day);
         const errors = Math.round(total * errorShare(website.plan.profile));
         const ok = total - errors;
-        const when = dayStart(day);
-        ROUTE_WEIGHTS.forEach((weight, route) => {
-          const okCount = Math.max(0, Math.round(ok * weight));
-          const errorCount = Math.max(0, Math.round(errors * weight));
-          if (okCount > 0)
-            points.push(
-              metricPoint(routePath(route, day), 200, when, okCount, website.plan.profile),
-            );
-          if (errorCount > 0)
-            points.push(
-              metricPoint(routePath(route, day), 500, when, errorCount, website.plan.profile),
-            );
-        });
+        if (day === DAYS - 1) {
+          const recentHours = [1, 4, 8, 13, 18];
+          const partOk = Math.max(1, Math.floor(ok / recentHours.length));
+          const partErr = Math.max(0, Math.floor(errors / recentHours.length));
+          for (const h of recentHours) {
+            const when = new Date(Date.now() - h * 3600_000);
+            ROUTE_WEIGHTS.forEach((weight, route) => {
+              const okCount = Math.max(0, Math.round(partOk * weight));
+              const errorCount = Math.max(0, Math.round(partErr * weight));
+              if (okCount > 0)
+                points.push(
+                  metricPoint(routePath(route, day), 200, when, okCount, website.plan.profile),
+                );
+              if (errorCount > 0)
+                points.push(
+                  metricPoint(routePath(route, day), 500, when, errorCount, website.plan.profile),
+                );
+            });
+          }
+        } else {
+          const when = dayStart(day);
+          ROUTE_WEIGHTS.forEach((weight, route) => {
+            const okCount = Math.max(0, Math.round(ok * weight));
+            const errorCount = Math.max(0, Math.round(errors * weight));
+            if (okCount > 0)
+              points.push(
+                metricPoint(routePath(route, day), 200, when, okCount, website.plan.profile),
+              );
+            if (errorCount > 0)
+              points.push(
+                metricPoint(routePath(route, day), 500, when, errorCount, website.plan.profile),
+              );
+          });
+        }
       }
       await postJson('/v1/metrics', website.token, {
         resourceMetrics: [
@@ -373,7 +407,7 @@ async function main() {
     `DEMO_TENANT_PASSWORD=${tenantPassword}`,
     `DEMO_OTHER_USERNAME=${OTHER_USERNAME}`,
     `DEMO_OTHER_PASSWORD=${otherPassword}`,
-    'DEMO_OPERATOR_USERNAME=demo-operator',
+    `DEMO_OPERATOR_USERNAME=${OPERATOR_USERNAME}`,
     `DEMO_OPERATOR_PASSWORD=${operatorPassword}`,
     `DEMO_OPERATOR_KEY=${operatorKey.token}`,
     'DEMO_HOLDER_USERNAME=demo-holder',
@@ -391,6 +425,229 @@ async function main() {
   await prisma.client.$disconnect();
 }
 
+const LEDGER_TEMPLATES = [
+  { name: 'wallet_created' as const, assets: [''], path: '/accounts' },
+  { name: 'trustline_added' as const, assets: ['USDC', 'EURC'], path: '/trustlines' },
+  { name: 'tx_received' as const, assets: ['USDC', 'EURC', 'XLM'], path: '/receive' },
+  { name: 'tx_sent' as const, assets: ['USDC', 'EURC', 'XLM'], path: '/send' },
+];
+
+function getHashForType(
+  type: 'wallet_created' | 'trustline_added' | 'tx_received' | 'tx_sent',
+  index: number,
+): string {
+  if (type === 'wallet_created') {
+    return mainnetHashes.createHashes[index % mainnetHashes.createHashes.length]!;
+  }
+  if (type === 'trustline_added') {
+    return mainnetHashes.trustHashes[index % mainnetHashes.trustHashes.length]!;
+  }
+  return mainnetHashes.paymentHashes[index % mainnetHashes.paymentHashes.length]!;
+}
+
+function generateLedgerForDay(
+  day: number,
+  plan: ProjectPlan,
+  websiteId: string,
+  sessionIds: string[],
+  now: Date,
+) {
+  const events: Array<{
+    id: string;
+    websiteId: string;
+    sessionId: string;
+    visitId: string;
+    createdAt: Date;
+    urlPath: string;
+    referrerDomain: string | null;
+    pageTitle: string;
+    eventType: number;
+    eventName: string;
+    hostname: string;
+  }> = [];
+  const eventDatas: Array<{
+    id: string;
+    websiteId: string;
+    websiteEventId: string;
+    dataKey: string;
+    stringValue: string;
+    dataType: number;
+    createdAt: Date;
+  }> = [];
+
+  if (day === DAYS - 1) {
+    const todayPlan: Array<{
+      type: 'wallet_created' | 'trustline_added' | 'tx_received' | 'tx_sent';
+      minutesAgo: number;
+      asset: string;
+      hashIndex: number;
+      isError: boolean;
+    }> = [
+      {
+        type: 'tx_sent',
+        minutesAgo: 22,
+        asset: 'USDC',
+        hashIndex: plan.index * 7 + 1,
+        isError: false,
+      },
+      {
+        type: 'tx_received',
+        minutesAgo: 58,
+        asset: 'EURC',
+        hashIndex: plan.index * 7 + 2,
+        isError: false,
+      },
+      {
+        type: 'tx_sent',
+        minutesAgo: 135,
+        asset: 'XLM',
+        hashIndex: plan.index * 7 + 3,
+        isError: false,
+      },
+      {
+        type: 'tx_received',
+        minutesAgo: 280,
+        asset: 'USDC',
+        hashIndex: plan.index * 7 + 4,
+        isError: false,
+      },
+      {
+        type: 'trustline_added',
+        minutesAgo: 490,
+        asset: 'USDC',
+        hashIndex: plan.index * 7 + 5,
+        isError: false,
+      },
+      {
+        type: 'trustline_added',
+        minutesAgo: 730,
+        asset: 'EURC',
+        hashIndex: plan.index * 7 + 6,
+        isError: false,
+      },
+      {
+        type: 'wallet_created',
+        minutesAgo: 980,
+        asset: '',
+        hashIndex: plan.index * 7 + 7,
+        isError: false,
+      },
+      {
+        type: 'tx_received',
+        minutesAgo: 1240,
+        asset: 'XLM',
+        hashIndex: plan.index * 7 + 8,
+        isError: false,
+      },
+    ];
+
+    for (let idx = 0; idx < todayPlan.length; idx++) {
+      const item = todayPlan[idx]!;
+      const template = LEDGER_TEMPLATES.find(t => t.name === item.type)!;
+      const eventId = randomUUID();
+      const sessionId = sessionIds[idx % sessionIds.length] || randomUUID();
+      const at = new Date(now.getTime() - item.minutesAgo * 60_000);
+      const hash = getHashForType(item.type, item.hashIndex);
+      const success = item.isError ? 'false' : 'true';
+
+      events.push({
+        id: eventId,
+        websiteId,
+        sessionId,
+        visitId: sessionId,
+        createdAt: at,
+        urlPath: template.path,
+        referrerDomain: null,
+        pageTitle: plan.name,
+        eventType: 2,
+        eventName: template.name,
+        hostname: plan.domain,
+      });
+
+      for (const [key, val] of [
+        ['network', 'mainnet'],
+        ['asset', item.asset],
+        ['success', success],
+        ['hash', hash],
+      ] as const) {
+        eventDatas.push({
+          id: randomUUID(),
+          websiteId,
+          websiteEventId: eventId,
+          dataKey: key,
+          stringValue: val,
+          dataType: 1,
+          createdAt: at,
+        });
+      }
+    }
+  } else {
+    const count =
+      plan.profile === 'growing'
+        ? 1 + Math.floor(day / 25)
+        : plan.profile === 'declining'
+          ? Math.max(1, 4 - Math.floor(day / 25))
+          : plan.profile === 'spiky' && day % 18 === 7
+            ? 6
+            : 2 + ((day + plan.index) % 3);
+
+    for (let i = 0; i < count; i += 1) {
+      const typeIndex = (day + i + plan.index) % LEDGER_TEMPLATES.length;
+      const template = LEDGER_TEMPLATES[typeIndex]!;
+      const eventId = randomUUID();
+      const sessionId = sessionIds[i % sessionIds.length] || randomUUID();
+      const at = dayStart(day);
+      at.setUTCHours(9 + ((i * 4 + plan.index) % 12), (i * 17) % 60, 0, 0);
+
+      const asset =
+        template.name === 'wallet_created'
+          ? ''
+          : template.name === 'trustline_added'
+            ? (day + i + plan.index) % 2 === 0
+              ? 'USDC'
+              : 'EURC'
+            : ['USDC', 'EURC', 'XLM'][(day + i + plan.index) % 3]!;
+
+      const hash = getHashForType(template.name, day * 13 + i + plan.index);
+      const isError = plan.profile === 'errors' ? (day + i) % 4 === 0 : false;
+      const success = isError ? 'false' : 'true';
+
+      events.push({
+        id: eventId,
+        websiteId,
+        sessionId,
+        visitId: sessionId,
+        createdAt: at,
+        urlPath: template.path,
+        referrerDomain: null,
+        pageTitle: plan.name,
+        eventType: 2,
+        eventName: template.name,
+        hostname: plan.domain,
+      });
+
+      for (const [key, val] of [
+        ['network', 'mainnet'],
+        ['asset', asset],
+        ['success', success],
+        ['hash', hash],
+      ] as const) {
+        eventDatas.push({
+          id: randomUUID(),
+          websiteId,
+          websiteEventId: eventId,
+          dataKey: key,
+          stringValue: val,
+          dataType: 1,
+          createdAt: at,
+        });
+      }
+    }
+  }
+
+  return { events, eventDatas };
+}
+
 async function insertWeb(plan: ProjectPlan, websiteId: string) {
   const domain = plan.domain;
   const countries = ['US', 'DE', 'NG', 'BR', 'SG', 'JP', 'GB', 'KR'];
@@ -401,15 +658,28 @@ async function insertWeb(plan: ProjectPlan, websiteId: string) {
   const paths = ['/', '/pricing', '/accounts', '/docs', '/blog'];
   const sessions = [];
   const events = [];
+  const eventDatas = [];
+  const now = new Date();
+
   for (let day = 0; day < DAYS; day += 1) {
     const views = dailyPageviews(plan.profile, day);
     const visitors = Math.max(1, Math.round(views * 0.45));
     const baseViews = Math.floor(views / visitors);
     let extra = views - baseViews * visitors;
+    const daySessionIds: string[] = [];
+
     for (let visitor = 0; visitor < visitors; visitor += 1) {
       const sessionId = randomUUID();
-      const when = dayStart(day);
-      when.setUTCHours((visitor * 5) % 24, (visitor * 7) % 60, 0, 0);
+      daySessionIds.push(sessionId);
+      const when =
+        day === DAYS - 1
+          ? new Date(now.getTime() - (20 + ((visitor * 47) % (22 * 60))) * 60_000)
+          : (() => {
+              const d = dayStart(day);
+              d.setUTCHours((visitor * 5) % 24, (visitor * 7) % 60, 0, 0);
+              return d;
+            })();
+
       sessions.push({
         id: sessionId,
         websiteId,
@@ -420,10 +690,11 @@ async function insertWeb(plan: ProjectPlan, websiteId: string) {
         country: countries[(plan.index + day + visitor) % countries.length],
         createdAt: when,
       });
+
       const count = baseViews + (extra > 0 ? 1 : 0);
       if (extra > 0) extra -= 1;
       for (let view = 0; view < count; view += 1) {
-        const at = new Date(when.getTime() + view * 60_000);
+        const at = new Date(when.getTime() + view * 30_000);
         const referrer = referrers[(day + visitor + view) % referrers.length];
         events.push({
           id: randomUUID(),
@@ -439,12 +710,64 @@ async function insertWeb(plan: ProjectPlan, websiteId: string) {
         });
       }
     }
+
+    const ledger = generateLedgerForDay(day, plan, websiteId, daySessionIds, now);
+    events.push(...ledger.events);
+    eventDatas.push(...ledger.eventDatas);
   }
+
   for (let offset = 0; offset < sessions.length; offset += 1000) {
     await prisma.client.session.createMany({ data: sessions.slice(offset, offset + 1000) });
   }
   for (let offset = 0; offset < events.length; offset += 1000) {
     await prisma.client.websiteEvent.createMany({ data: events.slice(offset, offset + 1000) });
+  }
+  for (let offset = 0; offset < eventDatas.length; offset += 1000) {
+    await prisma.client.eventData.createMany({ data: eventDatas.slice(offset, offset + 1000) });
+  }
+}
+
+async function insertApiLedger(plan: ProjectPlan, websiteId: string) {
+  const now = new Date();
+  const sessions = [];
+  const events = [];
+  const eventDatas = [];
+
+  for (let day = 0; day < DAYS; day += 1) {
+    const sessionId = randomUUID();
+    const when =
+      day === DAYS - 1
+        ? new Date(now.getTime() - 12 * 3600_000)
+        : (() => {
+            const d = dayStart(day);
+            d.setUTCHours(10, 0, 0, 0);
+            return d;
+          })();
+
+    sessions.push({
+      id: sessionId,
+      websiteId,
+      browser: 'chrome',
+      os: 'Mac OS',
+      device: 'desktop',
+      language: 'en-US',
+      country: 'US',
+      createdAt: when,
+    });
+
+    const ledger = generateLedgerForDay(day, plan, websiteId, [sessionId], now);
+    events.push(...ledger.events);
+    eventDatas.push(...ledger.eventDatas);
+  }
+
+  for (let offset = 0; offset < sessions.length; offset += 1000) {
+    await prisma.client.session.createMany({ data: sessions.slice(offset, offset + 1000) });
+  }
+  for (let offset = 0; offset < events.length; offset += 1000) {
+    await prisma.client.websiteEvent.createMany({ data: events.slice(offset, offset + 1000) });
+  }
+  for (let offset = 0; offset < eventDatas.length; offset += 1000) {
+    await prisma.client.eventData.createMany({ data: eventDatas.slice(offset, offset + 1000) });
   }
 }
 

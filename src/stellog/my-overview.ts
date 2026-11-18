@@ -8,7 +8,9 @@ const ALL_SITES = '00000000-0000-4000-8000-0000000000a1';
 export type MySite = OperatorProject & {
   websiteId: string;
   domain: string | null;
-  hasApi: boolean;
+  kind: 'site' | 'api';
+  teamId: string | null;
+  teamName: string | null;
 };
 
 export type MyOverview = {
@@ -31,7 +33,15 @@ export async function readMyOverview(
           deletedAt: null,
           OR: [{ userId }, { team: { deletedAt: null, members: { some: { userId } } } }],
         },
-    select: { id: true, name: true, domain: true, enrollmentStatus: true },
+    select: {
+      id: true,
+      name: true,
+      domain: true,
+      enrollmentStatus: true,
+      teamId: true,
+      kind: true,
+      team: { select: { name: true } },
+    },
     orderBy: { name: 'asc' },
   });
   if (websites.length === 0) return { totals: emptyTotals(), sites: [] };
@@ -53,6 +63,7 @@ export async function readMyOverview(
     name: website.name,
     teamId: null,
     status: (website.enrollmentStatus === 'pending' ? 'pending' : 'active') as 'pending' | 'active',
+    kind: website.kind === 'api' ? ('api' as const) : ('site' as const),
   }));
   const ranked = rankProjects([], rows, web, api, { status: 'all', previous });
   const byId = new Map(ranked.map(project => [project.id, project]));
@@ -66,7 +77,9 @@ export async function readMyOverview(
       name: website.name,
       websiteId: website.id,
       domain: website.domain,
-      hasApi: /api/i.test(website.name) || (project?.requests ?? 0) > 0,
+      kind: website.kind === 'api' ? 'api' : 'site',
+      teamId: website.teamId,
+      teamName: website.team?.name ?? null,
     };
   });
 
@@ -79,6 +92,7 @@ export async function readMyOverview(
       status: (website.enrollmentStatus === 'pending' ? 'pending' : 'active') as
         | 'pending'
         | 'active',
+      kind: website.kind === 'api' ? ('api' as const) : ('site' as const),
     })),
     web,
     api,
@@ -96,6 +110,8 @@ function emptyTotals(): OperatorProject {
     status: 'active',
     properties: 0,
     pendingProperties: 0,
+    sites: 0,
+    apis: 0,
     websiteIds: [],
     domain: null,
     pageviews: 0,

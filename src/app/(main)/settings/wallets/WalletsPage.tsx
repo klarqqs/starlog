@@ -1,7 +1,7 @@
 'use client';
 import { Button, Column, Row, Text } from '@umami/react-zen';
 import { useState } from 'react';
-import { Empty } from '@/components/common/Empty';
+import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useApi } from '@/components/hooks';
@@ -50,9 +50,7 @@ export function WalletsPage() {
       </PageHeader>
       <Panel width="100%">
         {wallets.length === 0 ? (
-          <Column alignItems="center" justifyContent="center" minHeight="240px">
-            <Empty />
-          </Column>
+          <EmptyCard title="No wallets" description="Link a wallet you already use." />
         ) : (
           <Column gap="3">
             {wallets.map((wallet: { publicKey: string }) => (

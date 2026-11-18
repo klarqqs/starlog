@@ -1,10 +1,5 @@
-import type { Metadata } from 'next';
-import { WebsitesPage } from './WebsitesPage';
+import { redirect } from 'next/navigation';
 
 export default function () {
-  return <WebsitesPage />;
+  redirect('/projects');
 }
-
-export const metadata: Metadata = {
-  title: 'Websites',
-};

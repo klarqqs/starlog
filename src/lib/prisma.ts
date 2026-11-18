@@ -776,18 +776,18 @@ async function pagedQuery<T>(model: string, criteria: T, filters?: QueryFilters)
   // Independent queries; run concurrently (mirrors pagedRawQuery).
   const [data, count] = await Promise.all([
     client[model].findMany({
-    ...criteria,
-    ...{
-      ...(size > 0 && { take: +size, skip: +size * (+page - 1) }),
-      ...(orderBy && {
-        orderBy: [
-          {
-            [orderBy]: sortDescending ? 'desc' : 'asc',
-          },
-        ],
-      }),
-    },
-  }),
+      ...criteria,
+      ...{
+        ...(size > 0 && { take: +size, skip: +size * (+page - 1) }),
+        ...(orderBy && {
+          orderBy: [
+            {
+              [orderBy]: sortDescending ? 'desc' : 'asc',
+            },
+          ],
+        }),
+      },
+    }),
     client[model].count({ where: (criteria as any).where }),
   ]);
 
@@ -865,8 +865,21 @@ function transaction(input: any, options?: any) {
   return client.$transaction(input, options);
 }
 
+/** Runtime queries use the pooler when it is configured. Migrations stay on DATABASE_URL. */
+function runtimeDatabaseUrl() {
+  return process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL;
+}
+
+function poolConfig(connectionString: string) {
+  return {
+    connectionString,
+    // A Vercel function must not open pg's default pool. The direct host rejects the extras.
+    ...(process.env.VERCEL ? { max: 1 } : {}),
+  };
+}
+
 export function getSchema() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = runtimeDatabaseUrl();
 
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is not set.');
@@ -878,7 +891,7 @@ export function getSchema() {
 }
 
 function getClient() {
-  const url = process.env.DATABASE_URL;
+  const url = runtimeDatabaseUrl();
   const replicaUrl = process.env.DATABASE_REPLICA_URL;
   const logQuery = process.env.LOG_QUERY;
 
@@ -888,7 +901,7 @@ function getClient() {
 
   const schema = getSchema();
 
-  const baseAdapter = new PrismaPg({ connectionString: url }, { schema });
+  const baseAdapter = new PrismaPg(poolConfig(url), { schema });
 
   const baseClient = new PrismaClient({
     adapter: baseAdapter,
@@ -906,7 +919,7 @@ function getClient() {
     return baseClient;
   }
 
-  const replicaAdapter = new PrismaPg({ connectionString: replicaUrl }, { schema });
+  const replicaAdapter = new PrismaPg(poolConfig(replicaUrl), { schema });
 
   const replicaClient = new PrismaClient({
     adapter: replicaAdapter,
