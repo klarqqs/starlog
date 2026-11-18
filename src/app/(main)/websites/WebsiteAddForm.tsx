@@ -4,11 +4,13 @@ import { DOMAIN_REGEX } from '@/lib/constants';
 
 export function WebsiteAddForm({
   teamId,
+  kind = 'site',
   onSave,
   onClose,
   closeOnSave = true,
 }: {
   teamId?: string;
+  kind?: 'site' | 'api';
   onSave?: (website: any) => void | Promise<void>;
   onClose?: () => void;
   closeOnSave?: boolean;
@@ -17,7 +19,7 @@ export function WebsiteAddForm({
   const { mutateAsync, error, isPending } = useUpdateQuery('/websites', { teamId });
 
   const handleSubmit = async (data: any) => {
-    const website = await mutateAsync(data);
+    const website = await mutateAsync({ ...data, kind });
 
     await onSave?.(website);
 

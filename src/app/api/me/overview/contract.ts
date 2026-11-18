@@ -7,7 +7,9 @@ const mySiteSchema = operatorProjectSchema
   .extend({
     websiteId: z.uuid(),
     domain: z.string().nullable(),
-    hasApi: z.boolean(),
+    kind: z.enum(['site', 'api']),
+    teamId: z.uuid().nullable(),
+    teamName: z.string().nullable(),
   })
   .meta({ id: 'MySite' });
 

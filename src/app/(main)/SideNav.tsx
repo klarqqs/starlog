@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from '@umami/react-zen';
 import { AdminNav } from '@/app/(main)/admin/AdminNav';
+import { ProjectNav } from '@/app/(main)/projects/[projectId]/ProjectNav';
 import { SettingsNav } from '@/app/(main)/settings/SettingsNav';
 import { WebsiteNav } from '@/app/(main)/websites/[websiteId]/WebsiteNav';
 import { IconLabel } from '@/components/common/IconLabel';
@@ -19,11 +20,14 @@ import { useGlobalState, useLoginQuery, useMainNavItems, useNavigation } from '@
 import { PanelLeft } from '@/components/icons';
 import { UserButton } from '@/components/input/UserButton';
 import { Logo } from '@/components/svg';
+import { isReadOnlyOperator, PROJECT_PATH } from '@/stellog/project-nav';
 
 export function SideNav(props: any) {
   const { pathname, renderUrl, websiteId } = useNavigation();
+  const [, projectId] = pathname.match(PROJECT_PATH) || [];
   const { user } = useLoginQuery();
-  const readOnlyOperator = !!user?.isOperator && !user?.isAdmin;
+  const readOnlyOperator = isReadOnlyOperator(user);
+  const operatorShell = !!user?.isAdmin || readOnlyOperator;
   const [isCollapsed] = useGlobalState('sidenav-collapsed', false);
   const links = useMainNavItems();
 
@@ -38,7 +42,7 @@ export function SideNav(props: any) {
       minHeight="0"
       margin="2"
       style={{
-        width: isCollapsed ? '60px' : '240px',
+        width: isCollapsed ? '60px' : operatorShell ? '280px' : '240px',
         transition: 'width 0.2s ease-in-out',
         overflow: 'hidden',
       }}
@@ -56,9 +60,15 @@ export function SideNav(props: any) {
           flexGrow="1"
         >
           {!isCollapsed && (
-            <IconLabel icon={<Logo />}>
-              <Text weight="bold">{readOnlyOperator ? 'Stellog (Operator)' : 'Stellog'}</Text>
-            </IconLabel>
+            <Row alignItems="center" gap="2" minWidth="0">
+              <Icon>
+                <Logo />
+              </Icon>
+              <Text whitespace="nowrap">
+                <Text weight="bold">Stellog</Text>
+                {operatorShell && <Text> (SCF Operator)</Text>}
+              </Text>
+            </Row>
           )}
           <PanelButton />
         </Row>
@@ -70,10 +80,12 @@ export function SideNav(props: any) {
       >
         {websiteId ? (
           <WebsiteNav websiteId={websiteId} isCollapsed={isCollapsed} />
+        ) : projectId ? (
+          <ProjectNav projectId={projectId} isCollapsed={isCollapsed} />
         ) : pathname.includes('/settings') ? (
           <SettingsNav isCollapsed={isCollapsed} />
-        ) : pathname.includes('/admin') && !readOnlyOperator ? (
-          <AdminNav />
+        ) : operatorShell ? (
+          <AdminNav isCollapsed={isCollapsed} />
         ) : (
           <Column gap="2">
             {links.map(({ id, path, label, icon }) => {

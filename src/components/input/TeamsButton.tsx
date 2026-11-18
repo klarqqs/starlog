@@ -46,7 +46,7 @@ export function TeamsButton() {
       if (cloudMode) {
         window.location.href = '/';
       } else {
-        router.push('/');
+        router.push('/overview');
       }
     }
   };
@@ -76,12 +76,14 @@ export function TeamsButton() {
           </MenuItem>
         </MenuSection>
         <MenuSeparator />
-        <MenuSection title={t(labels.teams)}>
+        <MenuSection title={cloudMode ? t(labels.teams) : 'Projects'}>
           {user?.teams?.map(({ id, name, billingStatus }) => (
             <MenuItem
               key={id}
               id={id}
-              onAction={() => handleNavigate(getUrl(`/teams/${id}`))}
+              onAction={() =>
+                handleNavigate(getUrl(cloudMode ? `/teams/${id}` : `/projects/${id}`))
+              }
               style={billingStatus === 'past_due' ? { opacity: 0.5 } : undefined}
             >
               <IconLabel icon={<Users />}>
@@ -90,9 +92,12 @@ export function TeamsButton() {
             </MenuItem>
           ))}
           <MenuSeparator />
-          <MenuItem id="manage-teams" onAction={() => handleNavigate(getUrl('/settings/teams'))}>
+          <MenuItem
+            id={cloudMode ? 'manage-teams' : 'projects'}
+            onAction={() => handleNavigate(getUrl(cloudMode ? '/settings/teams' : '/projects'))}
+          >
             <Row alignItems="center" justifyContent="space-between" gap width="100%">
-              <Text align="center">Manage teams</Text>
+              <Text align="center">{cloudMode ? 'Manage teams' : 'All projects'}</Text>
               <Icon>
                 <ArrowRight />
               </Icon>

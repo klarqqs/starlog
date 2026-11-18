@@ -2,6 +2,7 @@
 import { Column, Form, FormButtons, FormField, FormSubmitButton, Heading, Text, TextField } from '@umami/react-zen';
 import { useState } from 'react';
 import { LoginPageWrapper } from '../LoginPage';
+import { AuthBar, authLinkStyle } from '../AuthBar';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
 
 function ForgotForm() {
@@ -17,9 +18,17 @@ function ForgotForm() {
   };
 
   return (
-    <Column justifyContent="center" alignItems="center" gap="6">
+    <>
+      <AuthBar
+        action={
+          <a href="/login?mode=register" style={authLinkStyle}>
+            Sign up
+          </a>
+        }
+      />
+      <Column justifyContent="center" alignItems="center" gap="6" width="360px">
       <Heading>Reset password</Heading>
-      <Form onSubmit={handleSubmit} error={getErrorMessage(error)} style={{ minWidth: 300 }}>
+      <Form onSubmit={handleSubmit} error={getErrorMessage(error)} style={{ width: '100%' }}>
         <FormField label="Email" name="username" rules={{ required: 'Enter your email.' }}>
           <TextField type="email" autoComplete="email" autoFocus placeholder="you@example.com" />
         </FormField>
@@ -33,8 +42,11 @@ function ForgotForm() {
       {resetUrl && (
         <a href={resetUrl}>Open the reset link</a>
       )}
-      <a href="/login">Back to sign in</a>
+      <a href="/login" style={authLinkStyle}>
+        Back to sign in
+      </a>
     </Column>
+    </>
   );
 }
 

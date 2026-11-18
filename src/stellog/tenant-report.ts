@@ -16,7 +16,8 @@ const HIST_KEYS: HistKey[] = [
 ];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-export const MAX_METRICS_RANGE_MS = 366 * DAY_MS;
+/** Longest window the date control can ask for. Last 12 months starts at the first of that month. */
+export const MAX_METRICS_RANGE_MS = 400 * DAY_MS;
 
 export type MetricGrain = 'hour' | 'day';
 

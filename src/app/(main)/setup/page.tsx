@@ -1,10 +1,5 @@
-import type { Metadata } from 'next';
-import { SetupPage } from './SetupPage';
+import { redirect } from 'next/navigation';
 
 export default function () {
-  return <SetupPage />;
+  redirect('/projects');
 }
-
-export const metadata: Metadata = {
-  title: 'Setup',
-};

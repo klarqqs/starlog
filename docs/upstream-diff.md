@@ -36,7 +36,7 @@ Migration 29 is the interim collector. The accepted design replaces it in a late
 - New tables get Postgres row-level security. `stellog_operator` is a read-only database role and is not the Umami `admin` application role.
 - Route cardinality past a named per-team hourly cap is stored as `other`. Per-IP bot counters are ephemeral and are not a table.
 
-`src/app/page.tsx` already sends a signed-out visitor to `/home`. `src/app/page.test.tsx` now expects that path.
+A signed-out visit to `/` is the Stellog landing page. `/home` redirects there. A signed-in visit continues to the last team, or to `/overview`.
 
 ## Handover
 

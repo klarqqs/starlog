@@ -8,8 +8,13 @@ const schema = z.object({
   startAt: z.coerce.number().int(),
   endAt: z.coerce.number().int(),
   unit: z
-    .union([z.enum(['minute', 'hour', 'day', 'week', 'month', 'year']), z.literal('')])
-    .optional(),
+    .string()
+    .optional()
+    .transform(value =>
+      value && ['minute', 'hour', 'day', 'week', 'month', 'year'].includes(value)
+        ? value
+        : undefined,
+    ),
 });
 
 /** The signed-in account's sites and APIs for one date range. */
@@ -21,13 +26,16 @@ export async function GET(request: Request) {
   const windowError = metricsWindow(query.startAt, query.endAt);
   if (windowError) return badRequest({ message: windowError });
 
+  const isOpOrAdmin =
+    auth.user.role === 'operator' || auth.user.role === 'admin' || !!auth.user.isAdmin;
+
   return json(
     await readMyOverview(
       auth.user.id,
       new Date(query.startAt),
       new Date(query.endAt),
       query.unit || undefined,
-      auth.user.role === 'operator',
+      isOpOrAdmin,
     ),
   );
 }

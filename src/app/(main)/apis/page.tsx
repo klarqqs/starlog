@@ -1,10 +1,5 @@
-import type { Metadata } from 'next';
-import { ApisPage } from './ApisPage';
+import { redirect } from 'next/navigation';
 
 export default function () {
-  return <ApisPage />;
+  redirect('/projects');
 }
-
-export const metadata: Metadata = {
-  title: 'APIs',
-};

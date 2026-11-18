@@ -9,12 +9,14 @@ import { WebsitesTable } from './WebsitesTable';
 export function WebsitesDataTable({
   userId,
   teamId,
+  kind,
   showActions = true,
   includeIds,
   renderEmpty,
 }: {
   userId?: string;
   teamId?: string;
+  kind?: 'site' | 'api';
   showActions?: boolean;
   /** When set, the table lists only these websites. An empty list shows the empty state. */
   includeIds?: string[];
@@ -25,22 +27,17 @@ export function WebsitesDataTable({
     { userId: userId || user?.id, teamId },
     includeIds ? { pageSize: 100 } : undefined,
   );
-  const query = includeIds
-    ? {
-        ...queryResult,
-        data: queryResult.data
-          ? {
-              ...queryResult.data,
-              data: queryResult.data.data.filter((row: { id: string }) =>
-                includeIds.includes(row.id),
-              ),
-              count: queryResult.data.data.filter((row: { id: string }) =>
-                includeIds.includes(row.id),
-              ).length,
-            }
-          : queryResult.data,
-      }
-    : queryResult;
+  const rows = (queryResult.data?.data ?? []).filter((row: { id: string; kind?: string }) => {
+    if (includeIds && !includeIds.includes(row.id)) return false;
+    if (!kind) return true;
+    return (row.kind === 'api' ? 'api' : 'site') === kind;
+  });
+  const query = {
+    ...queryResult,
+    data: queryResult.data
+      ? { ...queryResult.data, data: rows, count: rows.length }
+      : queryResult.data,
+  } as typeof queryResult;
   const { renderUrl } = useNavigation();
 
   const renderLink = (row: any) => (

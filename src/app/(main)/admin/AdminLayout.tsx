@@ -7,7 +7,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const { user } = useLoginQuery();
   const { pathname } = useNavigation();
   const isOperator = !!user?.isOperator && !user?.isAdmin;
-  const allowed = !!user?.isAdmin || (isOperator && pathname.startsWith('/admin/projects'));
+  const allowed =
+    !!user?.isAdmin ||
+    (isOperator &&
+      (pathname.startsWith('/admin/overview') || pathname.startsWith('/admin/projects')));
 
   if (!allowed || process.env.cloudMode) {
     return null;

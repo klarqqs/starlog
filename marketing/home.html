@@ -1,36 +1,321 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Stellog: usage analytics for Stellar projects</title>
-  <meta name="description" content="Privacy-first web and API analytics for Stellar projects, with one verified view for SCF.">
+  <title>Stellog: the complete picture of every Stellar project</title>
+  <meta name="description"
+    content="Privacy-first web and API analytics for Stellar projects. Acquisition, behavior, conversion, and API health in one place, with one view for SCF.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try { var t = localStorage.getItem('stellog.theme'); document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark') } catch (e) { document.documentElement.setAttribute('data-theme', 'dark') }</script>
   <link rel="stylesheet" href="/site.css">
 </head>
+
 <body>
-<header><div class="wrap"><a class="logo" href="/">Stel<i>log</i></a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
-<main>
-  <div class="wrap"><div class="hero"><div class="eyebrow">Open-source web and API analytics for Stellar</div>
-    <h1>Verified usage for every Stellar project</h1>
-    <p class="lead">Projects add one snippet and get a private dashboard. SCF gets one view of every project. No cookies, no personal data, free for the ecosystem.</p>
-    <a class="btn p" href="/login">Project sign in</a> <a class="btn" href="/operator/login">Sign in as operator</a>
-    <figure class="shot"><img src="/marketing/dashboard.png" alt="Stellog overview for the last 30 days: visitors, pageviews, the traffic chart, pages, and sources."></figure>
-  </div></div>
-  <section id="features"><div class="wrap"><div class="eyebrow">Web analytics</div><h2>What each project sees</h2><p class="lead" style="margin-left:0">Add your domain, paste one script tag, and the dashboard fills in. Each project sees only its own data.</p>
-    <div class="grid"><div class="card"><h3>Page views and visitors</h3><p>Daily rollups with a selectable time range.</p></div><div class="card"><h3>Referrers</h3><p>Which sites send you traffic.</p></div><div class="card"><h3>Devices and browsers</h3><p>Desktop, mobile and tablet, by browser.</p></div><div class="card"><h3>Share link</h3><p>A revocable public link with totals only.</p></div></div>
-  </div></section>
-  <section id="api"><div class="wrap"><div class="eyebrow">The dashboard</div><h2>Umami’s full analytics, under Stellog</h2><p class="lead" style="margin-left:0">After sign-in you get Umami’s dashboard: pages, referrers, browsers, devices, realtime, and the rest of its reports. Each account sees its own websites.</p><a href="/docs">How to add a site →</a></div></section>
-  <section id="how"><div class="wrap"><div class="eyebrow">How it works</div><h2>From sign-up to numbers in four steps</h2>
-<div class="grid"><div class="card"><h3>1. Register</h3><p>Create an account with a username and password.</p></div><div class="card"><h3>2. Add a website</h3><p>Tell Stellog which site is yours.</p></div><div class="card"><h3>3. Paste the snippet</h3><p>The dashboard gives you one script tag for that site.</p></div><div class="card"><h3>4. Read your dashboard</h3><p>Only your numbers. Share a link if you want.</p></div></div>
-<p class="lead" style="margin:28px 0 0">Sign in with your password, or link <strong>Freighter</strong> or <strong>xBull</strong> and sign in with your wallet. Forgot the password? Reset it by email.</p></div></section>
-  <section id="operator"><div class="wrap"><div class="eyebrow">For SCF</div><h2>One screen for every project</h2><p class="lead" style="margin-left:0">Operators use a separate sign-in and open the admin view of every website, user, and team.</p><a class="btn" href="/operator/login">SCF operator sign in</a></div></section>
-  <section><div class="wrap"><div class="dark"><div class="eyebrow">Privacy</div><h2>No cookies. No personal data.</h2><p>The tracker is Umami’s: it does not use cookies. A linked wallet stores the public address only.</p>
-    <div class="grid"><div class="card"><h3>No consent banner</h3><p>Nothing is stored on the visitor’s device beyond a per-tab session flag.</p></div><div class="card"><h3>Strict isolation</h3><p>Every query runs under one project’s identity.</p></div><div class="card"><h3>Your data stays yours</h3><p>Self-host from one repository, or use the shared service.</p></div></div></div></div></section>
-  <section><div class="wrap" style="text-align:center"><div class="eyebrow">Open source</div><h2>Built in the open</h2><p class="lead">MIT licensed. Fork of Umami 3.5.0. Run it with <code>pnpm dev</code>.</p><a class="btn" href="https://github.com/klarqqs/starlog">View the source</a> <a class="btn p" href="/login?mode=register">Get started for free</a></div></section>
-</main>
-<footer><div class="wrap"><div><a class="logo" href="/">Stel<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
-<div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">Dashboard</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
-<div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>
-<div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF operator sign in</a></div></div></footer>
+  <header>
+    <div class="wrap"><a class="logo" href="/"><img src="/logo.svg" alt="Stellog"></a>
+      <nav><a href="/#product">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a
+          href="/pricing">Pricing</a></nav>
+      <button type="button" class="theme" data-theme-toggle aria-label="Switch theme"><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/></svg></button><a class="btn" href="/login">Log in</a><a class="btn p"
+        href="/login?mode=register">Sign up</a>
+    </div>
+  </header>
+  <main>
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow">Open-source web and API analytics for Stellar</div>
+        <h1>The complete picture of every Stellar project</h1>
+        <p class="lead">Understand acquisition, behavior, conversion, and API health in one privacy-first platform. No
+          cookies, no personal data, set up in minutes.</p>
+        <a class="btn p" href="/login?mode=register">Get started for free</a>
+        <figure class="shot"><img src="/marketing/c.png"
+            alt="Stellog overview: visitors, pageviews, API requests, the traffic chart, pages, and sources."></figure>
+      </div>
+    </div>
+
+    <section class="trust">
+      <div class="wrap">Built for the Stellar ecosystem
+        <div class="logos">
+          <img src="/images/browser/stellar.png" alt="Stellar">
+          <img src="/images/browser/scf.png" alt="Stellar Community Fund">
+          <img src="/images/browser/freighter.png" alt="Freighter">
+          <img src="/images/browser/xbull.png" alt="xBull">
+        </div>
+      </div>
+    </section>
+
+    <section id="product" class="center">
+      <div class="wrap">
+        <h2>Web and API analytics in one platform.</h2>
+        <p class="lead">Most teams stitch together a traffic tool, a status page, and a product tool. Stellog brings
+          acquisition, behavior, conversion, and API health into one place, without collecting personal data.</p>
+        <div class="grid" style="text-align:left">
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17l6-6 4 4 8-8" />
+                <path d="M15 7h6v6" />
+              </svg></div>
+            <h3>Acquisition</h3>
+            <p>Know which sites and campaigns bring people to your dapp.</p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 3l5 16 3-7 7-3z" />
+              </svg></div>
+            <h3>Behavior</h3>
+            <p>Follow what visitors do once they arrive.</p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 4h18l-7 8v6l-4 2v-8z" />
+              </svg></div>
+            <h3>Conversion and retention</h3>
+            <p>Find where users drop off and who comes back.</p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12h4l3-8 4 16 3-8h4" />
+              </svg></div>
+            <h3>API health</h3>
+            <p>Requests, error rate, and p95 latency for your endpoints.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="sec">
+      <div class="wrap">
+        <div class="eyebrow">Acquisition</div>
+        <h2>Where your traffic actually comes from</h2>
+        <p class="lead" style="margin-left:0">Channels, referrers, and campaigns attributed end to end, so you see what
+          is working before you spend more.</p>
+        <div class="split">
+          <div>
+            <h3>All your key metrics on one dashboard</h3>
+            <p>Pageviews, visitors, bounce rate, visit duration, and API metrics sit side by side, with a selectable
+              time range.</p>
+            <a class="more" href="/docs#web">Learn how to analyze website traffic →</a>
+          </div>
+          <figure class="pic">
+            <img src="/marketing/a.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+        </div>
+        <div class="split flip">
+          <figure class="pic">
+            <img src="/marketing/b.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+          <div>
+            <h3>Locations, devices, and referrers at a glance</h3>
+            <p>See which countries, browsers, and devices your users have, and which sites send you traffic.</p>
+            <a class="more" href="/docs">Explore the dashboard →</a>
+          </div>
+        </div>
+        <div class="split">
+          <div>
+            <h3>Measure whether your campaigns are working</h3>
+            <p>Compare any time period with UTM parameters and see how each source moves visitors toward your goals.</p>
+            <a class="more" href="/docs#web">Learn how to measure campaigns →</a>
+          </div>
+          <figure class="pic">
+            <img src="/marketing/a.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="wrap">
+        <div class="eyebrow">Behavior</div>
+        <h2>What people do once they arrive</h2>
+        <p class="lead" style="margin-left:0">Events and user journeys show how visitors move through your site, without
+          session replay.</p>
+        <div class="split flip">
+          <figure class="pic">
+            <img src="/marketing/b.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+          <div>
+            <h3>Track the actions that matter</h3>
+            <p>Count wallet connects, signed transactions, button clicks, and form submissions with one line of code.
+            </p>
+            <a class="more" href="/docs#web">Track events →</a>
+          </div>
+        </div>
+        <div class="split">
+          <div>
+            <h3>Follow the paths people actually take</h3>
+            <p>See the routes users take through your pages and where they exit.</p>
+            <a class="more" href="/docs">Explore journeys →</a>
+          </div>
+          <figure class="pic">
+            <img src="/marketing/a.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="wrap">
+        <div class="eyebrow">Conversion and retention</div>
+        <h2>Where you lose people, and who comes back</h2>
+        <div class="split flip">
+          <figure class="pic">
+            <img src="/marketing/b.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+          <div>
+            <h3>See where visitors drop off and why</h3>
+            <p>Build funnels across pages and events to find the step that costs you the most users.</p>
+            <a class="more" href="/docs">Build a funnel →</a>
+          </div>
+        </div>
+        <div class="split">
+          <div>
+            <h3>Measure whether people return</h3>
+            <p>Retention cohorts group visitors by first visit and show how many come back each week.</p>
+            <a class="more" href="/docs">Analyze retention →</a>
+          </div>
+          <figure class="pic">
+            <img src="/marketing/a.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="api" class="sec">
+      <div class="wrap">
+        <div class="eyebrow">API health</div>
+        <h2>What your endpoints are actually doing</h2>
+        <div class="split">
+          <div>
+            <h3>Connect your traffic to your backend</h3>
+            <p>Track API requests, error rate, and p95 latency next to your web numbers, so a spike in drop-offs can be
+              traced to a failing endpoint.</p>
+            <a class="more" href="/docs#metrics">API reference →</a>
+          </div>
+          <figure class="pic">
+            <img src="/marketing/b.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="operator" class="sec">
+      <div class="wrap">
+        <div class="eyebrow">For SCF</div>
+        <h2>One screen for every project</h2>
+        <div class="split flip">
+          <figure class="pic">
+            <img src="/marketing/a.png" alt="Stellog dashboard showing visitors, views, and API requests.">
+          </figure>
+          <div>
+            <h3>Operator view across the ecosystem</h3>
+            <p>Operators sign in separately and open the admin view of every website, user, and team. Each project sees
+              only its own data.</p>
+            <a class="btn" href="/operator/login">SCF operator sign in</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="band">
+          <div>
+            <div class="eyebrow">MCP</div>
+            <h2>Query your analytics from your AI assistant</h2>
+            <p class="lead" style="margin-left:0">Connect Claude or any MCP client to ask about traffic, events,
+              funnels, and API health in plain language.</p>
+            <a class="btn" href="https://github.com/klarqqs/stellog/tree/main/packages/mcp">Explore Stellog MCP</a>
+          </div>
+          <div>
+            <div class="q">“How many visitors did my dapp get last week?”</div>
+            <div class="q">“Which endpoint has the highest error rate?”</div>
+            <div class="q">“Where do users drop off before signing?”</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec center">
+      <div class="wrap">
+        <div class="dark">
+          <div class="eyebrow">Privacy</div>
+          <h2>Privacy by default. No cookies, no personal data.</h2>
+          <p>Stellog is built on Umami: it collects only anonymous usage data. A linked wallet stores the public address
+            only.</p>
+          <div class="grid">
+            <div class="card">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg></div>
+              <h3>No cookies, no consent banner</h3>
+              <p>Nothing is stored on the visitor’s device beyond a per-tab session flag.</p>
+            </div>
+            <div class="card">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="11" width="16" height="9" rx="2" />
+                  <path d="M8 11V8a4 4 0 018 0v3" />
+                </svg></div>
+              <h3>Strict isolation</h3>
+              <p>Every query runs under one project’s identity.</p>
+            </div>
+            <div class="card">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="6" rx="8" ry="3" />
+                  <path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
+                  <path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+                </svg></div>
+              <h3>Your data stays yours</h3>
+              <p>Self-host from one repository, or use the shared service.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec center">
+      <div class="wrap">
+        <div class="eyebrow">Open source</div>
+        <h2>Built in the open</h2>
+        <p class="lead">MIT licensed. A fork of Umami 3.5.0. Run it locally with <code>pnpm dev</code>.</p>
+        <div class="nums">
+          <div class="card"><b>MIT</b>Licensed</div>
+          <div class="card"><b>3.5.0</b>Umami base</div>
+          <div class="card"><b>0</b>Cookies</div>
+        </div>
+        <p style="margin-top:24px"><a class="btn" href="/docs">Read the docs</a> <a class="btn"
+            href="https://github.com/klarqqs/stellog">View the source</a></p>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap">
+        <h2>Try Stellog now.</h2><a class="btn p" href="/login?mode=register">Get started for free</a>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap">
+      <div><a class="logo" href="/"><img src="/logo.svg" alt="Stellog"></a>
+        <p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p>
+      </div>
+      <div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">Dashboard</a><a
+          href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
+      <div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a
+          href="https://github.com/klarqqs/stellog">GitHub</a></div>
+      <div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF
+          operator sign in</a></div>
+    </div>
+  </footer>
+  <script src="/theme.js"></script>
 </body>
+
 </html>

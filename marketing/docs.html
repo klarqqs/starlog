@@ -1,27 +1,71 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Docs · Stellog</title>
   <meta name="description" content="Add a website, sign in, and self-host Stellog.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try { var t = localStorage.getItem('stellog.theme'); document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark') } catch (e) { document.documentElement.setAttribute('data-theme', 'dark') }</script>
   <link rel="stylesheet" href="/site.css">
 </head>
+
 <body>
-<header><div class="wrap"><a class="logo" href="/">Stel<i>log</i></a><nav><a href="/#features">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a href="/pricing">Pricing</a></nav><a class="btn" href="/login">Log in</a><a class="btn p" href="/login?mode=register">Sign up</a></div></header>
-<main class="wrap doc"><div class="eyebrow">Documentation</div><h1 style="font-size:44px">Get counted in five minutes</h1>
-<h2 id="start">Quick start</h2><ol><li><a href="/login?mode=register">Create an account</a>.</li><li>Add a website in the dashboard.</li><li>Paste the snippet the dashboard shows.</li></ol>
-<h2 id="web">Install the tracker</h2><p>Each website has a script tag in its settings. Paste that tag in the <code>&lt;head&gt;</code> of the site. The tracker is Umami’s and does not use cookies.</p>
-<h2 id="signin">Sign in, password reset and wallets</h2><p>Sign in at <a href="/login">/login</a>. Forgot the password? <a href="/login/forgot">Request a reset link</a>. It lasts 1 hour, works once, and signs that account out everywhere. In development the link is printed by the server.</p>
-<p>After you sign in, open Settings → Wallets and link <strong>Freighter</strong> or <strong>xBull</strong> (up to 5). Linking asks the wallet to sign a short challenge. Nothing is sent to the Stellar network. The wallet buttons on the sign-in page then work. A wallet belongs to one account.</p>
-<h2 id="operator">SCF operators</h2><p>Operators sign in at <a href="/operator/login">/operator/login</a>. The button says “Sign in as operator.” The username is not an email. Project accounts use <a href="/login">project sign in</a> and are turned away from the operator door. A signed-in operator opens the read-only view of every project.</p>
-<h2 id="selfhost">Self-host</h2><pre><code>git clone https://github.com/klarqqs/starlog
-cd starlog &amp;&amp; cp .env.example .env
+  <header>
+    <div class="wrap"><a class="logo" href="/"><img src="/logo.svg" alt="Stellog"></a>
+      <nav><a href="/#product">Product</a><a href="/#operator">For SCF</a><a href="/docs">Docs</a><a
+          href="/pricing">Pricing</a></nav>
+      <button type="button" class="theme" data-theme-toggle aria-label="Switch theme"><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"/></svg></button><a class="btn" href="/login">Log in</a><a class="btn p"
+        href="/login?mode=register">Sign up</a>
+    </div>
+  </header>
+  <main class="wrap doc">
+    <div class="eyebrow">Documentation</div>
+    <h1>Get counted in five minutes</h1>
+    <h2 id="start">Quick start</h2>
+    <ol>
+      <li><a href="/login?mode=register">Create an account</a>.</li>
+      <li>Add a website in the dashboard.</li>
+      <li>Paste the snippet the dashboard shows.</li>
+    </ol>
+    <h2 id="web">Install the tracker</h2>
+    <p>Each website has a script tag in its settings. Paste that tag in the <code>&lt;head&gt;</code> of the site. The
+      tracker is Umami’s and does not use cookies.</p>
+    <h2 id="signin">Sign in, password reset and wallets</h2>
+    <p>Sign in at <a href="/login">/login</a>. Forgot the password? <a href="/login/forgot">Request a reset link</a>. It
+      lasts 1 hour, works once, and signs that account out everywhere. In development the link is printed by the server.
+    </p>
+    <p>After you sign in, open Settings → Wallets and link <strong>Freighter</strong> or <strong>xBull</strong> (up to
+      5). Linking asks the wallet to sign a short challenge. Nothing is sent to the Stellar network. The wallet buttons
+      on the sign-in page then work. A wallet belongs to one account.</p>
+    <h2 id="operator">SCF operators</h2>
+    <p>Operators sign in at <a href="/operator/login">/operator/login</a>. The button says “Sign in as operator.” The
+      username is not an email. Project accounts use <a href="/login">project sign in</a> and are turned away from the
+      operator door. A signed-in operator opens the read-only view of every project.</p>
+    <h2 id="selfhost">Self-host</h2>
+    <pre><code>git clone https://github.com/klarqqs/stellog
+cd stellog &amp;&amp; cp .env.example .env
 pnpm install
-pnpm dev</code></pre><p>The app is on <code>http://127.0.0.1:3000</code>. Set <code>DATABASE_URL</code> and <code>APP_SECRET</code> in <code>.env</code>. For wallet sign-in, set <code>STELLAR_AUTH_SECRET</code> to a Stellar secret key. Without it, development uses a temporary key.</p></main>
-<footer><div class="wrap"><div><a class="logo" href="/">Stel<i>log</i></a><p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p></div>
-<div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">Dashboard</a><a href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
-<div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a href="https://github.com/klarqqs/starlog">GitHub</a></div>
-<div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF operator sign in</a></div></div></footer>
+pnpm dev</code></pre>
+    <p>The app is on <code>http://127.0.0.1:3000</code>. Set <code>DATABASE_URL</code> and <code>APP_SECRET</code> in
+      <code>.env</code>. For wallet sign-in, set <code>STELLAR_AUTH_SECRET</code> to a Stellar secret key. Without it,
+      development uses a temporary key.</p>
+  </main>
+  <footer>
+    <div class="wrap">
+      <div><a class="logo" href="/"><img src="/logo.svg" alt="Stellog"></a>
+        <p>Open-source, privacy-first analytics for Stellar projects. MIT licensed.</p>
+      </div>
+      <div><b>Product</b><a href="/#features">Web analytics</a><a href="/#api">Dashboard</a><a
+          href="/#operator">Operator view</a><a href="/pricing">Pricing</a></div>
+      <div><b>Resources</b><a href="/docs">Documentation</a><a href="/docs#metrics">API reference</a><a
+          href="https://github.com/klarqqs/stellog">GitHub</a></div>
+      <div><b>Company</b><a href="/privacy">Privacy</a><a href="/login">Project sign in</a><a href="/operator/login">SCF
+          operator sign in</a></div>
+    </div>
+  </footer>
+  <script src="/theme.js"></script>
 </body>
+
 </html>

@@ -1,12 +1,24 @@
 'use client';
 
-import { Button, Column, DataColumn, DataTable, Heading, Row, Text } from '@umami/react-zen';
+import {
+  Button,
+  Column,
+  DataColumn,
+  DataTable,
+  Heading,
+  Row,
+  Text,
+  TextField,
+} from '@umami/react-zen';
 import { useEffect, useState } from 'react';
 import { Panel } from '@/components/common/Panel';
 import { useApi, useDateRange } from '@/components/hooks';
 import { useProjectDateRange } from '@/components/hooks/useProjectDateRange';
 import { DialogButton } from '@/components/input/DialogButton';
+import { getItem, removeItem, setItem } from '@/lib/storage';
 import type { AiSummary, SummaryScope } from '@/stellog/summary-text';
+
+const SUMMARY_KEY = 'stellog.xai-key';
 
 export function AiSummaryButton({ scope, websiteId }: { scope: SummaryScope; websiteId?: string }) {
   const [open, setOpen] = useState(false);
@@ -17,16 +29,18 @@ export function AiSummaryButton({ scope, websiteId }: { scope: SummaryScope; web
   return (
     <>
       <Button variant="outline" onPress={() => setOpen(true)}>
-        <AiIcon />
-        AI Summary
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <AiIcon />
+          Summary
+        </span>
       </Button>
       <DialogButton
         isOpen={open}
         onOpenChange={setOpen}
         title={
-          <Row alignItems="center" gap="2">
+          <Row alignItems="center" gap="1">
             <AiIcon />
-            AI Summary
+            Summary
           </Row>
         }
         width="720px"
@@ -45,6 +59,37 @@ export function AiSummaryButton({ scope, websiteId }: { scope: SummaryScope; web
   );
 }
 
+function KeyPrompt({ message, onSave }: { message?: string; onSave: (key: string) => void }) {
+  const [value, setValue] = useState('');
+
+  return (
+    <Column gap="3">
+      <Text>
+        Add your xAI API key to write this summary. It stays in this browser and is sent only for
+        the request.
+      </Text>
+      <TextField
+        aria-label="xAI API key"
+        type="password"
+        value={value}
+        autoComplete="off"
+        placeholder="xai-…"
+        onChange={setValue}
+      />
+      {message && <Text color="muted">{message}</Text>}
+      <Row justifyContent="flex-end">
+        <Button
+          variant="primary"
+          isDisabled={value.trim().length < 20}
+          onPress={() => onSave(value.trim())}
+        >
+          Save key
+        </Button>
+      </Row>
+    </Column>
+  );
+}
+
 function AiIcon() {
   return (
     <img
@@ -52,7 +97,7 @@ function AiIcon() {
       src={`${process.env.basePath || ''}/images/ai.png`}
       width={16}
       height={16}
-      style={{ marginRight: 6, verticalAlign: 'text-bottom' }}
+      style={{ display: 'block' }}
     />
   );
 }
@@ -76,6 +121,11 @@ function SummaryTable({ columns, rows }: { columns: string[]; rows: string[][] }
   );
 }
 
+function savedKey() {
+  const value = getItem(SUMMARY_KEY);
+  return typeof value === 'string' ? value : '';
+}
+
 function SummaryBody({
   scope,
   websiteId,
@@ -88,22 +138,44 @@ function SummaryBody({
   endAt: number;
 }) {
   const { post } = useApi();
+  const [apiKey, setApiKey] = useState(savedKey);
   const [summary, setSummary] = useState<AiSummary | null>(null);
   const [message, setMessage] = useState('Writing the summary…');
 
   useEffect(() => {
+    if (!apiKey) return;
     let current = true;
-    post('/ai/summary', { scope, websiteId, startAt, endAt })
+    post('/ai/summary', { scope, websiteId, startAt, endAt, apiKey })
       .then(data => {
         if (current) setSummary(data as AiSummary);
       })
       .catch(error => {
-        if (current) setMessage(error instanceof Error ? error.message : 'The summary failed.');
+        if (!current) return;
+        const text = error instanceof Error ? error.message : 'The summary failed.';
+        if (/api key/i.test(text)) {
+          removeItem(SUMMARY_KEY);
+          setApiKey('');
+        }
+        setMessage(text);
       });
     return () => {
       current = false;
     };
-  }, [post, scope, websiteId, startAt, endAt]);
+  }, [post, scope, websiteId, startAt, endAt, apiKey]);
+
+  if (!apiKey) {
+    return (
+      <KeyPrompt
+        message={message === 'Writing the summary…' ? '' : message}
+        onSave={key => {
+          setItem(SUMMARY_KEY, key);
+          setMessage('Writing the summary…');
+          setSummary(null);
+          setApiKey(key);
+        }}
+      />
+    );
+  }
 
   if (!summary) {
     return <Text color="muted">{message}</Text>;
@@ -148,6 +220,16 @@ function SummaryBody({
           </Column>
         </Panel>
       )}
+      <Button
+        variant="quiet"
+        onPress={() => {
+          removeItem(SUMMARY_KEY);
+          setApiKey('');
+          setSummary(null);
+        }}
+      >
+        Change API key
+      </Button>
     </Column>
   );
 }

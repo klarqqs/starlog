@@ -5,24 +5,35 @@ import {
   Column,
   DataColumn,
   DataTable,
+  Dialog,
+  DialogTrigger,
   Grid,
+  Icon,
   ListItem,
+  Modal,
   Row,
   SearchField,
   Select,
   Text,
 } from '@umami/react-zen';
 import { useState } from 'react';
-import { Empty } from '@/components/common/Empty';
+import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import { Favicon } from '@/components/common/Favicon';
 import Link from '@/components/common/Link';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
-import { useApi, useDateRange, useLoginQuery, useNavigation } from '@/components/hooks';
+import { useApi, useLoginQuery, useNavigation } from '@/components/hooks';
+import { Ellipsis } from '@/components/icons';
 import { AiSummaryButton } from '@/components/input/AiSummaryButton';
 import { DateFilter } from '@/components/input/DateFilter';
 import { ChangeLabel } from '@/components/metrics/ChangeLabel';
-import { limitSelection } from '@/stellog/operator-report';
+import { parseDateRange } from '@/lib/date';
+import {
+  limitSelection,
+  parseProjectId,
+  propertyLabel,
+  showLatency,
+} from '@/stellog/operator-report';
 
 type Project = {
   id: string;
@@ -31,6 +42,8 @@ type Project = {
   status: 'active' | 'pending';
   properties: number;
   pendingProperties: number;
+  sites: number;
+  apis: number;
   websiteIds: string[];
   domain: string | null;
   pageviews: number;
@@ -49,6 +62,8 @@ type Project = {
   p50Capped: boolean;
   p95Capped: boolean;
 };
+
+type TrendKey = 'pageviews' | 'visitors' | 'requests';
 
 const oneLine = { whiteSpace: 'nowrap' } as const;
 
@@ -69,24 +84,30 @@ export function OperatorProjectsPage() {
   const { get, post, del, useQuery } = useApi();
   const { user } = useLoginQuery();
   const canManage = !!user?.isAdmin;
-  const { dateRange } = useDateRange();
   const { router, query, updateParams } = useNavigation();
   const [selected, setSelected] = useState<string[]>([]);
   const [draft, setDraft] = useState(query.q || '');
-  const startAt = dateRange.startDate.getTime();
-  const endAt = dateRange.endDate.getTime();
-  const status = query.status || 'active';
-  const sort = query.sort || 'requests';
-  const order = query.order || 'desc';
+  const dateValue = `${query.date || '30day'}`;
+  const parsed = parseDateRange(dateValue) ?? parseDateRange('30day');
+  const startAt = parsed?.startDate.getTime() ?? Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const endAt = parsed?.endDate.getTime() ?? Date.now();
+  const status = query.status === 'pending' || query.status === 'all' ? query.status : 'active';
+  const sort = SORTS.some(([id]) => id === query.sort) ? query.sort : 'requests';
+  const order = query.order === 'asc' ? 'asc' : 'desc';
+  const units: readonly string[] = ['minute', 'hour', 'day', 'week', 'month', 'year'];
+  const unit = parsed?.unit && units.includes(parsed.unit) ? parsed.unit : 'day';
+  const q = `${query.q || ''}`.trim().slice(0, 100);
+  const trend: TrendKey =
+    query.trend === 'pageviews' || query.trend === 'visitors' ? query.trend : 'requests';
 
   const projectsQuery = useQuery({
-    queryKey: ['operator-projects', startAt, endAt, query.q || '', status, sort, order],
+    queryKey: ['operator-projects', startAt, endAt, q, status, sort, order, unit],
     queryFn: () =>
       get('/admin/projects', {
         startAt,
         endAt,
-        unit: dateRange.unit,
-        q: query.q || undefined,
+        unit,
+        q: q || undefined,
         status,
         sort,
         order,
@@ -96,8 +117,11 @@ export function OperatorProjectsPage() {
   const projects = (projectsQuery.data?.projects ?? []).map((project, index) => ({
     ...project,
     rank: index + 1,
+    sites: project.sites ?? 0,
+    apis: project.apis ?? 0,
     websiteIds: project.websiteIds ?? [],
   }));
+  const latency = showLatency(projects);
   const compared = selected
     .map(id => projects.find(project => project.id === id))
     .filter((project): project is (typeof projects)[number] => !!project);
@@ -117,7 +141,7 @@ export function OperatorProjectsPage() {
       <PageHeader title="Projects">
         <Row gap="3" alignItems="center">
           <DateFilter
-            value={query.date || '24hour'}
+            value={dateValue}
             onChange={value => setParam('date', value)}
             showAllTime={false}
           />
@@ -126,50 +150,78 @@ export function OperatorProjectsPage() {
       </PageHeader>
       <Panel>
         <Column gap="4">
-          <Row gap="3" alignItems="center" wrap="wrap">
-            <Select
-              aria-label="Status"
-              value={status}
-              onChange={value => setParam('status', String(value))}
-            >
-              <ListItem id="active">Active</ListItem>
-              <ListItem id="pending">Pending</ListItem>
-              <ListItem id="all">All</ListItem>
-            </Select>
-            <Select
-              aria-label="Sort"
-              value={sort}
-              onChange={value => setParam('sort', String(value))}
-            >
-              {SORTS.map(([id, label]) => (
-                <ListItem id={id} key={id}>
-                  {label}
-                </ListItem>
-              ))}
-            </Select>
-            <Select
-              aria-label="Order"
-              value={order}
-              onChange={value => setParam('order', String(value))}
-            >
-              <ListItem id="desc">Descending</ListItem>
-              <ListItem id="asc">Ascending</ListItem>
-            </Select>
-            <SearchField
-              value={draft}
-              placeholder="Filter by name"
-              onSearch={value => {
-                setDraft(value);
-                setParam('q', value);
-              }}
-            />
+          <Row alignItems="center" gap="3" wrap="nowrap">
+            <div style={{ width: '100%', maxWidth: '28rem', flex: '1 1 16rem' }}>
+              <SearchField
+                value={draft}
+                placeholder="Search"
+                style={{ width: '100%' }}
+                onSearch={value => {
+                  setDraft(value);
+                  setParam('q', value);
+                }}
+              />
+            </div>
+            <Row alignItems="center" gap="3" wrap="nowrap" style={{ marginLeft: 'auto' }}>
+              <Select
+                aria-label="Status"
+                value={status}
+                renderValue={() =>
+                  status === 'pending' ? 'Pending' : status === 'all' ? 'All' : 'Active'
+                }
+                onChange={value => setParam('status', String(value))}
+              >
+                <ListItem id="active">Active</ListItem>
+                <ListItem id="pending">Pending</ListItem>
+                <ListItem id="all">All</ListItem>
+              </Select>
+              <Select
+                aria-label="Sort"
+                value={sort}
+                renderValue={() => SORTS.find(([id]) => id === sort)?.[1] ?? 'API requests'}
+                onChange={value => setParam('sort', String(value))}
+              >
+                {SORTS.map(([id, label]) => (
+                  <ListItem id={id} key={id}>
+                    {label}
+                  </ListItem>
+                ))}
+              </Select>
+              <Select
+                aria-label="Order"
+                value={order}
+                renderValue={() => (order === 'asc' ? 'Ascending' : 'Descending')}
+                onChange={value => setParam('order', String(value))}
+              >
+                <ListItem id="desc">Descending</ListItem>
+                <ListItem id="asc">Ascending</ListItem>
+              </Select>
+              <Select
+                aria-label="Trend"
+                value={trend}
+                renderValue={() =>
+                  trend === 'pageviews'
+                    ? 'Pageview trend'
+                    : trend === 'visitors'
+                      ? 'Visitor trend'
+                      : 'API trend'
+                }
+                onChange={value => setParam('trend', String(value))}
+              >
+                <ListItem id="requests">API trend</ListItem>
+                <ListItem id="pageviews">Pageview trend</ListItem>
+                <ListItem id="visitors">Visitor trend</ListItem>
+              </Select>
+            </Row>
           </Row>
           {projectsQuery.isLoading && <Text>Loading projects.</Text>}
           {projectsQuery.error && <Text>Projects could not be loaded.</Text>}
-          {projectsQuery.data && projects.length === 0 && <Empty />}
+          {projectsQuery.data && projects.length === 0 && (
+            <EmptyCard title="No projects" description="No projects match this range." />
+          )}
           {projects.length > 0 && (
             <div style={{ overflowX: 'auto' }}>
-              <DataTable data={projects} style={{ minWidth: 1180 }}>
+              <DataTable data={projects} style={{ minWidth: latency ? 1180 : 980 }}>
                 <DataColumn id="compare" label=" " width="44px" style={oneLine}>
                   {(row: (typeof projects)[number]) => (
                     <input
@@ -187,13 +239,21 @@ export function OperatorProjectsPage() {
                   {(row: (typeof projects)[number]) => (
                     <Row gap="2" alignItems="center">
                       <Favicon domain={row.domain} />
-                      {row.websiteIds[0] ? (
-                        <Link href={`/websites/${row.websiteIds[0]}`}>{row.name}</Link>
+                      {projectPath(row) ? (
+                        <Link href={projectPath(row)}>{row.name}</Link>
                       ) : (
                         <Text>{row.name}</Text>
                       )}
                     </Row>
                   )}
+                </DataColumn>
+                <DataColumn
+                  id="properties"
+                  label="Properties"
+                  width="minmax(120px, 1fr)"
+                  style={oneLine}
+                >
+                  {(row: (typeof projects)[number]) => propertyLabel(row.sites, row.apis)}
                 </DataColumn>
                 <DataColumn
                   id="pageviews"
@@ -240,82 +300,92 @@ export function OperatorProjectsPage() {
                 >
                   {(row: (typeof projects)[number]) => formatRate(row.errorRate)}
                 </DataColumn>
+                {latency && (
+                  <DataColumn
+                    id="p50"
+                    label="p50"
+                    align="end"
+                    width="minmax(72px, 0.8fr)"
+                    style={oneLine}
+                  >
+                    {(row: (typeof projects)[number]) => formatLatency(row.p50, row.p50Capped)}
+                  </DataColumn>
+                )}
+                {latency && (
+                  <DataColumn
+                    id="p95"
+                    label="p95"
+                    align="end"
+                    width="minmax(72px, 0.8fr)"
+                    style={oneLine}
+                  >
+                    {(row: (typeof projects)[number]) => formatLatency(row.p95, row.p95Capped)}
+                  </DataColumn>
+                )}
                 <DataColumn
-                  id="p50"
-                  label="p50"
-                  align="end"
-                  width="minmax(72px, 0.8fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => formatLatency(row.p50, row.p50Capped)}
-                </DataColumn>
-                <DataColumn
-                  id="p95"
-                  label="p95"
-                  align="end"
-                  width="minmax(72px, 0.8fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => formatLatency(row.p95, row.p95Capped)}
-                </DataColumn>
-                <DataColumn
-                  id="pageviewsGrowth"
-                  label="Pageviews trend"
-                  align="end"
-                  width="minmax(132px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => (
-                    <Trend
-                      value={row.pageviewsGrowth}
-                      current={row.pageviews}
-                      previous={row.pageviewsPrevious}
-                    />
-                  )}
-                </DataColumn>
-                <DataColumn
-                  id="visitorsGrowth"
-                  label="Visitors trend"
-                  align="end"
-                  width="minmax(124px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => (
-                    <Trend
-                      value={row.visitorsGrowth}
-                      current={row.visitors}
-                      previous={row.visitorsPrevious}
-                    />
-                  )}
-                </DataColumn>
-                <DataColumn
-                  id="requestsGrowth"
-                  label="API trend"
+                  id="trend"
+                  label="Trend"
                   align="end"
                   width="minmax(96px, 1fr)"
                   style={oneLine}
                 >
-                  {(row: (typeof projects)[number]) => (
-                    <Trend
-                      value={row.requestsGrowth}
-                      current={row.requests}
-                      previous={row.requestsPrevious}
-                    />
-                  )}
+                  {(row: (typeof projects)[number]) => {
+                    const numbers = trendNumbers(row, trend);
+                    return (
+                      <Trend
+                        value={numbers.value}
+                        current={numbers.current}
+                        previous={numbers.previous}
+                      />
+                    );
+                  }}
                 </DataColumn>
                 {canManage && (
-                  <DataColumn id="action" label=" " align="end" width="160px">
+                  <DataColumn id="action" label=" " align="end" width="48px">
                     {(row: (typeof projects)[number]) => (
-                      <Row gap="2">
-                        {row.status === 'pending' && (
-                          <Button variant="quiet" onPress={() => act(post, row, 'approve', reload)}>
-                            Approve
-                          </Button>
-                        )}
-                        <Button variant="quiet" onPress={() => act(del, row, '', reload, true)}>
-                          Remove
+                      <DialogTrigger>
+                        <Button variant="quiet" aria-label={`Actions for ${row.name}`}>
+                          <Icon>
+                            <Ellipsis />
+                          </Icon>
                         </Button>
-                      </Row>
+                        <Modal>
+                          <Dialog title={row.name} style={{ width: 400 }}>
+                            {({ close }) => (
+                              <Column gap="4">
+                                <Text>
+                                  {row.status === 'pending'
+                                    ? 'Approve this project, or remove it from the ranking.'
+                                    : 'Remove this project from the ranking.'}
+                                </Text>
+                                <Row justifyContent="flex-end" gap="2">
+                                  <Button onPress={close}>Cancel</Button>
+                                  {row.status === 'pending' && (
+                                    <Button
+                                      variant="primary"
+                                      onPress={() => {
+                                        close();
+                                        act(post, row, 'approve', reload);
+                                      }}
+                                    >
+                                      Approve
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="danger"
+                                    onPress={() => {
+                                      close();
+                                      act(del, row, '', reload);
+                                    }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </Row>
+                              </Column>
+                            )}
+                          </Dialog>
+                        </Modal>
+                      </DialogTrigger>
                     )}
                   </DataColumn>
                 )}
@@ -330,35 +400,23 @@ export function OperatorProjectsPage() {
             {compared.map(project => (
               <Column key={project.id} gap="2">
                 <Text weight="bold">{project.name}</Text>
+                <Metric label="Properties" value={propertyLabel(project.sites, project.apis)} />
                 <Metric label="Pageviews" value={project.pageviews.toLocaleString()} />
                 <Metric label="Visitors" value={project.visitors.toLocaleString()} />
                 <Metric label="API requests" value={project.requests.toLocaleString()} />
-                <Metric label="API errors" value={project.errors.toLocaleString()} />
                 <Metric label="Error rate" value={formatRate(project.errorRate)} />
-                <Metric label="p50" value={formatLatency(project.p50, project.p50Capped)} />
-                <Metric label="p95" value={formatLatency(project.p95, project.p95Capped)} />
+                {latency && (
+                  <Metric label="p50" value={formatLatency(project.p50, project.p50Capped)} />
+                )}
+                {latency && (
+                  <Metric label="p95" value={formatLatency(project.p95, project.p95Capped)} />
+                )}
                 <Metric
-                  label="Pageviews trend"
+                  label="Trend"
                   value={growthText(
-                    project.pageviewsGrowth,
-                    project.pageviews,
-                    project.pageviewsPrevious,
-                  )}
-                />
-                <Metric
-                  label="Visitors trend"
-                  value={growthText(
-                    project.visitorsGrowth,
-                    project.visitors,
-                    project.visitorsPrevious,
-                  )}
-                />
-                <Metric
-                  label="API trend"
-                  value={growthText(
-                    project.requestsGrowth,
-                    project.requests,
-                    project.requestsPrevious,
+                    trendNumbers(project, trend).value,
+                    trendNumbers(project, trend).current,
+                    trendNumbers(project, trend).previous,
                   )}
                 />
               </Column>
@@ -375,13 +433,53 @@ async function act(
   project: Project,
   action: 'approve' | '',
   reload: () => void,
-  confirmRemove = false,
 ) {
-  if (confirmRemove && !window.confirm(`Remove ${project.name}?`)) return;
   const [, type, id] = project.id.match(/^(team|website):(.+)$/) || [];
   const suffix = action ? `/${action}` : '';
   await method(`/admin/projects/${type}/${id}${suffix}`);
   reload();
+}
+
+function trendNumbers(
+  row: {
+    pageviews: number;
+    visitors: number;
+    requests: number;
+    pageviewsGrowth: number | null;
+    visitorsGrowth: number | null;
+    requestsGrowth: number | null;
+    pageviewsPrevious: number;
+    visitorsPrevious: number;
+    requestsPrevious: number;
+  },
+  trend: TrendKey,
+) {
+  if (trend === 'pageviews') {
+    return {
+      value: row.pageviewsGrowth,
+      current: row.pageviews,
+      previous: row.pageviewsPrevious,
+    };
+  }
+  if (trend === 'visitors') {
+    return {
+      value: row.visitorsGrowth,
+      current: row.visitors,
+      previous: row.visitorsPrevious,
+    };
+  }
+  return {
+    value: row.requestsGrowth,
+    current: row.requests,
+    previous: row.requestsPrevious,
+  };
+}
+
+function projectPath(row: { id: string; websiteIds: string[] }) {
+  const parsed = parseProjectId(row.id);
+  if (parsed?.type === 'team') return `/projects/${parsed.id}`;
+  if (row.websiteIds[0]) return `/websites/${row.websiteIds[0]}`;
+  return '';
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

@@ -31,7 +31,31 @@ export async function request(
     },
     body,
   }).then(async res => {
-    const data = await res.json();
+    const text = await res.text();
+    let data: unknown;
+
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = undefined;
+      }
+    }
+
+    // A crashed route returns an empty or HTML body. Parsing that throws
+    // "Unexpected end of JSON input", which is what the form was showing.
+    if (data === undefined && !res.ok) {
+      data = {
+        error: {
+          status: res.status,
+          message:
+            res.status >= 500
+              ? 'The server failed before it could answer. The database may be stopped.'
+              : 'The server returned an unexpected response.',
+          code: 'invalid-response',
+        },
+      };
+    }
 
     return {
       ok: res.ok,

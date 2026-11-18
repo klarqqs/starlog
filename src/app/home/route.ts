@@ -1,5 +1,3 @@
-import { marketingPage } from '@/lib/marketing';
-
-export function GET() {
-  return marketingPage('home.html');
+export function GET(request: Request) {
+  return Response.redirect(new URL('/', request.url), 308);
 }

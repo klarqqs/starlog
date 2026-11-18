@@ -71,7 +71,7 @@ sudo -u stellog env \
   ./scripts/reset-demo.sh
 ```
 
-Reset the synthetic data the same way. `scripts/reset-demo.sh` runs `scripts/seed-demo.ts --reset`. It deletes teams whose names start with `Demo ` and the `demo-tenant`, `demo-other`, `demo-holder`, and `demo-operator` users, then creates them again. It changes the seeded admin password only while that password is still the default.
+Reset the synthetic data the same way. `scripts/reset-demo.sh` runs `scripts/seed-demo.ts --reset`. It deletes teams whose names start with `Demo ` and the `demo-tenant`, `demo-other`, `demo-holder`, and `scf-operator-045` users, then creates them again. It changes the seeded admin password only while that password is still the default.
 
 The backup timer runs `scripts/backup-vps.sh` daily. Dumps go to `BACKUP_DIR` (default `/var/backups/stellog`) and files older than 14 days are deleted. Run it once by hand to confirm `pg_dump` works:
 

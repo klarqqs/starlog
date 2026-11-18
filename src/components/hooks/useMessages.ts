@@ -22,7 +22,15 @@ export function useMessages() {
 
     const code = (error as ApiError)?.code;
 
-    return code ? getMessage(code) : error?.message || 'Unknown error';
+    if (code) {
+      const translated = getMessage(code);
+      // A missing catalog entry comes back as the key, for example "message.service-unavailable".
+      if (translated && translated !== `message.${code}`) {
+        return translated;
+      }
+    }
+
+    return error?.message || 'Unknown error';
   };
 
   return { t, messages, labels, getMessage, getErrorMessage };

@@ -20,7 +20,7 @@ You should see request volume, a status split, p50 and p95, and routes. The stor
 
 ## 3. Operator ranking
 
-Sign out. Sign in as `demo-operator` at `/operator/login`. You land on `/admin/projects`.
+Sign out. Sign in as `scf-operator-045` at `/operator/login`. You land on `/admin/projects`.
 
 Set **Last 30 days**. The table lists the SCF projects (Authline, JetPad, Obba, and the rest), each with its site icon, a rank, error rate, p95, and a trend against the previous 30 days. Sort by API requests, then by error rate. Filter the name to `Authline`.
 

@@ -2,6 +2,7 @@
 import { Column, Form, FormButtons, FormField, FormSubmitButton, Heading, PasswordField, Text } from '@umami/react-zen';
 import { useEffect, useState } from 'react';
 import { LoginPageWrapper } from '../LoginPage';
+import { AuthBar, authLinkStyle } from '../AuthBar';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
 
 function ResetForm() {
@@ -19,9 +20,17 @@ function ResetForm() {
   };
 
   return (
-    <Column justifyContent="center" alignItems="center" gap="6">
+    <>
+      <AuthBar
+        action={
+          <a href="/login" style={authLinkStyle}>
+            Sign in
+          </a>
+        }
+      />
+      <Column justifyContent="center" alignItems="center" gap="6" width="360px">
       <Heading>Choose a new password</Heading>
-      <Form onSubmit={handleSubmit} error={token ? getErrorMessage(error) : 'This link is invalid or expired.'} style={{ minWidth: 300 }}>
+      <Form onSubmit={handleSubmit} error={token ? getErrorMessage(error) : 'This link is invalid or expired.'} style={{ width: '100%' }}>
         <FormField label={t(labels.password)} name="password" rules={{ required: t(labels.required), minLength: { value: 8, message: 'At least 8 characters.' } }}>
           <PasswordField autoComplete="new-password" autoFocus />
         </FormField>
@@ -32,8 +41,11 @@ function ResetForm() {
         </FormButtons>
       </Form>
       {done && <Text>{done}</Text>}
-      <a href="/login">Back to sign in</a>
+      <a href="/login" style={authLinkStyle}>
+        Back to sign in
+      </a>
     </Column>
+    </>
   );
 }
 

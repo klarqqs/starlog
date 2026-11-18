@@ -13,8 +13,15 @@ export type LedgerRow = {
   url: string | null;
 };
 
-/** Wallet, trustline, and payment reports stored for one property. */
-export async function readLedger(websiteId: string, start: Date, end: Date): Promise<LedgerRow[]> {
+/** Wallet, trustline, and payment reports stored for one or more properties. */
+export async function readLedger(
+  websiteId: string | string[],
+  start: Date,
+  end: Date,
+): Promise<LedgerRow[]> {
+  const ids = Array.isArray(websiteId) ? websiteId : [websiteId];
+  if (ids.length === 0) return [];
+
   const rows = await prisma.rawQuery(
     `
     select e.event_id as id,
@@ -26,15 +33,16 @@ export async function readLedger(websiteId: string, start: Date, end: Date): Pro
       max(case when d.data_key = 'hash' then d.string_value end) as hash
     from website_event e
     left join event_data d on d.website_event_id = e.event_id
-    where e.website_id = {{websiteId}}::uuid
+    where e.website_id = any({{websiteIds}}::uuid[])
       and e.event_type = 2
       and e.event_name in ('wallet_created', 'trustline_added', 'tx_received', 'tx_sent')
       and e.created_at >= {{start}}
       and e.created_at <= {{end}}
     group by e.event_id, e.event_name, e.created_at
     order by e.created_at desc
+    limit 500
     `,
-    { websiteId, start, end },
+    { websiteIds: ids, start, end },
     'websiteLedger',
   );
 

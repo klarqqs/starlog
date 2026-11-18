@@ -3,7 +3,7 @@ import { useSpring, useTransform } from 'motion/react';
 import { type ReactNode, useEffect } from 'react';
 import { List, type RowComponentProps } from 'react-window';
 import { AnimatedDiv } from '@/components/common/AnimatedDiv';
-import { Empty } from '@/components/common/Empty';
+import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import { useMessages, useMobile } from '@/components/hooks';
 import { useReducedMotion } from '@/components/hooks/useReducedMotion';
 import { formatLongNumber } from '@/lib/format';
@@ -82,7 +82,7 @@ export function ListTable({
         </Text>
       </Grid>
       <Column gap="1">
-        {data?.length === 0 && <Empty />}
+        {data?.length === 0 && <EmptyCard title="No data" description="Nothing in this range." />}
         {virtualize && data.length > 0 ? (
           <List
             style={{ width: '100%', height: itemCount * ITEM_SIZE }}

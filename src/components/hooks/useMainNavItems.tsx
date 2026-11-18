@@ -1,29 +1,25 @@
 import {
-  Activity,
   ChartColumn,
-  Globe,
+  GitCompare,
   LayoutDashboard,
+  MousePointerClick,
+  Radio,
   Settings,
-  Wrench,
 } from '@/components/icons';
-import { isReadOnlyOperator, operatorViewNav, PROJECT_NAV } from '@/stellog/project-nav';
-import { useLoginQuery } from './queries/useLoginQuery';
+import { PROJECT_NAV } from '@/stellog/project-nav';
 
 const icons = {
   overview: <LayoutDashboard />,
-  websites: <Globe />,
-  apis: <Activity />,
-  setup: <Wrench />,
-  settings: <Settings />,
   projects: <ChartColumn />,
+  realtime: <Radio />,
+  events: <MousePointerClick />,
+  compare: <GitCompare />,
+  settings: <Settings />,
 };
 
-/** The five tabs a Stellar project uses. A read-only operator also gets Projects. */
+/** The tenant shell. Operators use the SCF nav instead. */
 export function useMainNavItems() {
-  const { user } = useLoginQuery();
-  const items = isReadOnlyOperator(user) ? operatorViewNav() : PROJECT_NAV;
-
-  return items.map(item => ({
+  return PROJECT_NAV.map(item => ({
     ...item,
     icon: icons[item.id],
   }));

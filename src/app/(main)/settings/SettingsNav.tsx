@@ -1,8 +1,9 @@
 import { Column, Row, Text, Tooltip, TooltipTrigger } from '@umami/react-zen';
 import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
-import { useMessages, useNavigation } from '@/components/hooks';
+import { useLoginQuery, useMessages, useNavigation } from '@/components/hooks';
 import { ArrowLeft, KeyRound, ShieldCheck, UserCircle, Users } from '@/components/icons';
+import { isReadOnlyOperator } from '@/stellog/project-nav';
 
 export function SettingsNav({
   isCollapsed,
@@ -12,7 +13,9 @@ export function SettingsNav({
   onItemClick?: () => void;
 }) {
   const { t, labels } = useMessages();
+  const { user } = useLoginQuery();
   const { renderUrl, pathname } = useNavigation();
+  const home = user?.isAdmin || isReadOnlyOperator(user) ? '/admin/overview' : '/overview';
 
   const items = [
     {
@@ -52,7 +55,7 @@ export function SettingsNav({
 
   return (
     <Column gap="2">
-      <Link href={renderUrl('/websites', false)} role="button" onClick={onItemClick}>
+      <Link href={renderUrl(home, false)} role="button" onClick={onItemClick}>
         {(() => {
           const content = (
             <Row

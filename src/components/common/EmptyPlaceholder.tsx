@@ -46,3 +46,20 @@ export function EmptyPlaceholder({
     </Column>
   );
 }
+
+/** The Umami empty card: a title, a short line, and an optional action. */
+export function EmptyCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <EmptyPlaceholder title={title} description={description} minHeight="240px">
+      {children}
+    </EmptyPlaceholder>
+  );
+}

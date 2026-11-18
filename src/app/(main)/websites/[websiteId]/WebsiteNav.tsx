@@ -1,7 +1,12 @@
 import { Column, Row, Text, Tooltip, TooltipTrigger } from '@umami/react-zen';
 import { IconLabel } from '@/components/common/IconLabel';
 import Link from '@/components/common/Link';
-import { useMessages, useNavigation, useWebsiteNavItems } from '@/components/hooks';
+import {
+  useMessages,
+  useNavigation,
+  useWebsiteNavItems,
+  useWebsiteQuery,
+} from '@/components/hooks';
 import { ArrowLeft } from '@/components/icons';
 
 export function WebsiteNav({
@@ -15,11 +20,13 @@ export function WebsiteNav({
 }) {
   const { t, labels } = useMessages();
   const { renderUrl } = useNavigation();
+  const { data: website } = useWebsiteQuery(websiteId);
   const { items, selectedKey } = useWebsiteNavItems(websiteId);
+  const back = website?.teamId ? `/projects/${website.teamId}` : '/projects';
 
   return (
     <Column gap="2" marginTop={isCollapsed ? '2' : undefined}>
-      <Link href={renderUrl('/websites', false)} role="button" onClick={onItemClick}>
+      <Link href={renderUrl(back, false)} role="button" onClick={onItemClick}>
         {isCollapsed ? (
           <TooltipTrigger delay={0}>
             <Row

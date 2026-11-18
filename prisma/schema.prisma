@@ -143,6 +143,8 @@ model Website {
   updatedAt DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
   enrollmentStatus String @default("active") @map("enrollment_status") @db.VarChar(20)
+  // A project owns both. site is frontend traffic. api is OpenTelemetry traffic.
+  kind String @default("site") @db.VarChar(20)
 
   recorderEnabled Boolean @default(false) @map("recorder_enabled")
   replayConfig    Json?   @map("replay_config")

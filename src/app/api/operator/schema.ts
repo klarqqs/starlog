@@ -15,6 +15,8 @@ export const operatorProjectSchema = z
     status: z.enum(['active', 'pending']),
     properties: z.number().int(),
     pendingProperties: z.number().int(),
+    sites: z.number().int(),
+    apis: z.number().int(),
     websiteIds: z.array(z.uuid()),
     domain: z.string().nullable(),
     pageviews: z.number().int(),
