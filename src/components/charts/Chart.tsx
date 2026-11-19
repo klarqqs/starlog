@@ -15,7 +15,7 @@ import { Legend } from '@/components/metrics/Legend';
 import { getChartBucketIndex } from '@/lib/charts';
 import { DEFAULT_ANIMATION_DURATION } from '@/lib/constants';
 
-ChartJS.defaults.font.family = 'Inter';
+ChartJS.defaults.font.family = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 export interface ChartProps extends BoxProps {
   type?: 'bar' | 'bubble' | 'doughnut' | 'pie' | 'line' | 'polarArea' | 'radar' | 'scatter';
@@ -30,6 +30,8 @@ export interface ChartProps extends BoxProps {
   annotations?: ChartAnnotation[];
   onAnnotationClick?: (annotations: ChartAnnotation[]) => void;
   onAnnotationMoreClick?: (annotations: ChartAnnotation[]) => void;
+  /** Extra Chart.js plugins, such as a hover crosshair. */
+  chartPlugins?: any[];
 }
 
 function isSameMarkers(a: AnnotationMarker[], b: AnnotationMarker[]) {
@@ -58,6 +60,7 @@ export function Chart({
   annotations,
   onAnnotationClick,
   onAnnotationMoreClick,
+  chartPlugins,
   ...props
 }: ChartProps) {
   const canvas = useRef(null);
@@ -114,6 +117,9 @@ export function Chart({
   );
 
   const options = useMemo(() => {
+    const incoming = (chartOptions ?? {}) as { plugins?: { legend?: object; tooltip?: object } };
+    const incomingPlugins = incoming.plugins ?? {};
+    const { plugins: _plugins, ...rest } = incoming as { plugins?: object };
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -126,19 +132,22 @@ export function Chart({
           duration: 0,
         },
       },
+      ...rest,
       plugins: {
+        ...incomingPlugins,
         legend: {
           display: false,
+          ...incomingPlugins.legend,
         },
         tooltip: {
           enabled: false,
           intersect: true,
+          ...incomingPlugins.tooltip,
           external: onTooltip,
         },
       },
-      ...chartOptions,
     };
-  }, [chartOptions]);
+  }, [chartOptions, animationDuration, onTooltip]);
 
   const handleLegendClick = (item: LegendItem) => {
     if (onLegendClick && type === 'bar') {
@@ -175,7 +184,7 @@ export function Chart({
         type,
         data: chartData,
         options,
-        plugins: [annotationPlugin],
+        plugins: [annotationPlugin, ...(chartPlugins ?? [])],
       });
 
       setLegendItems(chart.current.legend.legendItems);

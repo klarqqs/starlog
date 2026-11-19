@@ -106,16 +106,58 @@ export function histFromExplicitBuckets(explicitBounds: number[], bucketCounts: 
 }
 
 /**
- * Bucket ceiling for a percentile, not a linear interpolation.
+ * Linear interpolation inside the cumulative bucket that holds the percentile.
  * Returns null when the histogram is empty, and Infinity when the percentile sits above 10s.
  */
 export function percentileMs(hist: Hist, percentile: number): number | null {
   if (hist.hInf <= 0 || percentile <= 0 || percentile > 1) return null;
   const target = hist.hInf * percentile;
+  let previousBound = 0;
+  let previousCount = 0;
   for (const [key, bound] of BOUND_KEYS) {
-    if (hist[key] >= target) return bound;
+    const count = hist[key];
+    if (count >= target) {
+      const span = count - previousCount;
+      if (span <= 0) return bound;
+      const fraction = (target - previousCount) / span;
+      return previousBound + fraction * (bound - previousBound);
+    }
+    previousBound = bound;
+    previousCount = count;
   }
   return Number.POSITIVE_INFINITY;
+}
+
+/** Cumulative histogram whose interpolated p50 and p95 land on the requested latencies. */
+export function histForPercentiles(count: number, p50: number, p95: number): Hist {
+  const hist = emptyHist();
+  if (count <= 0) return hist;
+  const median = Math.max(1, p50);
+  const tail = Math.max(median * 1.05, p95);
+  const sigma = Math.log(tail / median) / 1.64485362695;
+  const cdf = (ms: number) => normalCdf(Math.log(ms / median) / sigma);
+  let assigned = 0;
+  for (const [key, bound] of BOUND_KEYS) {
+    const value = Math.min(count, Math.max(assigned, Math.round(count * cdf(bound))));
+    hist[key] = value;
+    assigned = value;
+  }
+  hist.hInf = count;
+  return hist;
+}
+
+function normalCdf(z: number) {
+  const sign = z < 0 ? -1 : 1;
+  const x = Math.abs(z) / Math.SQRT2;
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+  const t = 1 / (1 + p * x);
+  const erf = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return 0.5 * (1 + sign * erf);
 }
 
 function nonNegative(value: number): number {

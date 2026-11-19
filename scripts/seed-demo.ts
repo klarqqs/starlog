@@ -11,18 +11,38 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { chmodSync, readFileSync, writeFileSync } from 'node:fs';
 import { hasDefaultPassword, hashPassword } from '../src/lib/password';
 import prisma from '../src/lib/prisma';
+import {
+  dayDate,
+  demoPoint,
+  demoRand,
+  errorRateFor,
+  histogramFor,
+  HISTORY_DAYS,
+  ROUTES,
+  routeLatency,
+  stableUuid,
+} from '../src/stellog/demo-series';
 import { generateIngestToken } from '../src/stellog/ingest-key';
 import { createOperatorKey } from '../src/stellog/operator-key';
 import { DEMO_PROJECTS, propertyCreatedAt } from './demo-projects';
 import mainnetHashes from './stellar-mainnet-hashes.json';
 
-const DAYS = 90;
-const PROJECTS = DEMO_PROJECTS.length;
+const DAYS = HISTORY_DAYS;
 const base = (process.env.DEMO_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
 const reset = process.argv.includes('--reset');
+const merge = process.argv.includes('--merge');
 const credentialsFile = '.env.demo';
-const BOUNDS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
-const ROUTE_WEIGHTS = [0.28, 0.18, 0.16, 0.14, 0.14, 0.1];
+const DEMO_MARKER = 'demo-';
+const ROUTE_WEIGHTS = [0.12, 0.28, 0.18, 0.42];
+const OK_STATUS: Array<[number, number]> = [
+  [200, 0.82],
+  [201, 0.045],
+  [304, 0.04],
+  [400, 0.025],
+  [401, 0.015],
+  [404, 0.04],
+  [429, 0.015],
+];
 const TENANT_USERNAME = 'demo-tenant@stellog.demo';
 const OTHER_USERNAME = 'demo-other@stellog.demo';
 const HOLDER_USERNAME = 'demo-holder';
@@ -31,96 +51,119 @@ const OPERATOR_USERNAME = 'scf-operator-045';
 /** Real Stellar products. The traffic is synthetic; the names and domains are the public ones. */
 
 type Kind = 'web' | 'api' | 'both';
-type Profile = 'steady' | 'growing' | 'declining' | 'errors' | 'spiky';
 
 type ProjectPlan = {
   index: number;
   name: string;
   domain: string;
   kind: Kind;
-  profile: Profile;
   owner: 'tenant' | 'other' | 'holder';
 };
 
-const plans: ProjectPlan[] = DEMO_PROJECTS.map((project, index) => {
-  const kinds: Kind[] = ['both', 'web', 'api'];
-  const profiles: Profile[] = ['steady', 'growing', 'declining', 'errors', 'spiky'];
-  const kind: Kind = index === 0 ? 'both' : index === 1 ? 'web' : kinds[index % 3];
+const plans: ProjectPlan[] = DEMO_PROJECTS.flatMap((project, index) => {
+  if (project.name === 'Obba') return [];
   const owner = index < 2 ? 'tenant' : index === 2 ? 'other' : 'holder';
-  return {
-    index,
-    name: project.name,
-    domain: project.domain,
-    kind,
-    profile: profiles[index % profiles.length],
-    owner,
-  };
+  return [{ index, name: project.name, domain: project.domain, kind: 'both' as const, owner }];
 });
 
 function dayStart(day: number) {
-  const date = new Date();
-  date.setUTCHours(12, 0, 0, 0);
-  date.setUTCDate(date.getUTCDate() - (DAYS - 1 - day));
-  return date;
+  return dayDate(day);
 }
 
-function dailyRequests(profile: Profile, day: number) {
-  if (profile === 'steady') return 480;
-  if (profile === 'growing') return 20 + day * 5;
-  if (profile === 'declining') return Math.max(15, 420 - day * 4);
-  if (profile === 'errors') return 160;
-  return day % 18 === 7 ? 900 : 25;
+function splitCount(count: number, weights: number[]) {
+  const parts = weights.map(weight => Math.floor(count * weight));
+  const drift = count - parts.reduce((sum, value) => sum + value, 0);
+  parts[0] = (parts[0] ?? 0) + drift;
+  return parts;
 }
 
-function dailyPageviews(profile: Profile, day: number) {
-  if (profile === 'steady') return 80;
-  if (profile === 'growing') return 8 + Math.round(day * 0.8);
-  if (profile === 'declining') return Math.max(6, 90 - day);
-  if (profile === 'errors') return 24;
-  return day % 18 === 7 ? 220 : 12;
+function statusCounts(total: number, errors: number) {
+  const safeErrors = Math.min(total, Math.max(0, errors));
+  const serverErrors = Math.round(safeErrors * 0.8);
+  const counts = new Map<number, number>([
+    [500, serverErrors],
+    [503, safeErrors - serverErrors],
+  ]);
+  const rest = total - safeErrors;
+  const weights = OK_STATUS.map(([, weight]) => weight);
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  const parts = splitCount(
+    rest,
+    weights.map(weight => weight / weightTotal),
+  );
+  OK_STATUS.forEach(([status], index) => counts.set(status, parts[index] ?? 0));
+  return [...counts.entries()].filter(([, count]) => count > 0);
 }
 
-function errorShare(profile: Profile) {
-  if (profile === 'errors') return 0.22;
-  if (profile === 'spiky') return 0.06;
-  return 0.02;
-}
-
-function buckets(count: number, profile: Profile) {
-  const weights =
-    profile === 'errors'
-      ? [0, 0, 0, 0, 0.1, 0.25, 0.4, 0.25, 0, 0, 0, 0]
-      : [0, 0.15, 0.35, 0.3, 0.15, 0.05, 0, 0, 0, 0, 0, 0];
-  const counts = weights.map(weight => Math.floor(count * weight));
-  const peak = weights.indexOf(Math.max(...weights));
-  counts[peak] += count - counts.reduce((sum, value) => sum + value, 0);
-  const mids = [2, 7, 17, 37, 75, 175, 375, 750, 1750, 3750, 7500, 15000];
+function metricRow(
+  websiteId: string,
+  serviceName: string,
+  route: string,
+  status: number,
+  when: Date,
+  count: number,
+  latency: { p50: number; p95: number },
+) {
+  const typical = (latency.p50 + latency.p95) / 2;
   return {
-    counts,
-    sum: counts.reduce((total, value, index) => total + value * mids[index], 0),
+    websiteId,
+    bucketStart: when,
+    serviceName: serviceName.slice(0, 255),
+    route,
+    statusCode: status,
+    requestCount: count,
+    latencySumMs: count * typical,
+    latencyCount: count,
+    ...histogramFor(count, latency.p50, latency.p95),
   };
 }
 
-function routePath(route: number, day: number) {
-  const account = `G${'A'.repeat(55)}`;
-  const contract = `C${'C'.repeat(55)}`;
-  const hash = `${(day % 16).toString(16).padStart(2, '0')}${'ab'.repeat(31)}`;
-  const paths = [
-    `/payments/${1000 + day}`,
-    `/orders/11111111-1111-4111-8111-${String(111111111111 + day).padStart(12, '0')}`,
-    `/accounts/${account}`,
-    `/contracts/${contract}`,
-    `/tx/${hash}`,
-    '/health/',
-  ];
-  return paths[route] ?? '/health/';
+async function insertApiHistory(plan: ProjectPlan, websiteId: string, serviceName: string) {
+  const days = [];
+  const hours = [];
+  const rate = errorRateFor(plan.index);
+  for (let day = 0; day < DAYS; day += 1) {
+    const point = demoPoint(plan.name, plan.index, plan.kind, day);
+    const when = dayStart(day);
+    when.setUTCHours(0, 0, 0, 0);
+    const routeCounts = splitCount(point.requests, ROUTE_WEIGHTS);
+    ROUTES.forEach((route, routeIndex) => {
+      const routeTotal = routeCounts[routeIndex] ?? 0;
+      if (routeTotal <= 0) return;
+      const routeErrors = Math.min(
+        routeTotal,
+        Math.round((point.errors * routeTotal) / Math.max(1, point.requests)),
+      );
+      const latency = routeLatency(plan.name, route);
+      for (const [status, count] of statusCounts(routeTotal, routeErrors)) {
+        days.push(metricRow(websiteId, serviceName, route, status, when, count, latency));
+        if (day < DAYS - 3) continue;
+        const each = Math.floor(count / 24);
+        let rest = count - each * 24;
+        for (let hour = 0; hour < 24; hour += 1) {
+          const hourCount = each + (rest > 0 ? 1 : 0);
+          if (rest > 0) rest -= 1;
+          if (hourCount <= 0) continue;
+          const at = new Date(when.getTime() + hour * 3600_000);
+          hours.push(metricRow(websiteId, serviceName, route, status, at, hourCount, latency));
+        }
+      }
+    });
+  }
+  for (let offset = 0; offset < days.length; offset += 2000) {
+    await prisma.client.apiMetricDay.createMany({ data: days.slice(offset, offset + 2000) });
+  }
+  for (let offset = 0; offset < hours.length; offset += 2000) {
+    await prisma.client.apiMetricHour.createMany({ data: hours.slice(offset, offset + 2000) });
+  }
+  console.log(`api ${plan.name} days=${days.length} hours=${hours.length} rate=${rate}`);
 }
 
 async function resetDemo() {
-  const names = DEMO_PROJECTS.map(p => `'${p.name.replace(/'/g, "''")}'`).join(',');
+  const names = plans.map(p => `'${p.name.replace(/'/g, "''")}'`).join(',');
   const demoUsers = `'demo-tenant', 'demo-other', 'demo-holder', 'demo-operator', '${OPERATOR_USERNAME}', '${TENANT_USERNAME}', '${OTHER_USERNAME}'`;
-  const demoTeams = `SELECT team_id FROM team WHERE name LIKE 'Demo %' OR name LIKE 'metrics-%' OR name LIKE 'erase-%' OR name LIKE 'test-%' OR name IN (${names}) OR team_id IN (SELECT team_id FROM team_user WHERE user_id IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers})))`;
-  const site = `SELECT website_id FROM website WHERE team_id IN (${demoTeams}) OR name LIKE 'erase-%' OR name LIKE 'metrics-%' OR user_id IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers}))`;
+  const demoTeams = `SELECT team_id FROM team WHERE name <> 'Obba' AND (access_code LIKE '${DEMO_MARKER}%' OR name LIKE 'Demo %' OR name LIKE 'metrics-%' OR name LIKE 'erase-%' OR name LIKE 'test-%' OR name IN (${names}) OR team_id IN (SELECT team_id FROM team_user WHERE user_id IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers}))))`;
+  const site = `SELECT website_id FROM website WHERE coalesce(domain, '') <> 'obba.dayfi.co' AND name <> 'Obba' AND name <> 'Obba website' AND (team_id IN (${demoTeams}) OR name LIKE 'erase-%' OR name LIKE 'metrics-%' OR user_id IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers})))`;
   const statements = [
     `DELETE FROM event_data WHERE website_id IN (${site})`,
     `DELETE FROM website_event WHERE website_id IN (${site})`,
@@ -134,7 +177,8 @@ async function resetDemo() {
     `DELETE FROM website WHERE website_id IN (${site})`,
     `DELETE FROM team WHERE team_id IN (${demoTeams})`,
     `DELETE FROM operator_api_key WHERE created_by IN (SELECT user_id FROM "user" WHERE username IN (${demoUsers}))`,
-    `DELETE FROM "user" WHERE username IN (${demoUsers})`,
+    `DELETE FROM team_user WHERE team_id IN (SELECT team_id FROM team WHERE name = 'Starlog' AND NOT EXISTS (SELECT 1 FROM website w WHERE w.team_id = team.team_id))`,
+    `DELETE FROM team WHERE name = 'Starlog' AND NOT EXISTS (SELECT 1 FROM website w WHERE w.team_id = team.team_id)`,
   ];
   for (const statement of statements) {
     await prisma.client.$executeRawUnsafe(statement);
@@ -162,43 +206,126 @@ function password() {
   return randomBytes(18).toString('base64url');
 }
 
-async function postJson(path: string, token: string, body: unknown) {
-  const response = await fetch(`${base}${path}`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    const text = (await response.text()).slice(0, 300);
-    throw new Error(`${path} returned ${response.status}: ${text}`);
+function savedSecret(key: string) {
+  try {
+    return readFileSync(credentialsFile, 'utf8').match(new RegExp(`^${key}=(.*)$`, 'm'))?.[1] ?? '';
+  } catch {
+    return '';
   }
 }
 
-function metricPoint(path: string, status: number, when: Date, count: number, profile: Profile) {
-  const histogram = buckets(count, profile);
-  return {
-    attributes: [
-      { key: 'http.route', value: { stringValue: path } },
-      { key: 'http.response.status_code', value: { intValue: String(status) } },
-    ],
-    timeUnixNano: `${when.getTime()}000000`,
-    count: String(count),
-    sum: histogram.sum,
-    explicitBounds: BOUNDS,
-    bucketCounts: histogram.counts.map(String),
-  };
+async function clearWebsite(websiteId: string) {
+  const id = `'${websiteId}'::uuid`;
+  const statements = [
+    `DELETE FROM event_data WHERE website_id = ${id}`,
+    `DELETE FROM website_event WHERE website_id = ${id}`,
+    `DELETE FROM session WHERE website_id = ${id}`,
+    `DELETE FROM api_metric_raw WHERE website_id = ${id}`,
+    `DELETE FROM api_metric_hour WHERE website_id = ${id}`,
+    `DELETE FROM api_metric_day WHERE website_id = ${id}`,
+    `DELETE FROM api_metric_cursor WHERE website_id = ${id}`,
+  ];
+  for (const statement of statements) {
+    await prisma.client.$executeRawUnsafe(statement);
+  }
+}
+
+/** Keep every existing project and Obba. Replace only the synthetic series. */
+async function mergeDemo() {
+  const owner = await prisma.client.user.findFirst({
+    where: { username: OPERATOR_USERNAME, deletedAt: null },
+    select: { id: true },
+  });
+  if (!owner) throw new Error('The operator account was not found.');
+
+  for (const plan of plans) {
+    let team = await prisma.client.team.findFirst({
+      where: { name: plan.name, deletedAt: null },
+      select: { id: true },
+    });
+    if (!team) {
+      const teamId = stableUuid(`team:${plan.name}`);
+      await prisma.client.team.create({
+        data: {
+          id: teamId,
+          name: plan.name,
+          accessCode: `${DEMO_MARKER}${teamId.slice(0, 12)}`,
+          enrollmentStatus: 'active',
+          createdAt: propertyCreatedAt(plan.index, 'team'),
+        },
+      });
+      await prisma.client.teamUser.create({
+        data: { id: randomUUID(), teamId, userId: owner.id, role: 'team-owner' },
+      });
+      team = { id: teamId };
+    }
+
+    const properties = await prisma.client.website.findMany({
+      where: { teamId: team.id, deletedAt: null },
+      select: { id: true, kind: true, userId: true },
+    });
+    const userId = properties.find(row => row.userId)?.userId || owner.id;
+    let site = properties.find(row => row.kind !== 'api');
+    let api = properties.find(row => row.kind === 'api');
+
+    if (!site) {
+      const id = stableUuid(`site:${plan.name}`);
+      await prisma.client.website.create({
+        data: {
+          id,
+          name: plan.name.slice(0, 100),
+          domain: plan.domain,
+          userId,
+          teamId: team.id,
+          createdBy: userId,
+          enrollmentStatus: 'active',
+          kind: 'site',
+          createdAt: propertyCreatedAt(plan.index, 'site'),
+        },
+      });
+      site = { id, kind: 'site', userId };
+    }
+    if (!api) {
+      const id = stableUuid(`api:${plan.name}`);
+      await prisma.client.website.create({
+        data: {
+          id,
+          name: `${plan.name} API`.slice(0, 100),
+          domain: `api.${plan.domain}`,
+          userId,
+          teamId: team.id,
+          createdBy: userId,
+          enrollmentStatus: 'active',
+          kind: 'api',
+          createdAt: propertyCreatedAt(plan.index, 'api'),
+        },
+      });
+      api = { id, kind: 'api', userId };
+    }
+
+    await clearWebsite(site.id);
+    await clearWebsite(api.id);
+    await insertWeb(plan, site.id);
+    await insertApiLedger(plan, api.id);
+    await insertApiHistory(plan, api.id, `${plan.name} API`);
+    console.log(`merged ${plan.name}`);
+  }
+
+  console.log(`merged ${plans.length} projects`);
+  await prisma.client.$disconnect();
 }
 
 async function main() {
+  if (merge) {
+    await mergeDemo();
+    return;
+  }
   const health = await fetch(`${base}/api/health`).catch(() => null);
   if (health?.status !== 200) {
     throw new Error(`The app at ${base} did not answer GET /api/health. Start it before seeding.`);
   }
 
-  const demoTeamNames = DEMO_PROJECTS.map(p => p.name);
+  const demoTeamNames = plans.map(p => p.name);
   const existing = await prisma.client.team.count({
     where: {
       OR: [{ name: { in: demoTeamNames } }, { name: { startsWith: 'Demo ' } }],
@@ -209,10 +336,10 @@ async function main() {
   }
   if (reset) await resetDemo();
 
-  const tenantPassword = password();
-  const otherPassword = password();
-  const holderPassword = password();
-  const operatorPassword = password();
+  const tenantPassword = savedSecret('DEMO_TENANT_PASSWORD') || password();
+  const otherPassword = savedSecret('DEMO_OTHER_PASSWORD') || password();
+  const holderPassword = savedSecret('DEMO_HOLDER_PASSWORD') || password();
+  const operatorPassword = savedSecret('DEMO_OPERATOR_PASSWORD') || password();
   const tenantId = await ensureUser(TENANT_USERNAME, 'user', tenantPassword);
   const otherId = await ensureUser(OTHER_USERNAME, 'user', otherPassword);
   const holderId = await ensureUser(HOLDER_USERNAME, 'user', holderPassword);
@@ -247,12 +374,13 @@ async function main() {
   }> = [];
 
   for (const plan of plans) {
-    const teamId = randomUUID();
+    const teamId = stableUuid(`team:${plan.name}`);
     const ownerId = owners[plan.owner];
     await prisma.client.team.create({
       data: {
         id: teamId,
         name: plan.name,
+        accessCode: `${DEMO_MARKER}${stableUuid(`team:${plan.name}`).slice(0, 12)}`,
         enrollmentStatus: 'active',
         createdAt: propertyCreatedAt(plan.index, 'team'),
       },
@@ -262,7 +390,7 @@ async function main() {
     });
 
     const makeSite = async (kind: 'site' | 'api', domain: string) => {
-      const id = randomUUID();
+      const id = stableUuid(`${kind}:${plan.name}`);
       const name = (kind === 'api' ? `${plan.name} API` : plan.name).slice(0, 100);
       await prisma.client.website.create({
         data: {
@@ -299,106 +427,14 @@ async function main() {
       websites.push({ id: api.id, name: api.name, teamId, token: token.token, plan });
       await insertApiLedger(plan, api.id);
     }
-    if ((plan.index + 1) % 5 === 0) console.log(`created ${plan.index + 1} of ${PROJECTS}`);
+    if ((plan.index + 1) % 5 === 0) console.log(`created ${plan.name}`);
   }
 
-  console.log(`posting API history for ${websites.length} websites`);
-  let posted = 0;
+  console.log(`writing API history for ${websites.length} websites`);
   for (const website of websites) {
-    for (let start = 0; start < DAYS; start += 10) {
-      const points = [];
-      for (let day = start; day < Math.min(DAYS, start + 10); day += 1) {
-        const total = dailyRequests(website.plan.profile, day);
-        const errors = Math.round(total * errorShare(website.plan.profile));
-        const ok = total - errors;
-        if (day === DAYS - 1) {
-          const recentHours = [1, 4, 8, 13, 18];
-          const partOk = Math.max(1, Math.floor(ok / recentHours.length));
-          const partErr = Math.max(0, Math.floor(errors / recentHours.length));
-          for (const h of recentHours) {
-            const when = new Date(Date.now() - h * 3600_000);
-            ROUTE_WEIGHTS.forEach((weight, route) => {
-              const okCount = Math.max(0, Math.round(partOk * weight));
-              const errorCount = Math.max(0, Math.round(partErr * weight));
-              if (okCount > 0)
-                points.push(
-                  metricPoint(routePath(route, day), 200, when, okCount, website.plan.profile),
-                );
-              if (errorCount > 0)
-                points.push(
-                  metricPoint(routePath(route, day), 500, when, errorCount, website.plan.profile),
-                );
-            });
-          }
-        } else {
-          const when = dayStart(day);
-          ROUTE_WEIGHTS.forEach((weight, route) => {
-            const okCount = Math.max(0, Math.round(ok * weight));
-            const errorCount = Math.max(0, Math.round(errors * weight));
-            if (okCount > 0)
-              points.push(
-                metricPoint(routePath(route, day), 200, when, okCount, website.plan.profile),
-              );
-            if (errorCount > 0)
-              points.push(
-                metricPoint(routePath(route, day), 500, when, errorCount, website.plan.profile),
-              );
-          });
-        }
-      }
-      await postJson('/v1/metrics', website.token, {
-        resourceMetrics: [
-          {
-            resource: {
-              attributes: [
-                { key: 'service.name', value: { stringValue: website.name } },
-                { key: 'tenant.id', value: { stringValue: website.id } },
-              ],
-            },
-            scopeMetrics: [
-              {
-                metrics: [
-                  {
-                    name: 'http.server.duration',
-                    unit: 'ms',
-                    histogram: { aggregationTemporality: 1, dataPoints: points },
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      });
-      posted += 1;
-    }
-
-    const spans = [];
-    for (let day = 0; day < DAYS; day += 7) {
-      const end = dayStart(day);
-      const start = new Date(end.getTime() - 40);
-      spans.push({
-        attributes: [
-          { key: 'http.route', value: { stringValue: routePath(0, day) } },
-          { key: 'http.response.status_code', value: { intValue: '200' } },
-        ],
-        startTimeUnixNano: `${start.getTime()}000000`,
-        endTimeUnixNano: `${end.getTime()}000000`,
-      });
-    }
-    await postJson('/v1/traces', website.token, {
-      resourceSpans: [
-        {
-          resource: {
-            attributes: [
-              { key: 'service.name', value: { stringValue: website.name } },
-              { key: 'tenant.id', value: { stringValue: website.id } },
-            ],
-          },
-          scopeSpans: [{ spans }],
-        },
-      ],
-    });
+    await insertApiHistory(website.plan, website.id, website.name);
   }
+  const posted = websites.length;
 
   const operatorKey = await createOperatorKey(operatorId, 'Demo metrics');
   const lines = [
@@ -582,14 +618,7 @@ function generateLedgerForDay(
       }
     }
   } else {
-    const count =
-      plan.profile === 'growing'
-        ? 1 + Math.floor(day / 25)
-        : plan.profile === 'declining'
-          ? Math.max(1, 4 - Math.floor(day / 25))
-          : plan.profile === 'spiky' && day % 18 === 7
-            ? 6
-            : 2 + ((day + plan.index) % 3);
+    const count = day >= DAYS - 30 ? 2 + ((day + plan.index) % 2) : 0;
 
     for (let i = 0; i < count; i += 1) {
       const typeIndex = (day + i + plan.index) % LEDGER_TEMPLATES.length;
@@ -609,8 +638,7 @@ function generateLedgerForDay(
             : ['USDC', 'EURC', 'XLM'][(day + i + plan.index) % 3]!;
 
       const hash = getHashForType(template.name, day * 13 + i + plan.index);
-      const isError = plan.profile === 'errors' ? (day + i) % 4 === 0 : false;
-      const success = isError ? 'false' : 'true';
+      const success = 'true';
 
       events.push({
         id: eventId,
@@ -648,27 +676,94 @@ function generateLedgerForDay(
   return { events, eventDatas };
 }
 
+const COUNTRIES: Array<[string, number]> = [
+  ['US', 0.36],
+  ['NG', 0.16],
+  ['GB', 0.12],
+  ['DE', 0.09],
+  ['BR', 0.08],
+  ['SG', 0.06],
+  ['JP', 0.05],
+  ['KR', 0.04],
+  ['FR', 0.03],
+  ['KE', 0.01],
+];
+const BROWSERS: Array<[string, number]> = [
+  ['chrome', 0.55],
+  ['safari', 0.2],
+  ['firefox', 0.15],
+  ['edge', 0.1],
+];
+const REFERRERS: Array<[string, number]> = [
+  ['', 0.42],
+  ['google.com', 0.33],
+  ['stellar.org', 0.12],
+  ['github.com', 0.08],
+  ['duckduckgo.com', 0.05],
+];
+const PATHS: Array<[string, number]> = [
+  ['/', 0.46],
+  ['/pricing', 0.18],
+  ['/accounts', 0.16],
+  ['/docs', 0.12],
+  ['/blog', 0.08],
+];
+
+function pickWeighted<T>(items: Array<[T, number]>, rand: number): T {
+  let cursor = rand;
+  for (const [item, weight] of items) {
+    cursor -= weight;
+    if (cursor <= 0) return item;
+  }
+  return items[items.length - 1]![0];
+}
+
+function visitCounts(views: number, bounce: number) {
+  let visits = Math.max(1, Math.min(views, Math.round(views / (1 + 2 * (1 - bounce)))));
+  let singles = Math.min(visits, Math.round(visits * bounce));
+  let multi = visits - singles;
+  let rest = views - singles;
+  while (multi > 0 && rest < multi * 2 && singles > 0) {
+    singles -= 1;
+    multi += 1;
+    rest += 1;
+  }
+  if (multi === 0) return Array.from({ length: views }, () => 1);
+  const counts = Array.from({ length: singles }, () => 1);
+  const base = Math.floor(rest / multi);
+  let extra = rest - base * multi;
+  for (let i = 0; i < multi; i += 1) {
+    counts.push(base + (extra > 0 ? 1 : 0));
+    if (extra > 0) extra -= 1;
+  }
+  return counts;
+}
+
 async function insertWeb(plan: ProjectPlan, websiteId: string) {
   const domain = plan.domain;
-  const countries = ['US', 'DE', 'NG', 'BR', 'SG', 'JP', 'GB', 'KR'];
-  const browsers = ['chrome', 'firefox', 'safari', 'edge'];
   const systems = ['Windows', 'Mac OS', 'Android', 'iOS'];
   const devices = ['desktop', 'mobile', 'tablet'];
-  const referrers = ['stellar.org', 'google.com', 'github.com', 'duckduckgo.com', ''];
-  const paths = ['/', '/pricing', '/accounts', '/docs', '/blog'];
+  const bounce = 0.35 + demoRand(plan.name, 0, 'bounce') * 0.2;
+  const repeat = 0.08 + demoRand(plan.name, 0, 'repeat') * 0.16;
   const sessions = [];
   const events = [];
   const eventDatas = [];
   const now = new Date();
 
   for (let day = 0; day < DAYS; day += 1) {
-    const views = dailyPageviews(plan.profile, day);
-    const visitors = Math.max(1, Math.round(views * 0.45));
-    const baseViews = Math.floor(views / visitors);
-    let extra = views - baseViews * visitors;
+    const views = demoPoint(plan.name, plan.index, plan.kind, day).pageviews;
+    if (views === 0) continue;
+    const counts = visitCounts(views, bounce);
+    const extraVisits = Math.min(
+      Math.floor(counts.length / 2),
+      Math.round(counts.length * (repeat / (1 + repeat))),
+    );
+    const visitors = Math.max(1, counts.length - extraVisits);
     const daySessionIds: string[] = [];
+    let cursor = 0;
 
     for (let visitor = 0; visitor < visitors; visitor += 1) {
+      const owned = 1 + (visitor < extraVisits ? 1 : 0);
       const sessionId = randomUUID();
       daySessionIds.push(sessionId);
       const when =
@@ -679,35 +774,40 @@ async function insertWeb(plan: ProjectPlan, websiteId: string) {
               d.setUTCHours((visitor * 5) % 24, (visitor * 7) % 60, 0, 0);
               return d;
             })();
-
       sessions.push({
         id: sessionId,
         websiteId,
-        browser: browsers[(day + visitor) % browsers.length],
+        browser: pickWeighted(BROWSERS, demoRand(plan.name, day, `browser:${visitor}`)),
         os: systems[(day + visitor) % systems.length],
         device: devices[(day + visitor) % devices.length],
         language: 'en-US',
-        country: countries[(plan.index + day + visitor) % countries.length],
+        country: pickWeighted(COUNTRIES, demoRand(plan.name, day, `country:${visitor}`)),
+        distinctId: 'stellog-demo',
         createdAt: when,
       });
-
-      const count = baseViews + (extra > 0 ? 1 : 0);
-      if (extra > 0) extra -= 1;
-      for (let view = 0; view < count; view += 1) {
-        const at = new Date(when.getTime() + view * 30_000);
-        const referrer = referrers[(day + visitor + view) % referrers.length];
-        events.push({
-          id: randomUUID(),
-          websiteId,
-          sessionId,
-          visitId: sessionId,
-          createdAt: at,
-          urlPath: paths[(visitor + view) % paths.length],
-          referrerDomain: referrer || null,
-          pageTitle: plan.name,
-          eventType: 1,
-          hostname: domain,
-        });
+      for (let visit = 0; visit < owned; visit += 1) {
+        const pages = counts[cursor] ?? 1;
+        cursor += 1;
+        const visitId = randomUUID();
+        const visitAt = new Date(when.getTime() + visit * 3 * 3600_000);
+        for (let view = 0; view < pages; view += 1) {
+          const referrer = pickWeighted(
+            REFERRERS,
+            demoRand(plan.name, day, `ref:${visitor}:${visit}:${view}`),
+          );
+          events.push({
+            id: randomUUID(),
+            websiteId,
+            sessionId,
+            visitId,
+            createdAt: new Date(visitAt.getTime() + view * 40_000),
+            urlPath: pickWeighted(PATHS, demoRand(plan.name, day, `path:${visitor}:${visit}:${view}`)),
+            referrerDomain: referrer || null,
+            pageTitle: plan.name,
+            eventType: 1,
+            hostname: domain,
+          });
+        }
       }
     }
 

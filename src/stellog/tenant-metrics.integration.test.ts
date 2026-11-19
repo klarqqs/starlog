@@ -31,7 +31,7 @@ const end = new Date('2026-11-15T22:00:00.000Z');
     expect(report.websiteId).toBe(websiteA);
     expect(report.requests).toBe(6);
     expect(report.routes).toEqual([
-      expect.objectContaining({ route: '/accounts/{id}', requests: 6, p50: 25 }),
+      expect.objectContaining({ route: '/accounts/{id}', requests: 6, p50: 17.5 }),
     ]);
     expect(report.statuses).toEqual([{ statusCode: 200, requests: 6, share: 1 }]);
     expect(JSON.stringify(report)).not.toContain('/secret');

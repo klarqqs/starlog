@@ -21,7 +21,7 @@ Work through this list when the install moves to another operator. The running d
 
 ## Repository transfer
 
-The public repository is `https://github.com/klarqqs/stellog.git`. This checkout may still have `origin` pointed at `https://github.com/klarqqs/starlog.git`. Before transfer, push the commit you intend to hand over to `stellog`. This checkout also has uncommitted work until someone commits it.
+The public repository is `https://github.com/klarqqs/stellog.git`. This checkout may still have `origin` pointed at `https://github.com/klarqqs/starlog.git`. Before transfer, push the commit you intend to hand over to `stellog`.
 
 GitHub's transfer keeps issues and stars and changes the owner. After it finishes, update the local remote, and rotate `APP_SECRET` so a token minted on the old operator's watch cannot be replayed as a session. Ingest keys and operator keys are hashes in the database; they move with the dump and do not depend on `APP_SECRET`. Revoke any operator key you do not want the new operator to inherit.
 
@@ -41,7 +41,7 @@ CI on the new repository runs five jobs: unit and Postgres integration tests, th
 
 The dump includes users, websites, teams, sessions, API metric rollups, ingest-key hashes, and operator-key hashes. It does not include the plaintext of those keys. Tenants who lost a token need a new key.
 
-Postgres row-level security is not enabled. Isolation is in the application queries. A database superuser can read every tenant. Give the new operator a role that is not shared with the application only if you create one outside this repository; this repo does not create `stellog_operator`.
+Postgres row-level security is not enabled. Isolation is in the application queries. A database superuser can read every tenant. Migration 31 creates `stellog_operator` as `NOLOGIN` with `SELECT` on `api_metric_hour` and `api_metric_day`. The application does not connect as that role.
 
 There is no separate erasure workflow for `distinct_id`. Removing a project uses Umami's existing team and website delete. Say that in the handover instead of promising a GDPR delete API.
 
@@ -77,8 +77,6 @@ Copy `terraform.tfvars.example` and replace every value. Commit `infra/terraform
 
 ## Known limits to say out loud
 
-- Protobuf ingestion is not accepted.
-- The ingest key is per website, not per team.
 - Hourly API metrics are not on a 90-day partition schedule. Aggregates are retained at least 24 months by the prune script, which you have to schedule.
 - Password reset does not send email.
 - `window.umami` and `data-umami-event` are still the tracker names.

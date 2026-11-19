@@ -77,9 +77,10 @@ export function ApiMetricsPage({ websiteId }: { websiteId: string }) {
       {isLoading && <Text>Loading API traffic.</Text>}
       {error && <Text>API traffic could not be loaded.</Text>}
       {data && (
-        <Column gap="3">
-          <Grid columns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap>
+        <Column gap="6">
+          <Grid columns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap="2">
             <Stat label="Requests" value={data.requests.toLocaleString(dateLocale)} />
+            <Stat label="Error rate" value={errorRateLabel(data)} />
             <Stat label="p50 latency" value={formatLatency(data.p50, data.p50Capped)} />
             <Stat label="p95 latency" value={formatLatency(data.p95, data.p95Capped)} />
           </Grid>
@@ -93,7 +94,7 @@ export function ApiMetricsPage({ websiteId }: { websiteId: string }) {
               renderXLabel={renderXLabel}
             />
           </Panel>
-          <Grid columns={{ base: '1fr', lg: '1.4fr 0.8fr' }} gap>
+          <Grid columns={{ base: '1fr', lg: '1.4fr 0.8fr' }} gap="2">
             <Panel title="Routes">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -156,6 +157,14 @@ export function ApiMetricsPage({ websiteId }: { websiteId: string }) {
       )}
     </Column>
   );
+}
+
+function errorRateLabel(data: TenantMetrics) {
+  if (!data.requests) return '—';
+  const errors = data.statuses
+    .filter(status => status.statusCode >= 500)
+    .reduce((sum, status) => sum + status.requests, 0);
+  return `${Math.round((errors / data.requests) * 1000) / 10}%`;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -221,6 +230,6 @@ function localHourStamp(iso: string) {
 function formatLatency(ms: number | null, capped: boolean) {
   if (capped) return '> 10s';
   if (ms === null) return '—';
-  if (ms >= 1000) return `${ms / 1000}s`;
-  return `${ms} ms`;
+  if (ms >= 1000) return `${Math.round(ms / 100) / 10}s`;
+  return `${Math.round(ms)} ms`;
 }

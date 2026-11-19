@@ -1,12 +1,14 @@
 # Stellog status against the web and API analytics request
 
+This file is a point-in-time record of the local smoke run on 15 Nov 2026. The code it describes has since been merged to main (merge commit d84e890).
+
 This file records the local smoke on 15 Nov 2026. A row is BUILT only when that smoke passed it. PARTIAL means this smoke did not prove the whole requirement. PLANNED means this smoke did not exercise it and it is not claimed.
 
 Environment: the local production server, not a container. `docker info` did not answer within 10 seconds and was not retried. Postgres on port 5434 did not accept a connection, so the server used database `stellog_smoke` on local Postgres at `127.0.0.1:5432`. The repo `.env` was not modified. The app was built with `SKIP_BUILD_GEO=1` and started with `next start -H 127.0.0.1 -p 3000`. `SMOKE_HARNESS=1` was set so the harness page was available. `next dev` was not used.
 
 The script `scripts/smoke-test.ts` exited 0. Credentials stayed in gitignored `.env.smoke`.
 
-The server was built from the local working tree. Protobuf decoding, the team-key migration, retention, the prune script, and the privacy changes are still uncommitted, so these five commits do not by themselves contain that code. The rows below describe the server that was running.
+The server was built from the local working tree. The rows below describe the server that was running.
 
 | Requirement | Status | Evidence from this smoke |
 | --- | --- | --- |

@@ -1,51 +1,56 @@
 'use client';
 
-import { Column, Grid, Text } from '@umami/react-zen';
-import type { ReactNode } from 'react';
-import { LedgerReports } from '@/app/(main)/websites/[websiteId]/ledger/LedgerPage';
-import Link from '@/components/common/Link';
-import { LinkButton } from '@/components/common/LinkButton';
+import { Column } from '@umami/react-zen';
+import { useEffect } from 'react';
 import { LoadingPanel } from '@/components/common/LoadingPanel';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Panel } from '@/components/common/Panel';
-import { useApi, useDateRange, useLoginQuery, useNavigation } from '@/components/hooks';
-import { useTwoFactorStatusQuery } from '@/components/hooks/queries/useTwoFactorStatusQuery';
+import { useApi, useDateRange, useNavigation } from '@/components/hooks';
 import { DateFilter } from '@/components/input/DateFilter';
-import { ListTable } from '@/components/metrics/ListTable';
-import { MetricCard } from '@/components/metrics/MetricCard';
-import { MetricsBar } from '@/components/metrics/MetricsBar';
-import { formatLongNumber } from '@/lib/format';
+import { type FleetRow, FleetTable, formatLatency, formatRate, formatTrend, MetricCards } from '@/components/metrics/Fleet';
+import { OverviewAudience } from '@/components/metrics/OverviewAudience';
+import { TrafficChart } from '@/components/metrics/TrafficChart';
+import { rememberDateRange, resolveDateRange } from '@/lib/dashboard-date';
+import { curveDay } from '@/stellog/day-curve';
 import { parseProjectId } from '@/stellog/operator-report';
+import type { Audience } from '@/stellog/project-traffic';
 
 type Project = {
   id: string;
   name: string;
   status: 'active' | 'pending';
-  sites: number;
-  apis: number;
   websiteIds?: string[];
+  domain: string | null;
   pageviews: number;
+  pageviewsPrevious: number;
+  pageviewsGrowth: number | null;
   visitors: number;
+  visitorsPrevious: number;
+  visitorsGrowth: number | null;
   requests: number;
   errors: number;
-  pageviewsPrevious: number;
-  visitorsPrevious: number;
   requestsPrevious: number;
+  requestsGrowth: number | null;
+  errorRate: number;
   p95: number | null;
   p95Capped: boolean;
 };
 
-type KeyRow = { id: string; revokedAt: string | null };
-type UserRow = { id: string; role: string };
+type Series = { t: string; site: number; visitors: number; api: number };
 
 export function OperatorOverviewPage() {
   const { get, useQuery } = useApi();
-  const { user } = useLoginQuery();
-  const isAdmin = !!user?.isAdmin;
-  const { dateRange } = useDateRange();
-  const { query, router, updateParams } = useNavigation();
+  const { date, dateRange } = useDateRange();
+  const { router, updateParams } = useNavigation();
+  const selected = resolveDateRange(date);
   const startAt = dateRange.startDate.getTime();
   const endAt = dateRange.endDate.getTime();
+  const hourly = endAt - startAt <= 2 * 24 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    if (new Date().getHours() >= 12 || resolveDateRange(date) !== '0day') return;
+    rememberDateRange('24hour');
+    router.replace(updateParams({ date: '24hour' }));
+  }, [date, router, updateParams]);
 
   const projectsQuery = useQuery({
     queryKey: ['operator-overview', startAt, endAt],
@@ -57,40 +62,25 @@ export function OperatorOverviewPage() {
         status: 'all',
         sort: 'requests',
         order: 'desc',
-      }) as Promise<{
-        enrollmentMode: 'open' | 'approval-required';
-        projects: Project[];
-      }>,
+      }) as Promise<{ projects: Project[]; series?: Series[]; audience?: Audience }>,
   });
-  const keysQuery = useQuery({
-    queryKey: ['operator-keys'],
-    queryFn: () => get('/admin/operator-keys') as Promise<{ keys: KeyRow[] }>,
-    enabled: isAdmin,
-  });
-  const usersQuery = useQuery({
-    queryKey: ['operator-overview-users'],
-    queryFn: () => get('/admin/users', { page: 1, pageSize: 100 }) as Promise<{ data: UserRow[] }>,
-    enabled: isAdmin,
-  });
-  const twoFactor = useTwoFactorStatusQuery(isAdmin);
 
   const projects = projectsQuery.data?.projects ?? [];
   const totals = fleetTotals(projects);
-  const keys = keysQuery.data?.keys ?? [];
-  const activeKeys = keys.filter(key => !key.revokedAt).length;
-  const revokedKeys = keys.length - activeKeys;
-  const operators = (usersQuery.data?.data ?? []).filter(row => row.role === 'operator').length;
-  const mode = projectsQuery.data?.enrollmentMode;
-  const top = projects.slice(0, 8);
-  const requestTotal = totals.requests || 1;
-  const slowest = slowestProject(projects);
+  const busiest = projects.find(project => project.p95 != null) ?? null;
+  const series = projectsQuery.data?.series ?? [];
+  const chartPoints =
+    selected === '0day' ? curveDay(series, dateRange.startDate, dateRange.endDate) : series;
 
   return (
-    <Column gap="6" margin="2">
+    <Column gap="4" className="stellog-overview-page">
       <PageHeader title="Overview">
         <DateFilter
-          value={query.date || '24hour'}
-          onChange={value => router.push(updateParams({ date: value }))}
+          value={dateRange.value}
+          onChange={value => {
+            rememberDateRange(value);
+            router.push(updateParams({ date: value }));
+          }}
           showAllTime={false}
         />
       </PageHeader>
@@ -100,198 +90,96 @@ export function OperatorOverviewPage() {
         error={projectsQuery.error}
         minHeight="136px"
       >
-        <MetricsBar>
-          <MetricCard
-            label="Pageviews"
-            value={totals.pageviews}
-            change={totals.pageviews - totals.pageviewsPrevious}
-            formatValue={formatLongNumber}
-            showChange
+        <Column gap="4">
+          <MetricCards
+            pageviews={totals.pageviews}
+            visitors={totals.visitors}
+            requests={totals.requests}
+            p95={formatLatency(busiest?.p95, busiest?.p95Capped)}
+            pageviewsTrend={formatTrend(totals.pageviewsGrowth, totals.pageviews, totals.pageviewsPrevious)}
+            visitorsTrend={formatTrend(totals.visitorsGrowth, totals.visitors, totals.visitorsPrevious)}
+            requestsTrend={formatTrend(totals.requestsGrowth, totals.requests, totals.requestsPrevious)}
+            errorDetail={totals.requests === 0 ? null : `${formatRate(totals.errors / totals.requests)} errors`}
           />
-          <MetricCard
-            label="Visitors"
-            value={totals.visitors}
-            change={totals.visitors - totals.visitorsPrevious}
-            formatValue={formatLongNumber}
-            showChange
+          <TrafficChart
+            points={chartPoints}
+            start={dateRange.startDate}
+            end={dateRange.endDate}
+            unit={hourly ? 'hour' : 'day'}
           />
-          <MetricCard
-            label="API requests"
-            value={totals.requests}
-            change={totals.requests - totals.requestsPrevious}
-            formatValue={formatLongNumber}
-            showChange
+          <FleetTable
+            title="Top projects"
+            rows={projects.slice(0, 5).map(fleetRow)}
+            viewAllHref={projectsHref(dateRange.value)}
           />
-          <MetricCard
-            label="Error rate"
-            value={totals.errorRate * 100}
-            formatValue={rate => `${Math.round(rate)}%`}
-            reverseColors
-          />
-          <MetricCard
-            label="API errors"
-            value={totals.errors}
-            formatValue={formatLongNumber}
-            reverseColors
-          />
-          <MetricCard
-            label="Slowest p95"
-            value={slowest?.p95 ?? 0}
-            formatValue={() => latencyLabel(slowest)}
-          />
-        </MetricsBar>
+          {projectsQuery.data?.audience && (
+            <OverviewAudience audience={projectsQuery.data.audience} />
+          )}
+        </Column>
       </LoadingPanel>
-      <LedgerReports />
-      <Grid columns={{ base: '1fr', lg: '1fr 1fr' }} gap="6">
-        <Section title="Projects" href="/admin/projects">
-          <MetricsBar>
-            <MetricCard label="Projects" value={totals.projects} formatValue={formatLongNumber} />
-            <MetricCard label="Sites" value={totals.sites} formatValue={formatLongNumber} />
-            <MetricCard label="APIs" value={totals.apis} formatValue={formatLongNumber} />
-          </MetricsBar>
-          <ListTable
-            title="Project"
-            metric="Requests"
-            data={top.map(project => ({
-              label: project.name,
-              count: project.requests,
-              percent: (project.requests / requestTotal) * 100,
-            }))}
-            renderLabel={(row, index) => <Link href={projectPath(top[index])}>{row.label}</Link>}
-          />
-        </Section>
-        <Section title="Enrollment" href={isAdmin ? '/admin/enrollment' : undefined}>
-          <MetricsBar>
-            <MetricCard
-              label="Enrollment"
-              value={0}
-              formatValue={() => (mode === 'approval-required' ? 'Approval required' : 'Open')}
-            />
-            <MetricCard label="Pending" value={totals.pending} formatValue={formatLongNumber} />
-          </MetricsBar>
-        </Section>
-        {isAdmin && (
-          <Section title="Operator keys" href="/admin/operator-keys">
-            {keysQuery.isLoading && <Text>Loading keys.</Text>}
-            {keysQuery.error && <Text>Operator keys could not be loaded.</Text>}
-            {keysQuery.data && (
-              <MetricsBar>
-                <MetricCard label="Active" value={activeKeys} formatValue={formatLongNumber} />
-                <MetricCard label="Revoked" value={revokedKeys} formatValue={formatLongNumber} />
-              </MetricsBar>
-            )}
-          </Section>
-        )}
-        {isAdmin && (
-          <Section title="Operators" href="/admin/users">
-            {usersQuery.isLoading && <Text>Loading operators.</Text>}
-            {usersQuery.error && <Text>Operators could not be loaded.</Text>}
-            {usersQuery.data && (
-              <MetricsBar>
-                <MetricCard label="Operators" value={operators} formatValue={formatLongNumber} />
-              </MetricsBar>
-            )}
-          </Section>
-        )}
-        {isAdmin && (
-          <Section title="Security" href="/admin/security">
-            {twoFactor.isLoading && <Text>Loading security.</Text>}
-            {twoFactor.error && <Text>Security could not be loaded.</Text>}
-            {twoFactor.data && (
-              <MetricsBar>
-                <MetricCard
-                  label="Two-factor"
-                  value={0}
-                  formatValue={() => securityLabel(twoFactor.data)}
-                />
-              </MetricsBar>
-            )}
-          </Section>
-        )}
-      </Grid>
     </Column>
   );
 }
 
-function Section({ title, href, children }: { title: string; href?: string; children: ReactNode }) {
-  return (
-    <Panel
-      title={title}
-      toolbar={
-        href ? (
-          <LinkButton href={href} variant="quiet">
-            Open
-          </LinkButton>
-        ) : null
-      }
-    >
-      <Column gap="4">{children}</Column>
-    </Panel>
-  );
+function projectsHref(date: string) {
+  if (!date) return '/admin/projects';
+  return `/admin/projects?date=${encodeURIComponent(date)}`;
+}
+
+function fleetRow(project: Project): FleetRow {
+  const parsed = parseProjectId(project.id);
+  return {
+    id: project.id,
+    name: project.name,
+    domain: project.domain,
+    href: parsed?.type === 'team' ? `/projects/${parsed.id}` : null,
+    pageviews: project.pageviews,
+    requests: project.requests,
+    errorRate: project.errorRate,
+    p95: project.p95,
+    p95Capped: project.p95Capped,
+    growth: project.requests > 0 || project.requestsPrevious > 0
+      ? project.requestsGrowth
+      : project.pageviewsGrowth,
+    previous: project.requests > 0 || project.requestsPrevious > 0
+      ? project.requestsPrevious
+      : project.pageviewsPrevious,
+    current: project.requests > 0 || project.requestsPrevious > 0
+      ? project.requests
+      : project.pageviews,
+  };
 }
 
 function fleetTotals(projects: Project[]) {
   const totals = projects.reduce(
     (sum, project) => ({
       pageviews: sum.pageviews + project.pageviews,
-      visitors: sum.visitors + project.visitors,
-      requests: sum.requests + project.requests,
-      errors: sum.errors + project.errors,
       pageviewsPrevious: sum.pageviewsPrevious + project.pageviewsPrevious,
-      visitorsPrevious: sum.visitorsPrevious + project.visitorsPrevious,
+      visitors: sum.visitors + project.visitors,
+      visitorsPrevious: sum.visitorsPrevious + (project.visitorsPrevious || 0),
+      requests: sum.requests + project.requests,
       requestsPrevious: sum.requestsPrevious + project.requestsPrevious,
-      sites: sum.sites + (project.sites ?? 0),
-      apis: sum.apis + (project.apis ?? 0),
-      pending: sum.pending + (project.status === 'pending' ? 1 : 0),
+      errors: sum.errors + project.errors,
     }),
     {
       pageviews: 0,
-      visitors: 0,
-      requests: 0,
-      errors: 0,
       pageviewsPrevious: 0,
+      visitors: 0,
       visitorsPrevious: 0,
+      requests: 0,
       requestsPrevious: 0,
-      sites: 0,
-      apis: 0,
-      pending: 0,
+      errors: 0,
     },
   );
   return {
     ...totals,
-    projects: projects.length,
-    errorRate: totals.requests === 0 ? 0 : totals.errors / totals.requests,
+    pageviewsGrowth: rate(totals.pageviews, totals.pageviewsPrevious),
+    visitorsGrowth: rate(totals.visitors, totals.visitorsPrevious),
+    requestsGrowth: rate(totals.requests, totals.requestsPrevious),
   };
 }
 
-function slowestProject(projects: Project[]) {
-  return projects.reduce<Project | null>((slowest, project) => {
-    if (project.p95 == null) return slowest;
-    if (!slowest || project.p95 > (slowest.p95 ?? 0)) return project;
-    return slowest;
-  }, null);
-}
-
-function latencyLabel(project: Project | null) {
-  if (!project || project.p95 == null) return '—';
-  if (project.p95Capped) return '> 10s';
-  if (project.p95 >= 1000) return `${Math.round(project.p95 / 100) / 10}s`;
-  return `${Math.round(project.p95)} ms`;
-}
-
-function securityLabel(
-  status?: {
-    isConfigured?: boolean;
-    globalRequired?: boolean;
-  } | null,
-) {
-  if (!status?.isConfigured) return 'Not configured';
-  return status.globalRequired ? 'Required' : 'Off';
-}
-
-function projectPath(project: Project) {
-  const parsed = parseProjectId(project.id);
-  if (parsed?.type === 'team') return `/projects/${parsed.id}`;
-  if (project.websiteIds?.[0]) return `/websites/${project.websiteIds[0]}`;
-  return '/admin/projects';
+function rate(current: number, previous: number) {
+  if (previous === 0) return current === 0 ? 0 : null;
+  return (current - previous) / previous;
 }

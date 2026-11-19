@@ -32,10 +32,7 @@ export function ProjectApisPage({ projectId }: { projectId: string }) {
           </Panel>
         )}
         {apis.map(api => (
-          <Column key={api.id} gap="3">
-            <Text weight="bold">{api.name}</Text>
-            <ApiMetricsPage websiteId={api.id} />
-          </Column>
+          <ApiMetricsPage key={api.id} websiteId={api.id} />
         ))}
       </Column>
     </PageBody>

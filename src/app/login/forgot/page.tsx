@@ -3,6 +3,7 @@ import { Column, Form, FormButtons, FormField, FormSubmitButton, Heading, Text, 
 import { useState } from 'react';
 import { LoginPageWrapper } from '../LoginPage';
 import { AuthBar, authLinkStyle } from '../AuthBar';
+import Link from '@/components/common/Link';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
 
 function ForgotForm() {
@@ -21,9 +22,9 @@ function ForgotForm() {
     <>
       <AuthBar
         action={
-          <a href="/login?mode=register" style={authLinkStyle}>
+          <Link href="/login?mode=register" style={authLinkStyle}>
             Sign up
-          </a>
+          </Link>
         }
       />
       <Column justifyContent="center" alignItems="center" gap="6" width="360px">
@@ -42,9 +43,9 @@ function ForgotForm() {
       {resetUrl && (
         <a href={resetUrl}>Open the reset link</a>
       )}
-      <a href="/login" style={authLinkStyle}>
+      <Link href="/login" style={authLinkStyle}>
         Back to sign in
-      </a>
+      </Link>
     </Column>
     </>
   );

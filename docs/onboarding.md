@@ -1,6 +1,6 @@
 # Tenant onboarding
 
-A project is a team when the website belongs to one, and the website itself when it does not. A website is the property that receives traffic. This build does not yet have a separate `kind` of `web` or `api`. An API property is still a website, and creating one requires a domain because the Umami website form requires one.
+A project is a team when the website belongs to one, and the website itself when it does not. A website is the property that receives traffic. `website.kind` is `site` or `api`. An API property is a website row with kind `api`, and creating one requires a domain because the Umami website form requires one.
 
 ## Operator, before the first tenant
 
@@ -39,9 +39,9 @@ Send it as `Authorization: Bearer stk_...` to:
 - `POST /v1/traces`
 - `POST /v1/logs`
 
-The body is OTLP JSON. Protobuf is rejected with 415. A body over 1 MB, or more than 5000 points, is rejected. If the payload names a `tenant.id` other than the website that owns the key, nothing is stored. The website id is public and is not the credential.
+The body is OTLP JSON. Protobuf and gzip are accepted and converted to JSON before ingest. A body over 1 MB, or more than 5000 points, is rejected. If the payload names a `tenant.id` other than the website that owns the key, nothing is stored. The website id is public and is not the credential.
 
-This key is per website. A team-scoped `api_ingest_key` is the accepted later design and is not what these routes issue.
+The key is stored on the website's team (`ingest_key.team_id`). Migration 31 removed the website column from the key.
 
 The tenant API screen is `/websites/<websiteId>/api`. It shows request volume, routes, status codes, and p50/p95 for that website. p50 and p95 are histogram bucket ceilings. A value above 10 seconds is capped.
 

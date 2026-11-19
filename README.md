@@ -1,5 +1,7 @@
 # Stellog
 
+The canonical repository is https://github.com/klarqqs/stellog.
+
 Analytics for Stellar projects. This repository is [Umami](https://github.com/umami-software/umami) 3.5.0 (commit `b18d514`) with a Stellog landing page and three additions: password reset, Freighter and xBull sign-in, and a separate SCF operator door.
 
 The app, its API routes, and the landing pages are one project.

@@ -104,4 +104,12 @@ describe('useDateRange dateCompare', () => {
     expect(result.current.dateRange.value).toBe('24hour');
     expect(result.current.isCustomRange).toBe(false);
   });
+
+  test('uses the saved dashboard range when the page has no date', () => {
+    mockQuery.date = '';
+    setItem(DATE_RANGE_CONFIG, '90day');
+    const { result } = renderHook(() => useDateRange());
+
+    expect(result.current.dateRange.value).toBe('90day');
+  });
 });

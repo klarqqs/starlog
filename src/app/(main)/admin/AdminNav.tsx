@@ -72,7 +72,13 @@ export function AdminNav({
         );
 
         return (
-          <Link key={id} href={path} role="button" onClick={onItemClick}>
+          <Link
+            key={id}
+            href={path}
+            role="button"
+            onClick={onItemClick}
+            className={isSelected ? 'stellog-nav-link is-selected' : 'stellog-nav-link'}
+          >
             {isCollapsed ? (
               <TooltipTrigger delay={0}>
                 {content}

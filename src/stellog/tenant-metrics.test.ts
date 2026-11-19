@@ -90,9 +90,13 @@ describe('summarizeTenantMetrics', () => {
       { x: '2026-11-15T20:00:00.000Z', y: 12 },
       { x: '2026-11-15T21:00:00.000Z', y: 2 },
     ]);
+    expect(report.points.map(point => ({ x: point.x, requests: point.requests, errors: point.errors }))).toEqual([
+      { x: '2026-11-15T20:00:00.000Z', requests: 12, errors: 0 },
+      { x: '2026-11-15T21:00:00.000Z', requests: 2, errors: 2 },
+    ]);
     expect(report.routes.map(route => route.route)).toEqual(['/health', '/orders/{id}']);
     expect(report.routes[0].requests).toBe(12);
-    expect(report.routes[0].p50).toBe(25);
+    expect(report.routes[0].p50).toBeCloseTo(17.5);
     expect(report.statuses).toEqual([
       { statusCode: 200, requests: 8, share: 8 / 14 },
       { statusCode: 204, requests: 4, share: 4 / 14 },

@@ -3,6 +3,7 @@ import { isAfter } from 'date-fns';
 import { useMemo } from 'react';
 import { useDateRange, useDateRangeQuery, useMessages, useNavigation } from '@/components/hooks';
 import { ChevronRight } from '@/components/icons';
+import { rememberDateRange } from '@/lib/dashboard-date';
 import { getDateRangeValue } from '@/lib/date';
 import { DateFilter } from './DateFilter';
 
@@ -36,14 +37,17 @@ export function WebsiteDateFilter({
 
   const handleChange = (date: string) => {
     if (date === 'all' && hasData) {
+      const next = `${getDateRangeValue(websiteDateRange.startDate, websiteDateRange.endDate)}:all`;
+      rememberDateRange(next);
       router.push(
         updateParams({
-          date: `${getDateRangeValue(websiteDateRange.startDate, websiteDateRange.endDate)}:all`,
+          date: next,
           offset: undefined,
           page: 1,
         }),
       );
     } else {
+      rememberDateRange(date);
       router.push(updateParams({ date, offset: undefined, unit: undefined, page: 1 }));
     }
   };

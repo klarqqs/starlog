@@ -1,5 +1,5 @@
 'use client';
-import { Column, Grid, Loading, Row, Text } from '@umami/react-zen';
+import { Column, Grid, Row, Text } from '@umami/react-zen';
 import Script from 'next/script';
 import { useEffect } from 'react';
 import { MobileNav } from '@/app/(main)/MobileNav';
@@ -36,6 +36,25 @@ export function App({ children }) {
   const accessBlocked = needsTwoFactorSetup || passwordChangeRequired;
 
   useEffect(() => {
+    const move = () => {
+      const portal = document.querySelector('nextjs-portal');
+      const badge = portal?.shadowRoot?.querySelector('#devtools-indicator') as HTMLElement | null;
+      if (!badge) return;
+      badge.style.top = 'auto';
+      badge.style.left = 'auto';
+      badge.style.right = '20px';
+      badge.style.bottom = '20px';
+    };
+    move();
+    const timer = window.setInterval(move, 400);
+    const stop = window.setTimeout(() => window.clearInterval(timer), 5000);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(stop);
+    };
+  }, []);
+
+  useEffect(() => {
     if (teamId) {
       setItem(LAST_TEAM_CONFIG, teamId);
     } else {
@@ -57,7 +76,12 @@ export function App({ children }) {
   }, [isBillingPastDue, isOwner, teamId]);
 
   if (isLoading || (config.cloudMode && isSubscriptionLoading) || (teamId && isTeamLoading)) {
-    return <Loading placement="absolute" />;
+    return (
+      <div className="stellog-app stellog-boot">
+        <aside className="stellog-boot-rail" />
+        <div className="stellog-boot-main" />
+      </div>
+    );
   }
 
   if (error) {
@@ -107,6 +131,7 @@ export function App({ children }) {
 
   return (
     <Grid
+      className="stellog-app"
       columns={{ base: '1fr', lg: 'auto 1fr' }}
       rows={{ base: 'auto 1fr', lg: '1fr' }}
       height="screen"

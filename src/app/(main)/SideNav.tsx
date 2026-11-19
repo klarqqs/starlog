@@ -34,6 +34,7 @@ export function SideNav(props: any) {
   return (
     <Column
       {...props}
+      className="stellog-rail"
       backgroundColor="surface"
       border
       borderRadius
@@ -114,7 +115,12 @@ export function SideNav(props: any) {
                 </Row>
               );
               return (
-                <Link key={id} href={href} role="button">
+                <Link
+                  key={id}
+                  href={href}
+                  role="button"
+                  className={isSelected ? 'stellog-nav-link is-selected' : 'stellog-nav-link'}
+                >
                   {isCollapsed ? (
                     <TooltipTrigger delay={0}>
                       {content}

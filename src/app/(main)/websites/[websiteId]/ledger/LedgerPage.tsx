@@ -1,7 +1,7 @@
 'use client';
 
 import { Column, DataColumn, DataTable, Row, Text } from '@umami/react-zen';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { WebsiteControls } from '@/app/(main)/websites/[websiteId]/WebsiteControls';
 import { AssetLabel } from '@/components/common/AssetLabel';
 import { DateDistance } from '@/components/common/DateDistance';
@@ -17,11 +17,17 @@ import type { LedgerRow } from '@/stellog/ledger';
 const oneLine = { whiteSpace: 'nowrap' } as const;
 const PAGE_SIZE = 10;
 
-export function LedgerPage({ websiteId }: { websiteId: string }) {
+export function LedgerPage({
+  websiteId,
+  summary = 'full',
+}: {
+  websiteId: string;
+  summary?: 'full' | 'ledger';
+}) {
   return (
     <Column gap="3">
       <WebsiteControls websiteId={websiteId} />
-      <LedgerReports websiteId={websiteId} />
+      <LedgerReports websiteId={websiteId} summary={summary} />
     </Column>
   );
 }
@@ -31,10 +37,18 @@ export function LedgerReports({
   websiteId,
   startAt: startProp,
   endAt: endProp,
+  summary = 'full',
+  limit,
+  header,
 }: {
   websiteId?: string;
   startAt?: number;
   endAt?: number;
+  /** The project ledger tab keeps trustlines, received, and sent. */
+  summary?: 'full' | 'ledger' | 'none';
+  /** When set, show only this many newest rows and no pager. */
+  limit?: number;
+  header?: ReactNode;
 }) {
   const { get, useQuery } = useApi();
   const { startAt: rangeStart, endAt: rangeEnd } = useDateParameters();
@@ -57,11 +71,20 @@ export function LedgerReports({
   const rows = data ?? [];
   const maxPage = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const currentPage = Math.min(Math.max(1, page), maxPage);
-  const pageRows = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pageRows = limit
+    ? rows.slice(0, limit)
+    : rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <Column gap="3">
-      {!isLoading && (
+    <Column gap="5">
+      {!isLoading && summary === 'ledger' && (
+        <div className="stellog-ledger-stats">
+          <LedgerStat label="Trustlines" value={count(rows, 'trustline_added')} />
+          <LedgerStat label="Received" value={count(rows, 'tx_received')} />
+          <LedgerStat label="Sent" value={count(rows, 'tx_sent')} />
+        </div>
+      )}
+      {!isLoading && summary === 'full' && (
         <MetricsBar>
           <MetricCard label="Wallets" value={count(rows, 'wallet_created')} />
           <MetricCard label="Trustlines" value={count(rows, 'trustline_added')} />
@@ -69,7 +92,8 @@ export function LedgerReports({
           <MetricCard label="Sent" value={count(rows, 'tx_sent')} />
         </MetricsBar>
       )}
-      <Panel title="Ledger">
+      <Panel title={header ? undefined : 'Ledger'}>
+        {header}
         <LoadingPanel
           data={rows}
           isLoading={isLoading}
@@ -112,7 +136,7 @@ export function LedgerReports({
               </DataColumn>
             </DataTable>
           </div>
-          {rows.length > PAGE_SIZE && (
+          {!limit && rows.length > PAGE_SIZE && (
             <Row marginTop="4">
               <Pager
                 page={currentPage}
@@ -125,6 +149,15 @@ export function LedgerReports({
         </LoadingPanel>
       </Panel>
     </Column>
+  );
+}
+
+function LedgerStat({ label, value }: { label: string; value: number }) {
+  return (
+    <section className="stellog-overview-card stellog-stat">
+      <div className="stellog-stat-label">{label}</div>
+      <div className="stellog-stat-value">{value.toLocaleString()}</div>
+    </section>
   );
 }
 

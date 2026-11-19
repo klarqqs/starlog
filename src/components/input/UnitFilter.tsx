@@ -1,7 +1,6 @@
 import { ListItem, Row, Select } from '@umami/react-zen';
 import { useMessages, useNavigation } from '@/components/hooks';
-import { DATE_RANGE_CONFIG, DEFAULT_DATE_RANGE_VALUE } from '@/lib/constants';
-import { getItem } from '@/lib/storage';
+import { resolveDateRange } from '@/lib/dashboard-date';
 
 export function UnitFilter() {
   const { t, labels } = useMessages();
@@ -35,7 +34,7 @@ export function UnitFilter() {
   };
 
   const unitConfig =
-    DATE_RANGE_UNIT_CONFIG[query.date || getItem(DATE_RANGE_CONFIG) || DEFAULT_DATE_RANGE_VALUE];
+    DATE_RANGE_UNIT_CONFIG[resolveDateRange(query.date)];
 
   if (!unitConfig) {
     return null;

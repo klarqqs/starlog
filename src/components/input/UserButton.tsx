@@ -77,6 +77,8 @@ export function UserButton({ showText = true, onClose }: UserButtonProps) {
     label: languages[key].label,
   }));
 
+  if (!user) return null;
+
   const items = [
     cloudMode && {
       id: 'docs',

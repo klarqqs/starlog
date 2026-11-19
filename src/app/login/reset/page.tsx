@@ -3,6 +3,7 @@ import { Column, Form, FormButtons, FormField, FormSubmitButton, Heading, Passwo
 import { useEffect, useState } from 'react';
 import { LoginPageWrapper } from '../LoginPage';
 import { AuthBar, authLinkStyle } from '../AuthBar';
+import Link from '@/components/common/Link';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
 
 function ResetForm() {
@@ -23,9 +24,9 @@ function ResetForm() {
     <>
       <AuthBar
         action={
-          <a href="/login" style={authLinkStyle}>
+          <Link href="/login" style={authLinkStyle}>
             Sign in
-          </a>
+          </Link>
         }
       />
       <Column justifyContent="center" alignItems="center" gap="6" width="360px">
@@ -41,9 +42,9 @@ function ResetForm() {
         </FormButtons>
       </Form>
       {done && <Text>{done}</Text>}
-      <a href="/login" style={authLinkStyle}>
+      <Link href="/login" style={authLinkStyle}>
         Back to sign in
-      </a>
+      </Link>
     </Column>
     </>
   );

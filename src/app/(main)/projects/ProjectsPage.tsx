@@ -19,7 +19,6 @@ import {
   TextField,
 } from '@umami/react-zen';
 import { DataGrid } from '@/components/common/DataGrid';
-import { DateDistance } from '@/components/common/DateDistance';
 import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import Link from '@/components/common/Link';
 import { LoadingPanel } from '@/components/common/LoadingPanel';
@@ -37,11 +36,11 @@ import {
 } from '@/components/hooks';
 import { Plus } from '@/components/icons';
 import { DateFilter } from '@/components/input/DateFilter';
+import { formatRate, formatTrend } from '@/components/metrics/Fleet';
 import { ROLES } from '@/lib/constants';
 import { formatLongNumber } from '@/lib/format';
 import type { PageResult } from '@/lib/types';
 import type { MySite } from '@/stellog/my-overview';
-import { propertyLabel } from '@/stellog/operator-report';
 import { isReadOnlyOperator } from '@/stellog/project-nav';
 
 type TeamRow = {
@@ -59,6 +58,10 @@ type ProjectRow = {
   pageviews: number;
   visitors: number;
   requests: number;
+  requestsPrevious: number;
+  pageviewsPrevious: number;
+  errors: number;
+  p95: number | null;
   createdAt: string | null;
 };
 
@@ -124,22 +127,31 @@ export function ProjectsPage() {
                   <DataColumn id="name" label="Project" style={{ minWidth: 0 }}>
                     {(row: ProjectRow) => <Link href={row.href}>{row.name}</Link>}
                   </DataColumn>
-                  <DataColumn id="properties" label="Properties">
-                    {(row: ProjectRow) => propertyLabel(row.sites, row.apis)}
-                  </DataColumn>
                   <DataColumn id="pageviews" label="Pageviews" align="end">
                     {(row: ProjectRow) => formatLongNumber(row.pageviews)}
-                  </DataColumn>
-                  <DataColumn id="visitors" label="Visitors" align="end">
-                    {(row: ProjectRow) => formatLongNumber(row.visitors)}
                   </DataColumn>
                   <DataColumn id="requests" label="API requests" align="end">
                     {(row: ProjectRow) => formatLongNumber(row.requests)}
                   </DataColumn>
-                  <DataColumn id="created" label="Created" width="160px">
+                  <DataColumn id="errorRate" label="Error rate" align="end">
                     {(row: ProjectRow) =>
-                      row.createdAt ? <DateDistance date={new Date(row.createdAt)} /> : '—'
+                      row.requests === 0 ? '—' : formatRate(row.errors / row.requests)
                     }
+                  </DataColumn>
+                  <DataColumn id="p95" label="p95" align="end">
+                    {(row: ProjectRow) => (row.p95 == null ? '—' : `${Math.round(row.p95)} ms`)}
+                  </DataColumn>
+                  <DataColumn id="trend" label="Trend" align="end">
+                    {(row: ProjectRow) => {
+                      const useApi = row.requests > 0 || row.requestsPrevious > 0;
+                      const current = useApi ? row.requests : row.pageviews;
+                      const previous = useApi ? row.requestsPrevious : row.pageviewsPrevious;
+                      return formatTrend(
+                        previous === 0 ? (current === 0 ? 0 : null) : (current - previous) / previous,
+                        current,
+                        previous,
+                      );
+                    }}
                   </DataColumn>
                 </DataTable>
               )}
@@ -239,8 +251,12 @@ function projectRows(teams: TeamRow[], sites: MySite[]): ProjectRow[] {
       sites: site.kind === 'api' ? 0 : 1,
       apis: site.kind === 'api' ? 1 : 0,
       pageviews: site.pageviews,
+      pageviewsPrevious: site.pageviewsPrevious,
       visitors: site.visitors,
       requests: site.requests,
+      errors: site.errors,
+      requestsPrevious: site.requestsPrevious,
+      p95: site.p95,
       createdAt: null,
     });
   }
@@ -249,14 +265,29 @@ function projectRows(teams: TeamRow[], sites: MySite[]): ProjectRow[] {
 }
 
 function totals(sites: MySite[]) {
+  const api = sites.find(site => site.kind === 'api' && site.p95 != null);
   return sites.reduce(
     (sum, site) => ({
       sites: sum.sites + (site.kind === 'api' ? 0 : 1),
       apis: sum.apis + (site.kind === 'api' ? 1 : 0),
       pageviews: sum.pageviews + site.pageviews,
+      pageviewsPrevious: sum.pageviewsPrevious + site.pageviewsPrevious,
       visitors: sum.visitors + site.visitors,
       requests: sum.requests + site.requests,
+      errors: sum.errors + site.errors,
+      requestsPrevious: sum.requestsPrevious + site.requestsPrevious,
+      p95: api?.p95 ?? null,
     }),
-    { sites: 0, apis: 0, pageviews: 0, visitors: 0, requests: 0 },
+    {
+      sites: 0,
+      apis: 0,
+      pageviews: 0,
+      pageviewsPrevious: 0,
+      visitors: 0,
+      requests: 0,
+      errors: 0,
+      requestsPrevious: 0,
+      p95: null as number | null,
+    },
   );
 }

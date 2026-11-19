@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
-import { apiStatsFor, webStatsFor } from '@/stellog/operator-metrics';
+import { apiStatsFor, readUsageSeries, type UsagePoint, webStatsFor } from '@/stellog/operator-metrics';
 import { type OperatorProject, rankProjects } from '@/stellog/operator-report';
+import { type Audience, readAudience } from '@/stellog/project-traffic';
 import { metricGrain } from '@/stellog/tenant-report';
 
 const ALL_SITES = '00000000-0000-4000-8000-0000000000a1';
@@ -16,6 +17,8 @@ export type MySite = OperatorProject & {
 export type MyOverview = {
   totals: OperatorProject;
   sites: MySite[];
+  series: UsagePoint[];
+  audience: Audience;
 };
 
 /** Sites and APIs the signed-in account owns or reaches through a team. */
@@ -44,7 +47,7 @@ export async function readMyOverview(
     },
     orderBy: { name: 'asc' },
   });
-  if (websites.length === 0) return { totals: emptyTotals(), sites: [] };
+  if (websites.length === 0) return { totals: emptyTotals(), sites: [], series: [], audience: emptyAudience() };
 
   const ids = websites.map(website => website.id);
   const length = end.getTime() - start.getTime();
@@ -99,7 +102,16 @@ export async function readMyOverview(
     { status: 'all', previous },
   );
 
-  return { totals: totals ?? emptyTotals(), sites };
+  return {
+    totals: totals ?? emptyTotals(),
+    sites,
+    series: await readUsageSeries(ids, start, end),
+    audience: await readAudience(ids, start, end),
+  };
+}
+
+function emptyAudience(): Audience {
+  return { path: [], referrer: [], browser: [], country: [] };
 }
 
 function emptyTotals(): OperatorProject {

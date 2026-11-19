@@ -14,6 +14,7 @@ import {
 } from '@umami/react-zen';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Link from '@/components/common/Link';
 import { useMessages, useUpdateQuery } from '@/components/hooks';
 import { signWallet, type WalletId } from '@/components/wallet-client';
 import { AuthBar, authLinkStyle } from './AuthBar';
@@ -115,17 +116,17 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
   };
 
   const corner = operator ? (
-    <a href="/login" style={authLinkStyle}>
+    <Link href="/login" style={authLinkStyle}>
       Project sign in
-    </a>
+    </Link>
   ) : register ? (
-    <a href="/login" style={authLinkStyle}>
+    <Link href="/login" style={authLinkStyle}>
       Sign in
-    </a>
+    </Link>
   ) : (
-    <a href="/login?mode=register" style={authLinkStyle}>
+    <Link href="/login?mode=register" style={authLinkStyle}>
       Sign up
-    </a>
+    </Link>
   );
 
   return (
@@ -184,28 +185,28 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
         </Form>
         <Column gap="3" alignItems="center" width="100%">
           {operator ? (
-            <a href="/login" style={authLinkStyle}>
+            <Link href="/login" style={authLinkStyle}>
               Project sign in
-            </a>
+            </Link>
           ) : register ? (
             <Text>
               Already have an account?{' '}
-              <a href="/login" style={authLinkStyle}>
+              <Link href="/login" style={authLinkStyle}>
                 Sign in
-              </a>
+              </Link>
             </Text>
           ) : (
             <Text>
               Don&apos;t have an account?{' '}
-              <a href="/login?mode=register" style={authLinkStyle}>
+              <Link href="/login?mode=register" style={authLinkStyle}>
                 Sign up
-              </a>
+              </Link>
             </Text>
           )}
           {!register && (
-            <a href="/login/forgot" style={authLinkStyle}>
+            <Link href="/login/forgot" style={authLinkStyle}>
               Forgot password?
-            </a>
+            </Link>
           )}
           {!register && (
             <>
@@ -239,9 +240,9 @@ export function LoginForm({ operator = false }: { operator?: boolean }) {
             </>
           )}
           {!operator && !register && (
-            <a href="/operator/login" style={authLinkStyle}>
+            <Link href="/operator/login" style={authLinkStyle}>
               SCF operator sign in
-            </a>
+            </Link>
           )}
         </Column>
       </Column>

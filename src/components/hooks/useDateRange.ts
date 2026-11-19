@@ -2,9 +2,9 @@ import { toZonedTime } from 'date-fns-tz';
 import { useMemo } from 'react';
 import { useLocale } from '@/components/hooks/useLocale';
 import { useNavigation } from '@/components/hooks/useNavigation';
-import { DATE_RANGE_CONFIG, DEFAULT_DATE_RANGE_VALUE } from '@/lib/constants';
+import { DEFAULT_DATE_RANGE_VALUE } from '@/lib/constants';
+import { resolveDateRange } from '@/lib/dashboard-date';
 import { getCompareDate, getOffsetDateRange, parseDateRange } from '@/lib/date';
-import { getItem } from '@/lib/storage';
 
 export function useDateRange(options: { ignoreOffset?: boolean; timezone?: string } = {}) {
   const {
@@ -13,7 +13,7 @@ export function useDateRange(options: { ignoreOffset?: boolean; timezone?: strin
   const { locale } = useLocale();
   const dateRange = useMemo(() => {
     let dateRangeObject = parseDateRange(
-      date || getItem(DATE_RANGE_CONFIG) || DEFAULT_DATE_RANGE_VALUE,
+      resolveDateRange(date),
       unit,
       locale,
       options.timezone,

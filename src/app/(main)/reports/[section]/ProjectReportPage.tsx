@@ -18,8 +18,14 @@ import { formatLongNumber } from '@/lib/format';
 import { reportLabel } from '@/stellog/project-nav';
 import type { ReportRow } from '@/stellog/project-reports';
 import type { MetricRow } from '@/stellog/project-traffic';
+import { CompareProjects } from './CompareProjects';
 
 export function ProjectReportPage({ section }: { section: string }) {
+  if (section === 'compare') return <CompareProjects />;
+  return <ReportSection section={section} />;
+}
+
+function ReportSection({ section }: { section: string }) {
   const { data, isLoading, error, value, setValue } = useProjectReportQuery(section);
 
   return (
@@ -51,7 +57,6 @@ function ReportBody({
 }) {
   if (section === 'events') return <Events rows={rows} total={stats?.total ?? 0} />;
   if (section === 'sessions') return <Sessions rows={rows} />;
-  if (section === 'compare') return <Compare rows={rows} />;
   if (section === 'breakdown') return <Breakdown lists={lists} />;
   if (section === 'utm') return <Utm rows={rows} />;
   if (section === 'attribution') return <Attribution rows={rows} />;
@@ -107,30 +112,6 @@ function Sessions({ rows }: { rows: ReportRow[] }) {
         </DataColumn>
         <DataColumn id="country" label="Country">
           {(row: ReportRow) => row.country || '—'}
-        </DataColumn>
-        <DataColumn id="views" label="Views" align="end">
-          {(row: ReportRow) => formatLongNumber(Number(row.views) || 0)}
-        </DataColumn>
-      </DataTable>
-    </Panel>
-  );
-}
-
-function Compare({ rows }: { rows: ReportRow[] }) {
-  if (rows.length === 0)
-    return (
-      <Panel>
-        <EmptyCard title="No data" description="Nothing in this range." />
-      </Panel>
-    );
-  return (
-    <Panel>
-      <DataTable data={rows}>
-        <DataColumn id="website" label="Project">
-          {(row: ReportRow) => <Link href={String(row.href)}>{row.website}</Link>}
-        </DataColumn>
-        <DataColumn id="visitors" label="Visitors" align="end">
-          {(row: ReportRow) => formatLongNumber(Number(row.visitors) || 0)}
         </DataColumn>
         <DataColumn id="views" label="Views" align="end">
           {(row: ReportRow) => formatLongNumber(Number(row.views) || 0)}

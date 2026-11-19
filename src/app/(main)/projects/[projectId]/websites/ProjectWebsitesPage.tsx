@@ -6,7 +6,9 @@ import { PageBody } from '@/components/common/PageBody';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useLoginQuery } from '@/components/hooks';
+import { useWebsiteStatsQuery } from '@/components/hooks/queries/useWebsiteStatsQuery';
 import { ROLES } from '@/lib/constants';
+import { formatLongNumber, formatShortTime } from '@/lib/format';
 import { isReadOnlyOperator } from '@/stellog/project-nav';
 import { WebsiteAddButton } from '../../../websites/WebsiteAddButton';
 import { WebsitesDataTable } from '../../../websites/WebsitesDataTable';
@@ -26,6 +28,9 @@ export function ProjectWebsitesPage({ projectId }: { projectId: string }) {
         </PageHeader>
         {projectQuery.isLoading && <Text>Loading websites.</Text>}
         {projectQuery.error && <Text>This project could not be loaded.</Text>}
+        {projectQuery.data?.sites.map(site => (
+          <SiteVisitStats key={site.id} websiteId={site.id} />
+        ))}
         {ids && (
           <Panel>
             <WebsitesDataTable
@@ -40,5 +45,42 @@ export function ProjectWebsitesPage({ projectId }: { projectId: string }) {
         )}
       </Column>
     </PageBody>
+  );
+}
+
+function SiteVisitStats({ websiteId }: { websiteId: string }) {
+  const { data, isLoading } = useWebsiteStatsQuery({ websiteId });
+  if (isLoading) {
+    return (
+      <div className="stellog-overview-metrics" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <div key={index} className="stellog-shimmer stellog-visit-shimmer" />
+        ))}
+      </div>
+    );
+  }
+  if (!data) return null;
+  const visits = data.visits || 0;
+  const bounce = visits ? `${Math.round((Math.min(visits, data.bounces) / visits) * 100)}%` : '—';
+  const duration = visits ? formatShortTime(Math.abs(~~(data.totaltime / visits)), ['m', 's'], ' ') : '—';
+
+  return (
+    <div className="stellog-visit-stats">
+      <div className="stellog-overview-metrics">
+        <VisitStat label="Visits" value={formatLongNumber(data.visits)} />
+        <VisitStat label="Views" value={formatLongNumber(data.pageviews)} />
+        <VisitStat label="Bounce rate" value={bounce} />
+        <VisitStat label="Visit duration" value={duration} />
+      </div>
+    </div>
+  );
+}
+
+function VisitStat({ label, value }: { label: string; value: string }) {
+  return (
+    <section className="stellog-overview-card stellog-stat">
+      <div className="stellog-stat-label">{label}</div>
+      <div className="stellog-stat-value">{value}</div>
+    </section>
   );
 }

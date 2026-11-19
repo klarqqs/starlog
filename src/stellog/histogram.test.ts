@@ -33,11 +33,11 @@ describe('histFromExplicitBuckets', () => {
 });
 
 describe('percentileMs', () => {
-  test('returns the bucket ceiling', () => {
+  test('interpolates inside the bucket that holds the percentile', () => {
     const fast = histForLatency(3, 10);
     const mixed = histForLatency(40, 10);
-    expect(percentileMs(fast, 0.5)).toBe(5);
-    expect(percentileMs(mixed, 0.95)).toBe(50);
+    expect(percentileMs(fast, 0.5)).toBeCloseTo(2.5);
+    expect(percentileMs(mixed, 0.95)).toBeCloseTo(48.75);
     expect(percentileMs(histForLatency(20000, 1), 0.5)).toBe(Number.POSITIVE_INFINITY);
     expect(percentileMs(histForLatency(0, 0), 0.5)).toBeNull();
   });

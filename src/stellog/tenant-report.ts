@@ -46,6 +46,8 @@ export type TenantMetrics = {
   p50Capped: boolean;
   p95Capped: boolean;
   series: Array<{ x: string; y: number }>;
+  /** Per-bucket requests, server errors, and p95. The request series stays in `series`. */
+  points: Array<{ x: string; requests: number; errors: number; p95: number | null }>;
   routes: Array<{ route: string; requests: number } & LatencySummary>;
   statuses: Array<{ statusCode: number; requests: number; share: number }>;
 };
@@ -70,6 +72,7 @@ export function summarizeTenantMetrics(
   unit: MetricGrain,
 ): TenantMetrics {
   const series = new Map<string, number>();
+  const points = new Map<string, { requests: number; errors: number; hist: Hist }>();
   const routes = new Map<string, { requests: number; hist: Hist }>();
   const statuses = new Map<number, number>();
   let requests = 0;
@@ -82,6 +85,11 @@ export function summarizeTenantMetrics(
     latency = addHist(latency, rowLatency);
     const bucket = row.bucketStart.toISOString();
     series.set(bucket, (series.get(bucket) ?? 0) + row.requestCount);
+    const point = points.get(bucket) ?? { requests: 0, errors: 0, hist: emptyHist() };
+    point.requests += row.requestCount;
+    if (row.statusCode >= 500) point.errors += row.requestCount;
+    point.hist = addHist(point.hist, rowLatency);
+    points.set(bucket, point);
 
     const route = routes.get(row.route) ?? { requests: 0, hist: emptyHist() };
     route.requests += row.requestCount;
@@ -99,6 +107,14 @@ export function summarizeTenantMetrics(
     series: [...series.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([x, y]) => ({ x, y })),
+    points: [...points.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([x, point]) => ({
+        x,
+        requests: point.requests,
+        errors: point.errors,
+        p95: latencySummary(point.hist).p95,
+      })),
     routes: [...routes.entries()]
       .map(([route, value]) => ({
         route,

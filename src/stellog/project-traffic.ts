@@ -231,6 +231,41 @@ async function grouped(expression: string, where: string, params: Record<string,
     .filter(row => row.x !== '');
 }
 
+export type Audience = {
+  path: MetricRow[];
+  referrer: MetricRow[];
+  browser: MetricRow[];
+  country: MetricRow[];
+};
+
+const EMPTY_AUDIENCE: Audience = { path: [], referrer: [], browser: [], country: [] };
+
+/** Pages, referrers, browsers, and countries for every website in the window. */
+export async function readAudience(
+  websiteIds: string[],
+  start: Date,
+  end: Date,
+): Promise<Audience> {
+  if (websiteIds.length === 0) return EMPTY_AUDIENCE;
+  const params = { websiteIds, start, end };
+  const where = `
+    website_event.website_id = any({{websiteIds}}::uuid[])
+    and website_event.created_at between {{start}} and {{end}}
+  `;
+  const page = `and website_event.event_type = ${EVENT_TYPE.pageView}`;
+  const [path, referrer, browser, country] = await Promise.all([
+    grouped(`website_event.url_path`, `${where} ${page} and website_event.url_path <> ''`, params),
+    grouped(
+      `website_event.referrer_domain`,
+      `${where} ${page} and coalesce(website_event.referrer_domain, '') <> ''`,
+      params,
+    ),
+    sessionColumn('browser', params),
+    sessionColumn('country', params),
+  ]);
+  return { path, referrer, browser, country };
+}
+
 async function edges(direction: 'asc' | 'desc', params: Record<string, unknown>) {
   const rows = await prisma.rawQuery(
     `

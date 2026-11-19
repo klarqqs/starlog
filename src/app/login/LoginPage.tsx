@@ -1,5 +1,5 @@
 'use client';
-import { Column, Loading } from '@umami/react-zen';
+import { Column } from '@umami/react-zen';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useLoginQuery } from '@/components/hooks';
@@ -17,11 +17,19 @@ export function LoginPageWrapper({ children }: PropsWithChildren) {
   }, [user, router]);
 
   if (isLoading || user) {
-    return <Loading placement="absolute" />;
+    return (
+      <Column
+        className="stellog-auth"
+        height="100vh"
+        backgroundColor="surface-raised"
+        style={{ backgroundColor: 'var(--stellog-chrome)' }}
+      />
+    );
   }
 
   return (
     <Column
+      className="stellog-auth"
       alignItems="center"
       justifyContent="flex-start"
       height="100vh"

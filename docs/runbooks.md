@@ -114,4 +114,4 @@ A new tracker version is a new file under `public/s/`. The previous file stays. 
 
 ## What this build does not monitor
 
-There is no multi-region replica, no uptime vendor, and no paging unless you set `ALERT_WEBHOOK_URL`. The admin update notice and the telemetry pixel are off in Compose unless `DISABLE_UPDATES` or `DISABLE_TELEMETRY` is set to empty. Row-level security and a separate database role for operators are not in this schema.
+There is no multi-region replica, no uptime vendor, and no paging unless you set `ALERT_WEBHOOK_URL`. The admin update notice and the telemetry pixel are off in Compose unless `DISABLE_UPDATES` or `DISABLE_TELEMETRY` is set to empty. Row-level security is not enabled. `stellog_operator` exists (migration 31) but the application does not connect as it.

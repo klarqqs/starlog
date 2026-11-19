@@ -157,3 +157,63 @@ export async function apiStatsFor(
 function asStatus(value: string): EnrollmentStatus {
   return value === 'pending' ? 'pending' : 'active';
 }
+
+export type UsagePoint = { t: string; site: number; visitors: number; api: number };
+
+/** Daily, or hourly when the window is under two days. Sums match the pageview and request totals. */
+export async function readUsageSeries(
+  websiteIds: string[],
+  start: Date,
+  end: Date,
+): Promise<UsagePoint[]> {
+  if (websiteIds.length === 0) return [];
+  const hour = end.getTime() - start.getTime() <= 2 * 24 * 60 * 60 * 1000;
+  const siteRows = await prisma.rawQuery(
+    `
+    select to_char(date_trunc('${hour ? 'hour' : 'day'}', created_at at time zone 'utc'), '${
+      hour ? 'YYYY-MM-DD"T"HH24:00:00"Z"' : 'YYYY-MM-DD'
+    }') as t,
+      count(*)::int as views,
+      count(distinct session_id)::int as visitors
+    from website_event
+    where event_type = 1
+      and created_at >= {{start}} and created_at <= {{end}}
+      and website_id = any({{websiteIds}}::uuid[])
+    group by 1
+    order by 1
+    `,
+    { start, end, websiteIds },
+    'usageSiteSeries',
+  );
+  const apiRows = await prisma.rawQuery(
+    `
+    select to_char(date_trunc('${hour ? 'hour' : 'day'}', bucket_start at time zone 'utc'), '${
+      hour ? 'YYYY-MM-DD"T"HH24:00:00"Z"' : 'YYYY-MM-DD'
+    }') as t,
+      coalesce(sum(request_count), 0)::int as value
+    from ${hour ? 'api_metric_hour' : 'api_metric_day'}
+    where bucket_start >= {{start}} and bucket_start <= {{end}}
+      and website_id = any({{websiteIds}}::uuid[])
+    group by 1
+    order by 1
+    `,
+    { start, end, websiteIds },
+    'usageApiSeries',
+  );
+  const points = new Map<string, UsagePoint>();
+  for (const row of siteRows as Array<{ t: string; views: number; visitors: number }>) {
+    points.set(String(row.t), {
+      t: String(row.t),
+      site: Number(row.views),
+      visitors: Number(row.visitors),
+      api: 0,
+    });
+  }
+  for (const row of apiRows as Array<{ t: string; value: number }>) {
+    const key = String(row.t);
+    const current = points.get(key) ?? { t: key, site: 0, visitors: 0, api: 0 };
+    current.api = Number(row.value);
+    points.set(key, current);
+  }
+  return [...points.values()].sort((left, right) => left.t.localeCompare(right.t));
+}

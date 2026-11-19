@@ -8,6 +8,7 @@ export function PageHeader({
   description,
   label,
   icon,
+  mark,
   showBorder = true,
   titleHref,
   children,
@@ -17,6 +18,8 @@ export function PageHeader({
   description?: string;
   label?: ReactNode;
   icon?: ReactNode;
+  /** Logo shown immediately before the title. */
+  mark?: ReactNode;
   showBorder?: boolean;
   titleHref?: string;
   allowEdit?: boolean;
@@ -30,33 +33,36 @@ export function PageHeader({
       marginBottom="6"
       border={showBorder ? 'bottom' : undefined}
     >
-      <Column gap="2">
-        {label}
-        <Row alignItems="center" gap="3">
-          {icon && (
-            <Icon size="md" color="muted">
-              {icon}
-            </Icon>
+      <Row alignItems="center" gap="3">
+        {mark}
+        <Column gap="2" style={{ minWidth: 0 }}>
+          {label}
+          <Row alignItems="center" gap="3">
+            {icon && (
+              <Icon size="md" color="muted">
+                {icon}
+              </Icon>
+            )}
+            {title && titleHref ? (
+              <LinkButton href={titleHref} variant="quiet">
+                <Heading size={{ base: 'lg', md: '2xl', lg: '3xl' }}>{title}</Heading>
+              </LinkButton>
+            ) : (
+              title && <Heading size={{ base: 'lg', md: '2xl', lg: '3xl' }}>{title}</Heading>
+            )}
+            {titleSuffix && (
+              <Row alignItems="center" alignSelf="center" style={{ flexShrink: 0 }}>
+                {titleSuffix}
+              </Row>
+            )}
+          </Row>
+          {description && (
+            <Text color="muted" truncate style={{ maxWidth: 600 }} title={description}>
+              {description}
+            </Text>
           )}
-          {title && titleHref ? (
-            <LinkButton href={titleHref} variant="quiet">
-              <Heading size={{ base: 'lg', md: '2xl', lg: '3xl' }}>{title}</Heading>
-            </LinkButton>
-          ) : (
-            title && <Heading size={{ base: 'lg', md: '2xl', lg: '3xl' }}>{title}</Heading>
-          )}
-          {titleSuffix && (
-            <Row alignItems="center" alignSelf="center" style={{ flexShrink: 0 }}>
-              {titleSuffix}
-            </Row>
-          )}
-        </Row>
-        {description && (
-          <Text color="muted" truncate style={{ maxWidth: 600 }} title={description}>
-            {description}
-          </Text>
-        )}
-      </Column>
+        </Column>
+      </Row>
       <Row justifyContent="flex-end" alignItems="center" gap="3">
         {children}
       </Row>

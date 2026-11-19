@@ -4,6 +4,7 @@ import { Column, Text } from '@umami/react-zen';
 import { LedgerPage } from '@/app/(main)/websites/[websiteId]/ledger/LedgerPage';
 import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import { PageBody } from '@/components/common/PageBody';
+import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useProjectView } from '../useProjectView';
 
@@ -14,6 +15,7 @@ export function ProjectLedgerPage({ projectId }: { projectId: string }) {
   return (
     <PageBody>
       <Column margin="2" gap="6">
+        <PageHeader title="Ledger" />
         {projectQuery.isLoading && <Text>Loading ledger.</Text>}
         {projectQuery.error && <Text>This project could not be loaded.</Text>}
         {projectQuery.data && sites.length === 0 && (
@@ -27,7 +29,7 @@ export function ProjectLedgerPage({ projectId }: { projectId: string }) {
         {sites.map(site => (
           <Column key={site.id} gap="3">
             {sites.length > 1 && <Text weight="bold">{site.name}</Text>}
-            <LedgerPage websiteId={site.id} />
+            <LedgerPage websiteId={site.id} summary="ledger" />
           </Column>
         ))}
       </Column>

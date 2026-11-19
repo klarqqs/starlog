@@ -1,14 +1,72 @@
 :root {
-  --zen-font-family: var(--font-inter), sans-serif;
+  --stellog-font: "X-VF", "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --stellog-font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --stellog-sidebar: #101010;
+  --stellog-chrome: #141414;
+  --stellog-pane: #191919;
+  --stellog-elevated: #1f1f1f;
+  --stellog-text: #f5f5f5;
+  --stellog-accent: #71aeff;
+  --stellog-success: #41cb7e;
+  --stellog-warn: #f69f16;
+  --stellog-danger: #ff6161;
+  --stellog-radius-control: 10px;
+  --stellog-radius-panel: 16px;
+  --stellog-radius-card: 18px;
+  --zen-font-family: var(--stellog-font);
+  --zen-font-family-mono: var(--stellog-font-mono);
+  --zen-radius: var(--stellog-radius-control);
+  color-scheme: dark;
+  background-color: var(--stellog-chrome);
 }
 
-/* Preserve the brand accent when Zen applies its light or dark theme tokens. */
 :root,
-[data-theme="light"],
 [data-theme="dark"],
 .dark {
-  --zen-primary: oklch(62.3% 0.214 259.815);
-  --zen-primary-fg: oklch(98.5% 0 0);
+  --zen-palette-950: var(--stellog-sidebar);
+  --zen-palette-900: var(--stellog-pane);
+  --zen-palette-800: var(--stellog-elevated);
+  --zen-palette-700: #2a2a2a;
+  --zen-palette-400: #8a8a8a;
+  --zen-palette-100: var(--stellog-text);
+  --zen-surface: var(--stellog-pane);
+  --zen-surface-raised: var(--stellog-elevated);
+  --zen-surface-sunken: var(--stellog-chrome);
+  --zen-surface-overlay: var(--stellog-elevated);
+  --zen-fg: var(--stellog-text);
+  --zen-fg-muted: color-mix(in srgb, var(--stellog-text) 65%, transparent);
+  --zen-border: color-mix(in srgb, #fff 8%, transparent);
+  --zen-border-muted: color-mix(in srgb, #fff 6%, transparent);
+  --zen-primary: var(--stellog-accent);
+  --zen-primary-fg: #101010;
+  --zen-status-success: var(--stellog-success);
+  --zen-status-info: var(--stellog-accent);
+  --zen-status-warning: var(--stellog-warn);
+  --zen-status-error: var(--stellog-danger);
+}
+
+[data-theme="light"] {
+  --stellog-sidebar: #f5f5f5;
+  --stellog-chrome: #fcfcfc;
+  --stellog-pane: #fff;
+  --stellog-elevated: #fff;
+  --stellog-text: #1c1c1c;
+  --stellog-accent: #0b6dd3;
+  --stellog-success: #00854a;
+  --stellog-warn: #aa6300;
+  --stellog-danger: #cd2834;
+  --zen-surface: #fff;
+  --zen-surface-raised: #fff;
+  --zen-surface-sunken: #f5f5f5;
+  --zen-fg: #1c1c1c;
+  --zen-fg-muted: color-mix(in srgb, #1c1c1c 62%, transparent);
+  --zen-border: color-mix(in srgb, #1c1c1c 12%, transparent);
+  --zen-border-muted: color-mix(in srgb, #1c1c1c 8%, transparent);
+  --zen-primary: #0b6dd3;
+  --zen-primary-fg: #fff;
+  color-scheme: light;
+  background-color: var(--stellog-chrome);
+  color: var(--stellog-text);
 }
 
 /* Zen's rem-based typography and spacing assume the browser's default root size. */
@@ -18,15 +76,30 @@ html {
 
 html,
 body {
-  font-family: var(--zen-font-family), sans-serif;
-  color: var(--zen-fg);
-  background-color: var(--zen-surface-raised);
+  font-family: var(--stellog-font);
+  font-weight: 425;
+  font-size: 15px;
+  line-height: 24px;
+  letter-spacing: 0.0027em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  color: var(--stellog-text);
+  background-color: var(--stellog-chrome);
+  color-scheme: dark;
   width: 100%;
   min-height: 100vh;
 }
 
+html[data-theme='light'],
+html[data-theme='light'] body {
+  color: var(--stellog-text);
+  background-color: var(--stellog-chrome);
+  color-scheme: light;
+}
+
 body {
-  font-size: 0.875rem;
+  font-size: 15px;
 }
 
 html[style*="padding-right"] {
@@ -118,3 +191,1076 @@ select:is(:-webkit-autofill, :autofill):focus {
     font-size: 12px;
   }
 }
+
+.stellog-app,
+.stellog-auth {
+  font-family: var(--stellog-font);
+  background: var(--stellog-chrome);
+  color: var(--stellog-text);
+}
+
+.stellog-page {
+  box-sizing: border-box;
+  padding: 32px 32px 64px;
+}
+
+.stellog-app h1,
+.stellog-app h2,
+.stellog-app h3 {
+  font-weight: 525;
+  letter-spacing: 0;
+}
+
+@media (max-width: 720px) {
+  .stellog-page {
+    padding: 24px 16px 48px;
+  }
+}
+
+.stellog-app .stellog-rail {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
+  background: var(--stellog-sidebar) !important;
+}
+
+.stellog-app .stellog-nav-link {
+  display: block;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.stellog-app .stellog-nav-link.is-selected {
+  background: color-mix(in oklab, var(--zen-fg) 8%, transparent);
+}
+
+.stellog-demo {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--zen-border);
+  border-radius: 999px;
+  color: var(--zen-fg-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stellog-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stellog-card {
+  border: 1px solid var(--zen-border);
+  border-radius: var(--stellog-radius-card);
+  background: var(--zen-surface);
+  padding: 16px 18px;
+}
+
+.stellog-card span {
+  display: block;
+  color: var(--zen-fg-muted);
+  font-size: 13px;
+}
+
+.stellog-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.stellog-chart-card header,
+.stellog-chart-card p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stellog-chart-card h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stellog-chart-card p {
+  margin: 0;
+  color: var(--zen-fg-muted);
+  font-size: 12px;
+  justify-content: flex-end;
+}
+
+.stellog-chart-card i {
+  width: 8px;
+  height: 8px;
+  margin: 0 6px 0 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.stellog-chart-card i.site,
+.stellog-chart-card path.site {
+  background: #7aa2f7;
+  stroke: #7aa2f7;
+}
+
+.stellog-chart-card i.api,
+.stellog-chart-card path.api {
+  background: #9ece6a;
+  stroke: #9ece6a;
+}
+
+.stellog-chart-card svg {
+  display: block;
+  width: 100%;
+  height: 168px;
+  margin-top: 12px;
+}
+
+.stellog-chart-card path {
+  fill: none;
+  stroke-width: 1.75;
+}
+
+.stellog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.stellog-table th {
+  color: var(--zen-fg-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: right;
+  padding: 0 12px 10px;
+  white-space: nowrap;
+}
+
+.stellog-table th:first-child,
+.stellog-table td:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+
+.stellog-table td {
+  text-align: right;
+  padding: 12px;
+  border-top: 1px solid var(--zen-border);
+  white-space: nowrap;
+}
+
+.stellog-table a {
+  color: inherit;
+  font-weight: 560;
+  text-decoration: none;
+}
+
+.stellog-empty {
+  color: var(--zen-fg-muted);
+  margin: 24px 0 8px;
+}
+
+.stellog-compare-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  position: relative;
+}
+
+.stellog-compare-chip,
+.stellog-compare-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  border: 1px solid var(--zen-border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 0 10px 0 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stellog-compare-search {
+  margin-left: auto;
+  padding: 0 14px;
+  color: var(--zen-fg-muted);
+}
+
+.stellog-compare-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.stellog-compare-chip b {
+  font-weight: 560;
+}
+
+.stellog-compare-chip svg {
+  color: var(--zen-fg-muted);
+}
+
+.stellog-compare-count {
+  color: var(--zen-fg-muted);
+  font-size: 13px;
+}
+
+.stellog-compare-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, calc(100vw - 48px));
+  padding: 12px;
+  border: 1px solid var(--zen-border);
+  border-radius: var(--zen-radius);
+  background: var(--zen-surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.stellog-compare-popover input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  border: 1px solid var(--zen-border);
+  border-radius: var(--zen-radius);
+  background: transparent;
+  color: inherit;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.stellog-compare-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.stellog-compare-presets button {
+  border: 1px solid var(--zen-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--zen-fg-muted);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.stellog-compare-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.stellog-compare-option {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: var(--zen-radius);
+  background: transparent;
+  color: inherit;
+  padding: 8px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stellog-compare-option:hover {
+  background: color-mix(in srgb, var(--zen-fg) 6%, transparent);
+}
+
+.stellog-compare-option[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stellog-compare-option strong {
+  display: block;
+  font-weight: 560;
+}
+
+.stellog-compare-option small {
+  display: block;
+  margin-top: 2px;
+  color: var(--zen-fg-muted);
+  font-size: 12px;
+}
+
+.stellog-compare-check {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--zen-border);
+  border-radius: 3px;
+}
+
+.stellog-compare-check[data-on='true'] {
+  background: #fff;
+  border-color: #fff;
+}
+
+.stellog-compare-check[data-on='true']::after {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 7px;
+  margin: 1px 0 0 4px;
+  border: solid #171717;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.stellog-compare-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.stellog-compare-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 560;
+}
+
+.stellog-compare-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stellog-compare-metrics button {
+  border: 1px solid var(--zen-border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.stellog-compare-metrics button[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--zen-fg) 45%, var(--zen-border));
+}
+
+.stellog-compare-plot {
+  position: relative;
+  height: 280px;
+}
+
+.stellog-compare-tooltip {
+  position: absolute;
+  z-index: 2;
+  min-width: 160px;
+  pointer-events: none;
+  padding: 10px 12px;
+  border-radius: var(--zen-radius);
+  background: rgba(0, 0, 0, 0.86);
+  color: #fff;
+  font-size: 12px;
+}
+
+.stellog-compare-tooltip strong {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 560;
+}
+
+.stellog-compare-tooltip div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.stellog-compare-best {
+  color: #8fceaa;
+  font-weight: 560;
+}
+
+.stellog-compare-hint,
+.stellog-compare-empty {
+  color: var(--zen-fg-muted);
+}
+
+.stellog-compare-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.stellog-compare-table tr {
+  cursor: pointer;
+}
+
+.stellog-compare {
+  display: grid;
+  gap: 12px;
+}
+
+.stellog-compare-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.stellog-compare-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.stellog-compare-card dt {
+  color: var(--zen-fg-muted);
+  font-size: 12px;
+}
+
+.stellog-compare-card dd {
+  margin: 2px 0 0;
+  font-weight: 560;
+}
+
+.stellog-picks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.stellog-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--zen-border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 6px 12px 6px 8px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stellog-pick[aria-pressed='true'] {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+.stellog-pick:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stellog-pick-shimmer {
+  box-sizing: border-box;
+  height: 30px;
+  border-radius: 999px;
+}
+
+.stellog-compare-name {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--zen-fg);
+  font-weight: 560;
+}
+
+.stellog-compare-gap {
+  display: block;
+  margin-top: 2px;
+  color: var(--zen-fg-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.stellog-compare-lead {
+  color: #3dd68c;
+}
+
+.stellog-app button,
+.stellog-auth button,
+.stellog-filter-dialog button {
+  border-radius: 999px;
+}
+
+.stellog-projects-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stellog-projects-search {
+  flex: 1 1 16rem;
+  max-width: 20rem;
+  min-width: 12rem;
+}
+
+.stellog-projects-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.stellog-projects-table {
+  margin-top: 20px;
+}
+
+.stellog-table th button.stellog-sort {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.stellog-project-row {
+  cursor: pointer;
+}
+
+.stellog-project-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.stellog-project-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.stellog-project-mark img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.stellog-project-mark-table,
+.stellog-project-mark-table img {
+  width: 16px;
+  height: 16px;
+}
+
+.stellog-project-initial {
+  color: #f5f5f5;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stellog-project-name {
+  font-weight: 560;
+  line-height: 1.2;
+}
+
+.stellog-project-meta {
+  display: block;
+  margin-top: 2px;
+  color: var(--zen-fg-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.stellog-project-row:hover td {
+  background: color-mix(in srgb, var(--zen-fg) 5%, transparent);
+}
+
+.stellog-trend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.stellog-spark {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.stellog-boot {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--stellog-chrome);
+}
+
+.stellog-boot-rail {
+  background: var(--stellog-sidebar);
+  border-right: 1px solid var(--zen-border);
+}
+
+.stellog-boot-main {
+  background: var(--stellog-chrome);
+}
+
+@media (max-width: 900px) {
+  .stellog-cards,
+  .stellog-audience {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stellog-audience {
+    grid-template-columns: 1fr;
+  }
+
+  .stellog-boot {
+    grid-template-columns: 1fr;
+  }
+
+  .stellog-boot-rail {
+    display: none;
+  }
+}
+
+.stellog-overview-page {
+  width: 100%;
+  max-width: 1100px;
+  margin-inline: auto;
+}
+
+.stellog-metric p {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.stellog-metric strong {
+  margin-top: 0;
+}
+
+.stellog-metric em,
+.stellog-share b em {
+  color: var(--zen-fg-muted);
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stellog-metric small {
+  display: block;
+  margin-top: 6px;
+  color: var(--zen-fg-muted);
+  font-size: 13px;
+}
+
+.stellog-segment {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--zen-border);
+  border-radius: 999px;
+}
+
+.stellog-segment button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--zen-fg-muted);
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.stellog-segment button[aria-pressed='true'] {
+  background: color-mix(in srgb, #fff 12%, transparent);
+  color: var(--stellog-text);
+}
+
+.stellog-audience {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stellog-share-card h2,
+.stellog-chart-card h2,
+.stellog-table-card h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stellog-share-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.stellog-share {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.stellog-share > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--share);
+  border-radius: 6px;
+  background: color-mix(in srgb, #fff 7%, transparent);
+}
+
+.stellog-card .stellog-share > span {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  color: inherit;
+  font-size: 14px;
+}
+
+.stellog-share b {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stellog-more {
+  border: 0;
+  background: transparent;
+  padding: 10px 0 0;
+  cursor: pointer;
+}
+
+.stellog-click {
+  cursor: pointer;
+}
+
+.stellog-click:hover td {
+  background: color-mix(in srgb, #fff 4%, transparent);
+}
+
+.stellog-overview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stellog-property-label {
+  color: var(--zen-fg-muted);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stellog-overview-head h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.stellog-overview-head p {
+  margin: 2px 0 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+}
+
+.stellog-overview-controls {
+  margin-top: 16px;
+}
+
+.stellog-overview-card {
+  background: var(--zen-surface);
+  border: 1px solid var(--zen-border);
+  border-radius: var(--stellog-radius-card);
+  padding: 16px 18px;
+}
+
+.stellog-overview-metrics,
+.stellog-ledger-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stellog-overview .stellog-overview-metrics > .stellog-stat,
+.stellog-stat-shimmer {
+  box-sizing: border-box;
+  min-height: 117px;
+}
+
+.stellog-visit-shimmer {
+  box-sizing: border-box;
+  min-height: 90px;
+}
+
+.stellog-ledger-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stellog-overview-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.stellog-stat-label {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.stellog-stat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stellog-stat-value {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.stellog-stat-empty,
+.stellog-stat-detail,
+.stellog-overview-note {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+}
+
+.stellog-stat-empty {
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+.stellog-stat-detail {
+  margin-top: 8px;
+}
+
+.stellog-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stellog-delta-up {
+  color: #7dcea0;
+}
+
+.stellog-overview-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stellog-fleet-head {
+  margin-bottom: 20px;
+}
+
+.stellog-overview-card-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 560;
+}
+
+.stellog-overview-link {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.stellog-grain {
+  display: flex;
+  gap: 4px;
+}
+
+.stellog-overview .stellog-grain button {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: 0;
+}
+
+.stellog-overview .stellog-grain button[aria-pressed='true'] {
+  background: #fff;
+  color: #000;
+}
+
+.stellog-activity {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.stellog-activity th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 8px 8px 0;
+}
+
+.stellog-activity td {
+  padding: 8px 8px 8px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.stellog-activity th:last-child,
+.stellog-activity td:last-child {
+  text-align: right;
+  padding-right: 0;
+}
+
+.stellog-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stellog-rank-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.stellog-rank-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stellog-rank-count {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stellog-shimmer {
+  border-radius: var(--zen-radius);
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 37%, #2a2a2a 63%);
+  background-size: 400% 100%;
+  animation: stellog-shimmer 1.4s ease infinite;
+}
+
+.stellog-shimmer-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.stellog-shimmer-list .stellog-shimmer {
+  box-sizing: border-box;
+  height: 58px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--zen-border);
+}
+
+.stellog-shimmer-list .stellog-shimmer-head {
+  height: 28px;
+  border-bottom: 0;
+}
+
+.stellog-overview-add {
+  display: flex;
+  gap: 12px;
+}
+
+.stellog-visit-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-theme='light'] .stellog-overview-head p,
+html[data-theme='light'] .stellog-stat-label,
+html[data-theme='light'] .stellog-stat-empty,
+html[data-theme='light'] .stellog-stat-detail,
+html[data-theme='light'] .stellog-overview-note,
+html[data-theme='light'] .stellog-delta,
+html[data-theme='light'] .stellog-rank-count,
+html[data-theme='light'] .stellog-activity th {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme='light'] .stellog-overview .stellog-grain button[aria-pressed='true'] {
+  background: #111;
+  color: #fff;
+}
+
+@keyframes stellog-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .stellog-overview-metrics,
+  .stellog-overview-split,
+  .stellog-ledger-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+

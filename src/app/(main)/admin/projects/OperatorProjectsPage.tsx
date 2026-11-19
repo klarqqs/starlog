@@ -1,39 +1,27 @@
 'use client';
 
-import {
-  Button,
-  Column,
-  DataColumn,
-  DataTable,
-  Dialog,
-  DialogTrigger,
-  Grid,
-  Icon,
-  ListItem,
-  Modal,
-  Row,
-  SearchField,
-  Select,
-  Text,
-} from '@umami/react-zen';
-import { useState } from 'react';
+import { Button, Column, Dialog, DialogTrigger, Icon, Modal, Row, SearchField, Text } from '@umami/react-zen';
+import { useEffect, useState } from 'react';
 import { EmptyCard } from '@/components/common/EmptyPlaceholder';
 import { Favicon } from '@/components/common/Favicon';
-import Link from '@/components/common/Link';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Panel } from '@/components/common/Panel';
 import { useApi, useLoginQuery, useNavigation } from '@/components/hooks';
-import { Ellipsis } from '@/components/icons';
+import { ChevronDown, ChevronUp, Ellipsis } from '@/components/icons';
 import { AiSummaryButton } from '@/components/input/AiSummaryButton';
 import { DateFilter } from '@/components/input/DateFilter';
-import { ChangeLabel } from '@/components/metrics/ChangeLabel';
+import { ProjectFilterChips, ProjectListFilter } from '@/components/input/ProjectListFilter';
+import { formatLatency, formatRate, trendOf } from '@/components/metrics/Fleet';
+import { rememberDateRange, resolveDateRange } from '@/lib/dashboard-date';
 import { parseDateRange } from '@/lib/date';
+import { parseProjectId, propertyLabel } from '@/stellog/operator-report';
 import {
-  limitSelection,
-  parseProjectId,
-  propertyLabel,
-  showLatency,
-} from '@/stellog/operator-report';
+  PROJECT_PAGE_SIZE,
+  type FilterQuery,
+  type ProjectSortKey,
+  filterProjects,
+  sortProjects,
+} from '@/stellog/project-list-filters';
 
 type Project = {
   id: string;
@@ -63,368 +51,276 @@ type Project = {
   p95Capped: boolean;
 };
 
-type TrendKey = 'pageviews' | 'visitors' | 'requests';
-
-const oneLine = { whiteSpace: 'nowrap' } as const;
-
-const SORTS = [
-  ['requests', 'API requests'],
-  ['pageviews', 'Pageviews'],
-  ['visitors', 'Visitors'],
-  ['errors', 'API errors'],
-  ['errorRate', 'Error rate'],
-  ['p95', 'p95 latency'],
-  ['pageviewsGrowth', 'Pageview trend'],
-  ['visitorsGrowth', 'Visitor trend'],
-  ['requestsGrowth', 'API request trend'],
-  ['name', 'Name'],
-] as const;
+const SORTS: { key: ProjectSortKey; label: string; align: 'left' | 'right' }[] = [
+  { key: 'name', label: 'Project', align: 'left' },
+  { key: 'pageviews', label: 'Pageviews', align: 'right' },
+  { key: 'visitors', label: 'Visitors', align: 'right' },
+  { key: 'requests', label: 'API requests', align: 'right' },
+  { key: 'errorRate', label: 'Error rate', align: 'right' },
+  { key: 'p95', label: 'p95', align: 'right' },
+  { key: 'trend', label: 'Trend', align: 'right' },
+];
 
 export function OperatorProjectsPage() {
   const { get, post, del, useQuery } = useApi();
   const { user } = useLoginQuery();
   const canManage = !!user?.isAdmin;
   const { router, query, updateParams } = useNavigation();
-  const [selected, setSelected] = useState<string[]>([]);
-  const [draft, setDraft] = useState(query.q || '');
-  const dateValue = `${query.date || '30day'}`;
+  const [searchDraft, setSearchDraft] = useState(query.q || '');
+  const dateValue = resolveDateRange(query.date);
   const parsed = parseDateRange(dateValue) ?? parseDateRange('30day');
   const startAt = parsed?.startDate.getTime() ?? Date.now() - 30 * 24 * 60 * 60 * 1000;
   const endAt = parsed?.endDate.getTime() ?? Date.now();
-  const status = query.status === 'pending' || query.status === 'all' ? query.status : 'active';
-  const sort = SORTS.some(([id]) => id === query.sort) ? query.sort : 'requests';
-  const order = query.order === 'asc' ? 'asc' : 'desc';
   const units: readonly string[] = ['minute', 'hour', 'day', 'week', 'month', 'year'];
   const unit = parsed?.unit && units.includes(parsed.unit) ? parsed.unit : 'day';
-  const q = `${query.q || ''}`.trim().slice(0, 100);
-  const trend: TrendKey =
-    query.trend === 'pageviews' || query.trend === 'visitors' ? query.trend : 'requests';
+  const search = `${query.q || ''}`.trim().slice(0, 100);
+  const sort = isSort(query.sort) ? query.sort : 'requests';
+  const order = query.order === 'asc' ? 'asc' : 'desc';
+  const filters = filterQuery(query);
+
+  useEffect(() => {
+    setSearchDraft(query.q || '');
+  }, [query.q]);
 
   const projectsQuery = useQuery({
-    queryKey: ['operator-projects', startAt, endAt, q, status, sort, order, unit],
+    queryKey: ['operator-projects', startAt, endAt, unit],
     queryFn: () =>
       get('/admin/projects', {
         startAt,
         endAt,
         unit,
-        q: q || undefined,
-        status,
-        sort,
-        order,
+        status: 'all',
       }) as Promise<{ enrollmentMode: 'open' | 'approval-required'; projects: Project[] }>,
   });
 
-  const projects = (projectsQuery.data?.projects ?? []).map((project, index) => ({
+  const projects = (projectsQuery.data?.projects ?? []).map(project => ({
     ...project,
-    rank: index + 1,
     sites: project.sites ?? 0,
     apis: project.apis ?? 0,
     websiteIds: project.websiteIds ?? [],
   }));
-  const latency = showLatency(projects);
-  const compared = selected
-    .map(id => projects.find(project => project.id === id))
-    .filter((project): project is (typeof projects)[number] => !!project);
+  const filtered = sortProjects(filterProjects(projects, filters, search), sort, order);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PROJECT_PAGE_SIZE));
+  const page = Math.min(pageCount, Math.max(1, Number(query.page) || 1));
+  const visible = filtered.slice((page - 1) * PROJECT_PAGE_SIZE, page * PROJECT_PAGE_SIZE);
 
-  const setParam = (name: string, value: string) => {
-    router.push(updateParams({ [name]: value }));
+  const push = (params: Record<string, string | number | undefined>) => {
+    if (typeof params.date === 'string') rememberDateRange(params.date);
+    router.push(updateParams(params as Record<string, string>));
   };
 
-  const toggle = (id: string) => {
-    setSelected(current => limitSelection(current, id));
+  const clearFilters = () => {
+    setSearchDraft('');
+    push({
+      q: undefined,
+      page: undefined,
+      fsrc: undefined,
+      ferr: undefined,
+      fp95: undefined,
+      ftrend: undefined,
+      fpv: undefined,
+      freq: undefined,
+    });
   };
 
-  const reload = () => projectsQuery.refetch();
+  const toggleSort = (key: ProjectSortKey) => {
+    const nextOrder = sort === key && order === 'desc' ? 'asc' : sort === key && order === 'asc' ? 'desc' : key === 'name' ? 'asc' : 'desc';
+    push({ sort: key, order: nextOrder, page: undefined });
+  };
 
   return (
     <Column gap="6" margin="2">
       <PageHeader title="Projects">
-        <Row gap="3" alignItems="center">
-          <DateFilter
-            value={dateValue}
-            onChange={value => setParam('date', value)}
-            showAllTime={false}
-          />
-          <AiSummaryButton scope="projects" />
-        </Row>
+        <AiSummaryButton scope="projects" />
       </PageHeader>
       <Panel>
         <Column gap="4">
-          <Row alignItems="center" gap="3" wrap="nowrap">
-            <div style={{ width: '100%', maxWidth: '28rem', flex: '1 1 16rem' }}>
+          <div className="stellog-projects-toolbar">
+            <div className="stellog-projects-search">
               <SearchField
-                value={draft}
+                value={searchDraft}
                 placeholder="Search"
                 style={{ width: '100%' }}
+                onChange={setSearchDraft}
                 onSearch={value => {
-                  setDraft(value);
-                  setParam('q', value);
+                  setSearchDraft(value);
+                  push({ q: value.trim() || undefined, page: undefined });
                 }}
               />
             </div>
-            <Row alignItems="center" gap="3" wrap="nowrap" style={{ marginLeft: 'auto' }}>
-              <Select
-                aria-label="Status"
-                value={status}
-                renderValue={() =>
-                  status === 'pending' ? 'Pending' : status === 'all' ? 'All' : 'Active'
-                }
-                onChange={value => setParam('status', String(value))}
-              >
-                <ListItem id="active">Active</ListItem>
-                <ListItem id="pending">Pending</ListItem>
-                <ListItem id="all">All</ListItem>
-              </Select>
-              <Select
-                aria-label="Sort"
-                value={sort}
-                renderValue={() => SORTS.find(([id]) => id === sort)?.[1] ?? 'API requests'}
-                onChange={value => setParam('sort', String(value))}
-              >
-                {SORTS.map(([id, label]) => (
-                  <ListItem id={id} key={id}>
-                    {label}
-                  </ListItem>
-                ))}
-              </Select>
-              <Select
-                aria-label="Order"
-                value={order}
-                renderValue={() => (order === 'asc' ? 'Ascending' : 'Descending')}
-                onChange={value => setParam('order', String(value))}
-              >
-                <ListItem id="desc">Descending</ListItem>
-                <ListItem id="asc">Ascending</ListItem>
-              </Select>
-              <Select
-                aria-label="Trend"
-                value={trend}
-                renderValue={() =>
-                  trend === 'pageviews'
-                    ? 'Pageview trend'
-                    : trend === 'visitors'
-                      ? 'Visitor trend'
-                      : 'API trend'
-                }
-                onChange={value => setParam('trend', String(value))}
-              >
-                <ListItem id="requests">API trend</ListItem>
-                <ListItem id="pageviews">Pageview trend</ListItem>
-                <ListItem id="visitors">Visitor trend</ListItem>
-              </Select>
-            </Row>
-          </Row>
-          {projectsQuery.isLoading && <Text>Loading projects.</Text>}
+            <div className="stellog-projects-actions">
+              <ProjectListFilter query={filters} onApply={params => push({ ...params, page: undefined })} />
+              <DateFilter value={dateValue} onChange={value => push({ date: value })} showAllTime={false} />
+            </div>
+          </div>
+          <ProjectFilterChips
+            query={filters}
+            onApply={params => push({ ...params, page: undefined })}
+            onClear={clearFilters}
+          />
+          {projectsQuery.isLoading && (
+            <div className="stellog-shimmer-list" aria-hidden="true">
+              <div className="stellog-shimmer stellog-shimmer-head" />
+              {Array.from({ length: PROJECT_PAGE_SIZE }, (_, index) => (
+                <div key={index} className="stellog-shimmer" />
+              ))}
+            </div>
+          )}
           {projectsQuery.error && <Text>Projects could not be loaded.</Text>}
           {projectsQuery.data && projects.length === 0 && (
             <EmptyCard title="No projects" description="No projects match this range." />
           )}
-          {projects.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
-              <DataTable data={projects} style={{ minWidth: latency ? 1180 : 980 }}>
-                <DataColumn id="compare" label=" " width="44px" style={oneLine}>
-                  {(row: (typeof projects)[number]) => (
-                    <input
-                      type="checkbox"
-                      aria-label={`Compare ${row.name}`}
-                      checked={selected.includes(row.id)}
-                      onChange={() => toggle(row.id)}
-                    />
-                  )}
-                </DataColumn>
-                <DataColumn id="rank" label="Rank" align="end" width="64px" style={oneLine}>
-                  {(row: (typeof projects)[number]) => row.rank}
-                </DataColumn>
-                <DataColumn id="name" label="Project" width="minmax(148px, 1.5fr)" style={oneLine}>
-                  {(row: (typeof projects)[number]) => (
-                    <Row gap="2" alignItems="center">
-                      <Favicon domain={row.domain} />
-                      {projectPath(row) ? (
-                        <Link href={projectPath(row)}>{row.name}</Link>
-                      ) : (
-                        <Text>{row.name}</Text>
-                      )}
-                    </Row>
-                  )}
-                </DataColumn>
-                <DataColumn
-                  id="properties"
-                  label="Properties"
-                  width="minmax(120px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => propertyLabel(row.sites, row.apis)}
-                </DataColumn>
-                <DataColumn
-                  id="pageviews"
-                  label="Pageviews"
-                  align="end"
-                  width="minmax(96px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => row.pageviews.toLocaleString()}
-                </DataColumn>
-                <DataColumn
-                  id="visitors"
-                  label="Visitors"
-                  align="end"
-                  width="minmax(88px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => row.visitors.toLocaleString()}
-                </DataColumn>
-                <DataColumn
-                  id="requests"
-                  label="API requests"
-                  align="end"
-                  width="minmax(118px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => row.requests.toLocaleString()}
-                </DataColumn>
-                <DataColumn
-                  id="errors"
-                  label="Errors"
-                  align="end"
-                  width="minmax(80px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => row.errors.toLocaleString()}
-                </DataColumn>
-                <DataColumn
-                  id="errorRate"
-                  label="Error rate"
-                  align="end"
-                  width="minmax(96px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => formatRate(row.errorRate)}
-                </DataColumn>
-                {latency && (
-                  <DataColumn
-                    id="p50"
-                    label="p50"
-                    align="end"
-                    width="minmax(72px, 0.8fr)"
-                    style={oneLine}
-                  >
-                    {(row: (typeof projects)[number]) => formatLatency(row.p50, row.p50Capped)}
-                  </DataColumn>
-                )}
-                {latency && (
-                  <DataColumn
-                    id="p95"
-                    label="p95"
-                    align="end"
-                    width="minmax(72px, 0.8fr)"
-                    style={oneLine}
-                  >
-                    {(row: (typeof projects)[number]) => formatLatency(row.p95, row.p95Capped)}
-                  </DataColumn>
-                )}
-                <DataColumn
-                  id="trend"
-                  label="Trend"
-                  align="end"
-                  width="minmax(96px, 1fr)"
-                  style={oneLine}
-                >
-                  {(row: (typeof projects)[number]) => {
-                    const numbers = trendNumbers(row, trend);
+          {projects.length > 0 && filtered.length === 0 && (
+            <EmptyCard title="No projects match these filters">
+              <Button onPress={clearFilters}>Clear filters</Button>
+            </EmptyCard>
+          )}
+          {visible.length > 0 && (
+            <div className="stellog-projects-table" style={{ overflowX: 'auto' }}>
+              <table className="stellog-table">
+                <thead>
+                  <tr>
+                    {SORTS.map(column => (
+                      <th key={column.key} style={{ textAlign: column.align }}>
+                        <button type="button" className="stellog-sort" onClick={() => toggleSort(column.key)}>
+                          {column.label}
+                          {sort === column.key && (order === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+                        </button>
+                      </th>
+                    ))}
+                    {canManage && <th />}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map(row => {
+                    const path = projectPath(row);
                     return (
-                      <Trend
-                        value={numbers.value}
-                        current={numbers.current}
-                        previous={numbers.previous}
-                      />
-                    );
-                  }}
-                </DataColumn>
-                {canManage && (
-                  <DataColumn id="action" label=" " align="end" width="48px">
-                    {(row: (typeof projects)[number]) => (
-                      <DialogTrigger>
-                        <Button variant="quiet" aria-label={`Actions for ${row.name}`}>
-                          <Icon>
-                            <Ellipsis />
-                          </Icon>
-                        </Button>
-                        <Modal>
-                          <Dialog title={row.name} style={{ width: 400 }}>
-                            {({ close }) => (
-                              <Column gap="4">
-                                <Text>
-                                  {row.status === 'pending'
-                                    ? 'Approve this project, or remove it from the ranking.'
-                                    : 'Remove this project from the ranking.'}
-                                </Text>
-                                <Row justifyContent="flex-end" gap="2">
-                                  <Button onPress={close}>Cancel</Button>
-                                  {row.status === 'pending' && (
-                                    <Button
-                                      variant="primary"
-                                      onPress={() => {
-                                        close();
-                                        act(post, row, 'approve', reload);
-                                      }}
-                                    >
-                                      Approve
-                                    </Button>
+                      <tr
+                        key={row.id}
+                        className={path ? 'stellog-project-row' : undefined}
+                        onClick={() => path && router.push(path)}
+                      >
+                        <td>
+                          <div className="stellog-project-cell">
+                            <ProjectMark name={row.name} domain={row.domain} />
+                            <div>
+                              <div className="stellog-project-name">{row.name}</div>
+                              <span className="stellog-project-meta">{propertyLabel(row.sites, row.apis)}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{row.pageviews.toLocaleString()}</td>
+                        <td>{(row.visitors ?? 0).toLocaleString()}</td>
+                        <td>{row.apis === 0 ? 'Not connected' : row.requests.toLocaleString()}</td>
+                        <td>{row.requests === 0 ? '—' : formatRate(row.errorRate)}</td>
+                        <td>{formatLatency(row.p95, row.p95Capped)}</td>
+                        <td>
+                          <span className="stellog-trend">
+                            <TrendSpark
+                              previous={row.requests > 0 || row.requestsPrevious > 0 ? row.requestsPrevious : row.pageviewsPrevious}
+                              current={row.requests > 0 || row.requestsPrevious > 0 ? row.requests : row.pageviews}
+                            />
+                            {trendOf(row)}
+                          </span>
+                        </td>
+                        {canManage && (
+                          <td onClick={event => event.stopPropagation()}>
+                            <DialogTrigger>
+                              <Button variant="quiet" aria-label={`Actions for ${row.name}`}>
+                                <Icon>
+                                  <Ellipsis />
+                                </Icon>
+                              </Button>
+                              <Modal>
+                                <Dialog title={row.name} style={{ width: 400 }}>
+                                  {({ close }) => (
+                                    <Column gap="4">
+                                      <Text>
+                                        {row.status === 'pending'
+                                          ? 'Approve this project, or remove it from the ranking.'
+                                          : 'Remove this project from the ranking.'}
+                                      </Text>
+                                      <Row justifyContent="flex-end" gap="2">
+                                        <Button onPress={close}>Cancel</Button>
+                                        {row.status === 'pending' && (
+                                          <Button
+                                            variant="primary"
+                                            onPress={() => {
+                                              close();
+                                              act(post, row, 'approve', () => projectsQuery.refetch());
+                                            }}
+                                          >
+                                            Approve
+                                          </Button>
+                                        )}
+                                        <Button
+                                          variant="danger"
+                                          onPress={() => {
+                                            close();
+                                            act(del, row, '', () => projectsQuery.refetch());
+                                          }}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </Row>
+                                    </Column>
                                   )}
-                                  <Button
-                                    variant="danger"
-                                    onPress={() => {
-                                      close();
-                                      act(del, row, '', reload);
-                                    }}
-                                  >
-                                    Remove
-                                  </Button>
-                                </Row>
-                              </Column>
-                            )}
-                          </Dialog>
-                        </Modal>
-                      </DialogTrigger>
-                    )}
-                  </DataColumn>
-                )}
-              </DataTable>
+                                </Dialog>
+                              </Modal>
+                            </DialogTrigger>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          )}
+          {projects.length > 0 && (
+            <Row alignItems="center" justifyContent="space-between" gap="3" wrap="wrap">
+              <Text color="muted">
+                Showing {visible.length} of {projects.length} projects
+              </Text>
+              {pageCount > 1 && (
+                <Row alignItems="center" gap="2">
+                  <Button
+                    isDisabled={page <= 1}
+                    onPress={() => push({ page: page <= 2 ? undefined : String(page - 1) })}
+                  >
+                    Previous
+                  </Button>
+                  <Text>
+                    {page} / {pageCount}
+                  </Text>
+                  <Button isDisabled={page >= pageCount} onPress={() => push({ page: String(page + 1) })}>
+                    Next
+                  </Button>
+                </Row>
+              )}
+            </Row>
           )}
         </Column>
       </Panel>
-      {compared.length >= 2 && (
-        <Panel title="Side by side">
-          <Grid columns={{ base: '1fr', md: `repeat(${Math.min(compared.length, 4)}, 1fr)` }} gap>
-            {compared.map(project => (
-              <Column key={project.id} gap="2">
-                <Text weight="bold">{project.name}</Text>
-                <Metric label="Properties" value={propertyLabel(project.sites, project.apis)} />
-                <Metric label="Pageviews" value={project.pageviews.toLocaleString()} />
-                <Metric label="Visitors" value={project.visitors.toLocaleString()} />
-                <Metric label="API requests" value={project.requests.toLocaleString()} />
-                <Metric label="Error rate" value={formatRate(project.errorRate)} />
-                {latency && (
-                  <Metric label="p50" value={formatLatency(project.p50, project.p50Capped)} />
-                )}
-                {latency && (
-                  <Metric label="p95" value={formatLatency(project.p95, project.p95Capped)} />
-                )}
-                <Metric
-                  label="Trend"
-                  value={growthText(
-                    trendNumbers(project, trend).value,
-                    trendNumbers(project, trend).current,
-                    trendNumbers(project, trend).previous,
-                  )}
-                />
-              </Column>
-            ))}
-          </Grid>
-        </Panel>
-      )}
     </Column>
+  );
+}
+
+function TrendSpark({ previous, current }: { previous: number; current: number }) {
+  if (previous === 0 && current === 0) return null;
+  const max = Math.max(previous, current, 1);
+  const y = (value: number) => 14 - (value / max) * 12;
+  const rising = current >= previous;
+  return (
+    <svg className="stellog-spark" width="48" height="16" viewBox="0 0 48 16" aria-hidden="true">
+      <polyline
+        fill="none"
+        stroke={rising ? '#3dd68c' : '#f87171'}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        points={`2,${y(previous)} 46,${y(current)}`}
+      />
+    </svg>
   );
 }
 
@@ -440,41 +336,6 @@ async function act(
   reload();
 }
 
-function trendNumbers(
-  row: {
-    pageviews: number;
-    visitors: number;
-    requests: number;
-    pageviewsGrowth: number | null;
-    visitorsGrowth: number | null;
-    requestsGrowth: number | null;
-    pageviewsPrevious: number;
-    visitorsPrevious: number;
-    requestsPrevious: number;
-  },
-  trend: TrendKey,
-) {
-  if (trend === 'pageviews') {
-    return {
-      value: row.pageviewsGrowth,
-      current: row.pageviews,
-      previous: row.pageviewsPrevious,
-    };
-  }
-  if (trend === 'visitors') {
-    return {
-      value: row.visitorsGrowth,
-      current: row.visitors,
-      previous: row.visitorsPrevious,
-    };
-  }
-  return {
-    value: row.requestsGrowth,
-    current: row.requests,
-    previous: row.requestsPrevious,
-  };
-}
-
 function projectPath(row: { id: string; websiteIds: string[] }) {
   const parsed = parseProjectId(row.id);
   if (parsed?.type === 'team') return `/projects/${parsed.id}`;
@@ -482,44 +343,41 @@ function projectPath(row: { id: string; websiteIds: string[] }) {
   return '';
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function filterQuery(query: Record<string, string>): FilterQuery {
+  return {
+    fsrc: query.fsrc,
+    ferr: query.ferr,
+    fp95: query.fp95,
+    ftrend: query.ftrend,
+    fpv: query.fpv,
+    freq: query.freq,
+  };
+}
+
+function isSort(value: string | undefined): value is ProjectSortKey {
   return (
-    <Row justifyContent="space-between">
-      <Text color="muted">{label}</Text>
-      <Text>{value}</Text>
-    </Row>
+    value === 'name' ||
+    value === 'pageviews' ||
+    value === 'visitors' ||
+    value === 'requests' ||
+    value === 'errorRate' ||
+    value === 'p95' ||
+    value === 'trend'
   );
 }
 
-function Trend({
-  value,
-  current,
-  previous,
-}: {
-  value: number | null;
-  current: number;
-  previous: number;
-}) {
-  if (previous === 0 && current > 0) return <Text>new</Text>;
-  if (value === null) return <Text>—</Text>;
-  const pct = Math.round(value * 100);
-  return <ChangeLabel value={pct}>{`${pct > 0 ? '+' : ''}${pct}%`}</ChangeLabel>;
-}
-
-function growthText(value: number | null, current: number, previous: number) {
-  if (previous === 0 && current > 0) return 'new';
-  if (value === null) return '—';
-  const pct = Math.round(value * 100);
-  return `${pct > 0 ? '+' : ''}${pct}%`;
-}
-
-function formatRate(rate: number) {
-  return `${Math.round(rate * 1000) / 10}%`;
-}
-
-function formatLatency(ms: number | null, capped: boolean) {
-  if (capped) return '> 10s';
-  if (ms === null) return '—';
-  if (ms >= 1000) return `${ms / 1000}s`;
-  return `${ms} ms`;
+function ProjectMark({ name, domain }: { name: string; domain: string | null }) {
+  if (domain) {
+    return (
+      <span className="stellog-project-mark stellog-project-mark-table">
+        <Favicon domain={domain} />
+      </span>
+    );
+  }
+  const letter = name.trim().charAt(0).toUpperCase() || '?';
+  return (
+    <span className="stellog-project-mark stellog-project-mark-table stellog-project-initial" aria-hidden="true">
+      {letter}
+    </span>
+  );
 }
